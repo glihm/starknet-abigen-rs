@@ -47,11 +47,7 @@ impl CairoType for U8 {
     }
 
     fn deserialize(felts: &[FieldElement], offset: usize) -> Result<Self::RustType> {
-        // TODO: that's ugly or fine? We do know felt is always &[u8; 8]
-        // byte array.
-        let bytes: &[u8; 1] = &felts[offset].to_bytes_be()[31..].try_into().unwrap();
-
-        Ok(u8::from_be_bytes(*bytes))
+        Ok(felts[offset].try_into().unwrap())
     }
 }
 
@@ -66,11 +62,7 @@ impl CairoType for U16 {
     }
 
     fn deserialize(felts: &[FieldElement], offset: usize) -> Result<Self::RustType> {
-        // TODO: that's ugly or fine? We do know felt is always &[u8; 2]
-        // byte array.
-        let bytes: &[u8; 2] = &felts[offset].to_bytes_be()[30..].try_into().unwrap();
-
-        Ok(u16::from_be_bytes(*bytes))
+        Ok(felts[offset].try_into().unwrap())
     }
 }
 
@@ -85,11 +77,8 @@ impl CairoType for U32 {
     }
 
     fn deserialize(felts: &[FieldElement], offset: usize) -> Result<Self::RustType> {
-        // TODO: that's ugly or fine? We do know felt is always &[u8; 32]
-        // byte array.
-        let bytes: &[u8; 4] = &felts[offset].to_bytes_be()[28..].try_into().unwrap();
-
-        Ok(u32::from_be_bytes(*bytes))
+        // TODO: Convert error type to match
+        Ok(felts[offset].try_into().unwrap())
     }
 }
 
@@ -104,11 +93,7 @@ impl CairoType for U64 {
     }
 
     fn deserialize(felts: &[FieldElement], offset: usize) -> Result<Self::RustType> {
-        // TODO: that's ugly or fine? We do know felt is always &[u8; 64]
-        // byte array.
-        let bytes: &[u8; 8] = &felts[offset].to_bytes_be()[24..].try_into().unwrap();
-
-        Ok(u64::from_be_bytes(*bytes))
+        Ok(felts[offset].try_into().unwrap())
     }
 }
 
@@ -123,11 +108,7 @@ impl CairoType for U128 {
     }
 
     fn deserialize(felts: &[FieldElement], offset: usize) -> Result<Self::RustType> {
-        // TODO: that's ugly or fine? We do know felt is always &[u8; 32]
-        // byte array.
-        let bytes: &[u8; 16] = &felts[offset].to_bytes_be()[16..].try_into().unwrap();
-
-        Ok(u128::from_be_bytes(*bytes))
+        Ok(felts[offset].try_into().unwrap())
     }
 }
 
