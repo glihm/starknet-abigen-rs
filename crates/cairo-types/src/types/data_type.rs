@@ -1,8 +1,8 @@
-use crate::{Result};
-use alloc::{vec::Vec, vec};
-use starknet::core::types::FieldElement;
 use crate::ty::CairoType;
+use crate::Result;
+use alloc::{vec, vec::Vec};
 use core::marker::PhantomData;
+use starknet::core::types::FieldElement;
 
 /// FieldElement - `felt252`
 impl CairoType for FieldElement {
@@ -36,6 +36,44 @@ impl CairoType for Bool {
     }
 }
 
+/// U8 - `u8`
+pub struct U8;
+
+impl CairoType for U8 {
+    type RustType = u8;
+
+    fn serialize(rust: &Self::RustType) -> Vec<FieldElement> {
+        vec![FieldElement::from(*rust)]
+    }
+
+    fn deserialize(felts: &[FieldElement], offset: usize) -> Result<Self::RustType> {
+        // TODO: that's ugly or fine? We do know felt is always &[u8; 8]
+        // byte array.
+        let bytes: &[u8; 1] = &felts[offset].to_bytes_be()[31..].try_into().unwrap();
+
+        Ok(u8::from_be_bytes(*bytes))
+    }
+}
+
+/// U16 - `u16`
+pub struct U16;
+
+impl CairoType for U16 {
+    type RustType = u16;
+
+    fn serialize(rust: &Self::RustType) -> Vec<FieldElement> {
+        vec![FieldElement::from(*rust)]
+    }
+
+    fn deserialize(felts: &[FieldElement], offset: usize) -> Result<Self::RustType> {
+        // TODO: that's ugly or fine? We do know felt is always &[u8; 2]
+        // byte array.
+        let bytes: &[u8; 2] = &felts[offset].to_bytes_be()[30..].try_into().unwrap();
+
+        Ok(u16::from_be_bytes(*bytes))
+    }
+}
+
 /// U32 - `u32`
 pub struct U32;
 
@@ -49,11 +87,28 @@ impl CairoType for U32 {
     fn deserialize(felts: &[FieldElement], offset: usize) -> Result<Self::RustType> {
         // TODO: that's ugly or fine? We do know felt is always &[u8; 32]
         // byte array.
-        let bytes: &[u8; 4] = &felts[offset].to_bytes_be()[28..]
-            .try_into()
-            .unwrap();
+        let bytes: &[u8; 4] = &felts[offset].to_bytes_be()[28..].try_into().unwrap();
 
         Ok(u32::from_be_bytes(*bytes))
+    }
+}
+
+/// U64 - `u64`
+pub struct U64;
+
+impl CairoType for U64 {
+    type RustType = u64;
+
+    fn serialize(rust: &Self::RustType) -> Vec<FieldElement> {
+        vec![FieldElement::from(*rust)]
+    }
+
+    fn deserialize(felts: &[FieldElement], offset: usize) -> Result<Self::RustType> {
+        // TODO: that's ugly or fine? We do know felt is always &[u8; 64]
+        // byte array.
+        let bytes: &[u8; 8] = &felts[offset].to_bytes_be()[24..].try_into().unwrap();
+
+        Ok(u64::from_be_bytes(*bytes))
     }
 }
 
@@ -70,9 +125,7 @@ impl CairoType for U128 {
     fn deserialize(felts: &[FieldElement], offset: usize) -> Result<Self::RustType> {
         // TODO: that's ugly or fine? We do know felt is always &[u8; 32]
         // byte array.
-        let bytes: &[u8; 16] = &felts[offset].to_bytes_be()[16..]
-            .try_into()
-            .unwrap();
+        let bytes: &[u8; 16] = &felts[offset].to_bytes_be()[16..].try_into().unwrap();
 
         Ok(u128::from_be_bytes(*bytes))
     }
@@ -81,7 +134,10 @@ impl CairoType for U128 {
 /// Array<FieldElement> - `Array<felt252>`
 pub struct Array<T: CairoType>(PhantomData<T>);
 
-impl<T, U> CairoType for Array<T> where T: CairoType<RustType = U> {
+impl<T, U> CairoType for Array<T>
+where
+    T: CairoType<RustType = U>,
+{
     type RustType = Vec<U>;
 
     const SERIALIZED_SIZE: Option<usize> = None;
@@ -90,8 +146,7 @@ impl<T, U> CairoType for Array<T> where T: CairoType<RustType = U> {
     fn serialized_size(rust: &Self::RustType) -> usize {
         let data = rust;
         // 1 + because the length is always the first felt.
-        1 + data.iter().map(T::serialized_size).sum::<usize>()
-            + (T::DYNAMIC as usize * data.len())
+        1 + data.iter().map(T::serialized_size).sum::<usize>() + (T::DYNAMIC as usize * data.len())
     }
 
     fn serialize(rust: &Self::RustType) -> Vec<FieldElement> {
@@ -101,9 +156,8 @@ impl<T, U> CairoType for Array<T> where T: CairoType<RustType = U> {
     }
 
     fn deserialize(felts: &[FieldElement], offset: usize) -> Result<Self::RustType> {
-        let len: usize = usize::from_str_radix(
-            format!("{:x}", felts[offset]).as_str(), 16
-        ).expect("First felt of an array must fit into usize");
+        let len: usize = usize::from_str_radix(format!("{:x}", felts[offset]).as_str(), 16)
+            .expect("First felt of an array must fit into usize");
 
         let mut out: Vec<U> = vec![];
         let mut offset = offset + 1;
@@ -123,8 +177,6 @@ impl<T, U> CairoType for Array<T> where T: CairoType<RustType = U> {
     }
 }
 
-
-
 // *** THIS SHOULD BE GENERATED. HERE FOR TESTING for array
 //     with dynamic size.
 //***
@@ -140,20 +192,13 @@ impl CairoType for U256 {
     const SERIALIZED_SIZE: Option<usize> = Some(2);
 
     fn serialize(rust: &Self::RustType) -> Vec<FieldElement> {
-        vec![
-            FieldElement::from(rust.low),
-            FieldElement::from(rust.high)
-        ]
+        vec![FieldElement::from(rust.low), FieldElement::from(rust.high)]
     }
 
     fn deserialize(felts: &[FieldElement], offset: usize) -> Result<Self::RustType> {
-        let low: &[u8; 16] = &felts[offset].to_bytes_be()[16..]
-            .try_into()
-            .unwrap();
+        let low: &[u8; 16] = &felts[offset].to_bytes_be()[16..].try_into().unwrap();
 
-        let high: &[u8; 16] = &felts[offset + 1].to_bytes_be()[16..]
-            .try_into()
-            .unwrap();
+        let high: &[u8; 16] = &felts[offset + 1].to_bytes_be()[16..].try_into().unwrap();
 
         Ok(U256 {
             low: u128::from_be_bytes(*low),
@@ -161,7 +206,6 @@ impl CairoType for U256 {
         })
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -189,6 +233,21 @@ mod tests {
     }
 
     #[test]
+    fn test_serialize_u8() {
+        let v = 12_u8;
+        let felts = U8::serialize(&v);
+        assert_eq!(felts.len(), 1);
+        assert_eq!(felts[0], FieldElement::from(12 as u8));
+    }
+
+    #[test]
+    fn test_deserialize_u8() {
+        let felts = vec![FieldElement::from(12_u8), FieldElement::from(10_u8)];
+        assert_eq!(U8::deserialize(&felts, 0).unwrap(), 12);
+        assert_eq!(U8::deserialize(&felts, 1).unwrap(), 10);
+    }
+
+    #[test]
     fn test_serialize_u32() {
         let v = 123_u32;
         let felts = U32::serialize(&v);
@@ -197,10 +256,40 @@ mod tests {
     }
 
     #[test]
+    fn test_serialize_u16() {
+        let v = 12_u16;
+        let felts = U16::serialize(&v);
+        assert_eq!(felts.len(), 1);
+        assert_eq!(felts[0], FieldElement::from(12 as u16));
+    }
+
+    #[test]
+    fn test_deserialize_u16() {
+        let felts = vec![FieldElement::from(12_u16), FieldElement::from(10_u8)];
+        assert_eq!(U8::deserialize(&felts, 0).unwrap(), 12);
+        assert_eq!(U8::deserialize(&felts, 1).unwrap(), 10);
+    }
+
+    #[test]
     fn test_deserialize_u32() {
         let felts = vec![FieldElement::from(123_u32), FieldElement::from(99_u32)];
         assert_eq!(U32::deserialize(&felts, 0).unwrap(), 123);
         assert_eq!(U32::deserialize(&felts, 1).unwrap(), 99);
+    }
+
+    #[test]
+    fn test_serialize_u64() {
+        let v = 123_u64;
+        let felts = U64::serialize(&v);
+        assert_eq!(felts.len(), 1);
+        assert_eq!(felts[0], FieldElement::from(123 as u64));
+    }
+
+    #[test]
+    fn test_deserialize_u64() {
+        let felts = vec![FieldElement::from(123_u64), FieldElement::from(99_u64)];
+        assert_eq!(U64::deserialize(&felts, 0).unwrap(), 123);
+        assert_eq!(U64::deserialize(&felts, 1).unwrap(), 99);
     }
 
     #[test]
@@ -228,16 +317,7 @@ mod tests {
         assert_eq!(felts[2], FieldElement::TWO);
         assert_eq!(felts[3], FieldElement::THREE);
 
-        let v: Vec<U256> = vec![
-            U256 {
-                low: 1,
-                high: 0,
-            },
-            U256 {
-                low: 2,
-                high: 0,
-            }
-        ];
+        let v: Vec<U256> = vec![U256 { low: 1, high: 0 }, U256 { low: 2, high: 0 }];
 
         let felts = Array::<U256>::serialize(&v);
         assert_eq!(felts.len(), 5);
@@ -273,5 +353,4 @@ mod tests {
         assert_eq!(vals[0], U256 { low: 1, high: 0 });
         assert_eq!(vals[1], U256 { low: 2, high: 0 });
     }
-
 }
