@@ -1,5 +1,5 @@
-use alloc::string::{String, ToString};
-use core::fmt;
+use alloc::string::{String};
+
 
 /// Cairo types result.
 pub type Result<T> = core::result::Result<T, Error>;

@@ -1,5 +1,5 @@
 use crate::{Result};
-use alloc::{borrow::Cow, string::String as RustString, vec::Vec};
+use alloc::{vec::Vec};
 use starknet::core::types::FieldElement;
 use crate::ty::CairoType;
 use core::marker::PhantomData;
@@ -62,7 +62,7 @@ impl<T, U> CairoType for CairoOption<T> where T: CairoType<RustType = U> {
         }
     }
 
-    fn deserialize(felts: &[FieldElement]) -> Result<Self::RustType> {
+    fn deserialize(_felts: &[FieldElement]) -> Result<Self::RustType> {
         Ok(Option::None)
     }
 }
