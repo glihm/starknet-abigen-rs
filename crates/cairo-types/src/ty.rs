@@ -15,6 +15,21 @@ pub trait CairoType {
     // to serialize them at compile time, but when they contain
     // at least 1 array, then the length is known at runtime only.
 
+    /// The serialized size of the type in felts, if known at compile time.
+    const SERIALIZED_SIZE: Option<usize> = Some(1);
+
+    /// Whether the serialized size is dynamic.
+    const DYNAMIC: bool = Self::SERIALIZED_SIZE.is_none();
+
+    /// Calculate the serialized size of the data For a single felt
+    /// it will always be 1.
+    /// If the type is dynamic, SERIALIZED_SIZE is None, but the
+    /// function is overriden to correctly compute the size.
+    #[inline]
+    fn serialized_size(_rust: &Self::RustType) -> usize {
+        Self::SERIALIZED_SIZE.unwrap()
+    }
+
     /// Serializes the given type into a FieldElement sequence.
     fn serialize(rust: &Self::RustType) -> Vec<FieldElement>;
 
@@ -26,5 +41,5 @@ pub trait CairoType {
     ///
     /// TODO: mutable reference may be replaced by a decoder struct
     /// or other better design pattern.
-    fn deserialize(felts: &[FieldElement], offset: &mut usize) -> Result<Self::RustType>;
+    fn deserialize(felts: &[FieldElement], offset: usize) -> Result<Self::RustType>;
 }
