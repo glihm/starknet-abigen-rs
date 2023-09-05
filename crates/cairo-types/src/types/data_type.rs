@@ -10,11 +10,8 @@ pub struct U256 {
     high: u128,
 }
 
-/// U256 - `u256`
-pub struct CairoU256;
-
-impl CairoType for CairoU256 {
-    type RustType = U256;
+impl CairoType for U256 {
+    type RustType = Self;
 
     fn serialize(rust: &Self::RustType) -> Vec<FieldElement> {
         vec![
@@ -56,6 +53,18 @@ impl<T, U> CairoType for CairoOption<T> where T: CairoType<RustType = U> {
 }
 // ********* EXAMPLE ****
 
+/// FieldElement - `felt252`
+impl CairoType for FieldElement {
+    type RustType = Self;
+
+    fn serialize(rust: &Self::RustType) -> Vec<FieldElement> {
+        vec![*rust]
+    }
+
+    fn deserialize(felts: &[FieldElement]) -> Result<Self::RustType> {
+        Ok(felts[0])
+    }
+}
 
 /// Bool - `bool`
 pub struct Bool;
@@ -154,7 +163,7 @@ mod tests {
 
     #[test]
     fn test_deserialize_bool() {
-        let felts = vec![FieldElement::ZERO, FieldElement::ONE, FieldElement::TWO];
+        let felts = vec![FieldElement::ZERO, FieldElement::ONE, FieldElement::TWO]; // allocating in the heap.
         assert_eq!(Bool::deserialize(&felts).unwrap(), false);
         assert_eq!(Bool::deserialize(&felts[1..]).unwrap(), true);
         assert_eq!(Bool::deserialize(&felts[2..]).unwrap(), false);
@@ -220,7 +229,7 @@ mod tests {
                 high: 0,
             }
         ];
-        let felts = Array::<CairoU256>::serialize(&v);
+        let felts = Array::<U256>::serialize(&v);
         assert_eq!(felts.len(), 5);
         assert_eq!(felts[0], FieldElement::from(2_u32));
         assert_eq!(felts[1], FieldElement::ONE);
