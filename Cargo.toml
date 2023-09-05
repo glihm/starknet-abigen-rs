@@ -1,0 +1,32 @@
+[package]
+name = "starknet-abigen-rs"
+version = "0.1.0"
+edition = "2021"
+
+[workspace]
+members = [
+    "crates/cairo-types",
+    "crates/cairo-type-parser",
+    "crates/abigen-macro",
+]
+
+[workspace.dependencies]
+# workspace crates
+cairo-types = { path = "crates/cairo-types", default-features = false  }
+cairo-type-parser = { path = "crates/cairo-type-parser", default-features = false  }
+abigen-macro = { path = "crates/abigen-macro", default-features = false  }
+
+# serde
+serde = { version = "1.0", default-features = false, features = ["alloc"] }
+serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
+
+# macros
+proc-macro2 = "1.0"
+quote = "1.0"
+syn = "2.0"
+
+# starknet
+starknet = "0.5.0"
+
+# misc
+anyhow = "1.0"
