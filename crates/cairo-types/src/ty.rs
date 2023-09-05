@@ -2,6 +2,9 @@ use crate::{Result};
 use alloc::{vec::Vec};
 use starknet::core::types::FieldElement;
 
+// TODO: add the serialize_to method to only push data
+// to an existing vec:
+// serialize_to(rust: &Self::RustType, out: &mut Vec<FieldElement>).
 
 pub trait CairoType {
     /// The corresponding Rust type.

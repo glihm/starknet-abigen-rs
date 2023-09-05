@@ -4,6 +4,59 @@ use starknet::core::types::FieldElement;
 use crate::ty::CairoType;
 use core::marker::PhantomData;
 
+// AUTO GENERATED code example!
+pub struct U256 {
+    low: u128,
+    high: u128,
+}
+
+/// U256 - `u256`
+pub struct CairoU256;
+
+impl CairoType for CairoU256 {
+    type RustType = U256;
+
+    fn serialize(rust: &Self::RustType) -> Vec<FieldElement> {
+        vec![
+            FieldElement::from(rust.low),
+            FieldElement::from(rust.high)
+        ]
+    }
+
+    fn deserialize(felts: &[FieldElement]) -> Result<Self::RustType> {
+        Ok(U256 {
+            low: 0,
+            high: 0,
+        })
+    }
+}
+
+
+/// RustOption - Example on how implementing a type that is
+/// depending on an other type using T.
+pub struct CairoOption<T: CairoType>(PhantomData<T>);
+
+impl<T, U> CairoType for CairoOption<T> where T: CairoType<RustType = U> {
+    type RustType = Option<U>;
+
+    fn serialize(rust: &Self::RustType) -> Vec<FieldElement> {
+        match rust {
+            Some(v) => {
+                let mut felts = vec![FieldElement::ZERO];
+                felts.extend(T::serialize(v));
+                felts
+            }
+            None => vec![FieldElement::ONE]
+        }
+    }
+
+    fn deserialize(_felts: &[FieldElement]) -> Result<Self::RustType> {
+        Ok(Option::None)
+    }
+}
+// ********* EXAMPLE ****
+
+
 /// Bool - `bool`
 pub struct Bool;
 
@@ -44,26 +97,41 @@ impl CairoType for U32 {
     }
 }
 
-/// RustOption - Example on how implementing a type that is
-/// depending on an other type using T.
-pub struct CairoOption<T: CairoType>(PhantomData<T>);
+/// U128 - `u128`
+pub struct U128;
 
-impl<T, U> CairoType for CairoOption<T> where T: CairoType<RustType = U> {
-    type RustType = Option<U>;
+impl CairoType for U128 {
+    type RustType = u128;
 
     fn serialize(rust: &Self::RustType) -> Vec<FieldElement> {
-        match rust {
-            Some(v) => {
-                let mut felts = vec![FieldElement::ZERO];
-                felts.extend(T::serialize(v));
-                felts
-            }
-            None => vec![FieldElement::ONE]
-        }
+        vec![FieldElement::from(*rust)]
     }
 
-    fn deserialize(_felts: &[FieldElement]) -> Result<Self::RustType> {
-        Ok(Option::None)
+    fn deserialize(felts: &[FieldElement]) -> Result<Self::RustType> {
+        // TODO: that's ugly or fine? We do know felt is always &[u8; 32]
+        // byte array.
+        let bytes: &[u8; 16] = &felts[0].to_bytes_be()[16..]
+            .try_into()
+            .unwrap();
+
+        Ok(u128::from_be_bytes(*bytes))
+    }
+}
+
+/// Array<FieldElement> - `Array<felt252>`
+pub struct Array<T: CairoType>(PhantomData<T>);
+
+impl<T, U> CairoType for Array<T> where T: CairoType<RustType = U> {
+    type RustType = Vec<U>;
+
+    fn serialize(rust: &Self::RustType) -> Vec<FieldElement> {
+        let mut out: Vec<FieldElement> = vec![rust.len().into()];
+        rust.iter().for_each(|r| out.extend(T::serialize(r)));
+        out
+    }
+
+    fn deserialize(felts: &[FieldElement]) -> Result<Self::RustType> {
+        Ok(vec![])
     }
 }
 
@@ -108,12 +176,57 @@ mod tests {
     }
 
     #[test]
+    fn test_serialize_u128() {
+        let v = 123_u128;
+        let felts = U128::serialize(&v);
+        assert_eq!(felts.len(), 1);
+        assert_eq!(felts[0], FieldElement::from(123 as u128));
+    }
+
+    #[test]
+    fn test_deserialize_u128() {
+        let felts = vec![FieldElement::from(123_u128), FieldElement::from(99_u128)];
+        assert_eq!(U128::deserialize(&felts).unwrap(), 123);
+        assert_eq!(U128::deserialize(&felts[1..]).unwrap(), 99);
+    }
+
+    #[test]
     fn test_serialize_option() {
         let v = Some(32_u32);
         let felts = CairoOption::<U32>::serialize(&v);
         assert_eq!(felts.len(), 2);
         assert_eq!(felts[0], FieldElement::ZERO);
         assert_eq!(felts[1], FieldElement::from(32_u32));
+    }
+
+    #[test]
+    fn test_serialize_array() {
+        //let v: Vec<FieldElement> = vec![FieldElement::ZERO, FieldElement::ONE];
+        let v: Vec<u32> = vec![1, 2, 3];
+        let felts = Array::<U32>::serialize(&v);
+        assert_eq!(felts.len(), 4);
+        assert_eq!(felts[0], FieldElement::from(3_u32));
+        assert_eq!(felts[1], FieldElement::ONE);
+        assert_eq!(felts[2], FieldElement::TWO);
+        assert_eq!(felts[3], FieldElement::THREE);
+
+        let v: Vec<U256> = vec![
+            U256 {
+                low: 1,
+                high: 0,
+            },
+            U256 {
+                low: 2,
+                high: 0,
+            }
+        ];
+        let felts = Array::<CairoU256>::serialize(&v);
+        assert_eq!(felts.len(), 5);
+        assert_eq!(felts[0], FieldElement::from(2_u32));
+        assert_eq!(felts[1], FieldElement::ONE);
+        assert_eq!(felts[2], FieldElement::ZERO);
+        assert_eq!(felts[3], FieldElement::TWO);
+        assert_eq!(felts[4], FieldElement::ZERO);
     }
 
 }
