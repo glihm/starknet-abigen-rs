@@ -1,6 +1,6 @@
 use crate::ty::CairoType;
 use crate::Result;
-use alloc::{vec, vec::Vec};
+use alloc::{format, vec, vec::Vec};
 use core::marker::PhantomData;
 use starknet::core::types::FieldElement;
 
@@ -144,7 +144,6 @@ where
         let mut offset = offset + 1;
 
         loop {
-            println!("OFFSET {:?}", offset);
             if out.len() == len {
                 break;
             }

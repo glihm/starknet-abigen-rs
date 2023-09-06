@@ -1,0 +1,252 @@
+[
+  {
+    "type": "struct",
+    "name": "piaglihm::piaglihm::PG",
+    "members": [
+      {
+        "name": "v1",
+        "type": "core::felt252"
+      },
+      {
+        "name": "v2",
+        "type": "core::integer::u128"
+      }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "hello_world",
+    "inputs": [
+      {
+        "name": "value",
+        "type": "core::felt252"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "piaglihm::piaglihm::PG"
+      }
+    ],
+    "state_mutability": "view"
+  },
+  {
+    "type": "struct",
+    "name": "core::integer::u256",
+    "members": [
+      {
+        "name": "low",
+        "type": "core::integer::u128"
+      },
+      {
+        "name": "high",
+        "type": "core::integer::u128"
+      }
+    ]
+  },
+  {
+    "type": "struct",
+    "name": "piaglihm::piaglihm::InnerOne",
+    "members": [
+      {
+        "name": "a",
+        "type": "core::integer::u256"
+      },
+      {
+        "name": "b",
+        "type": "core::array::Array::<core::felt252>"
+      }
+    ]
+  },
+  {
+    "type": "struct",
+    "name": "piaglihm::piaglihm::ComplexOne",
+    "members": [
+      {
+        "name": "pg",
+        "type": "piaglihm::piaglihm::PG"
+      },
+      {
+        "name": "inner",
+        "type": "piaglihm::piaglihm::InnerOne"
+      }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "call_test",
+    "inputs": [
+      {
+        "name": "pg",
+        "type": "piaglihm::piaglihm::PG"
+      },
+      {
+        "name": "inner",
+        "type": "piaglihm::piaglihm::InnerOne"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "piaglihm::piaglihm::ComplexOne"
+      }
+    ],
+    "state_mutability": "external"
+  },
+  {
+    "type": "struct",
+    "name": "piaglihm::piaglihm::TypesInTypes::<core::integer::u256>",
+    "members": [
+      {
+        "name": "a",
+        "type": "core::array::Array::<core::array::Array::<core::felt252>>"
+      },
+      {
+        "name": "b",
+        "type": "core::integer::u256"
+      }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "call_bla",
+    "inputs": [
+      {
+        "name": "a",
+        "type": "piaglihm::piaglihm::TypesInTypes::<core::integer::u256>"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "piaglihm::piaglihm::TypesInTypes::<core::integer::u256>"
+      }
+    ],
+    "state_mutability": "external"
+  },
+  {
+    "type": "struct",
+    "name": "core::array::Span::<core::felt252>",
+    "members": [
+      {
+        "name": "snapshot",
+        "type": "@core::array::Array::<core::felt252>"
+      }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "call_bou",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "(core::array::Span::<core::felt252>, core::felt252)"
+      }
+    ],
+    "state_mutability": "external"
+  },
+  {
+    "type": "struct",
+    "name": "core::array::Span::<(core::felt252, piaglihm::piaglihm::PG)>",
+    "members": [
+      {
+        "name": "snapshot",
+        "type": "@core::array::Array::<(core::felt252, piaglihm::piaglihm::PG)>"
+      }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "call_bii",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "(core::array::Span::<(core::felt252, piaglihm::piaglihm::PG)>, core::felt252)"
+      }
+    ],
+    "state_mutability": "external"
+  },
+  {
+    "type": "enum",
+    "name": "piaglihm::piaglihm::TestEnum::<core::felt252>",
+    "variants": [
+      {
+        "name": "V1",
+        "type": "core::felt252"
+      },
+      {
+        "name": "V2",
+        "type": "core::integer::u128"
+      },
+      {
+        "name": "V3",
+        "type": "core::array::Array::<core::felt252>"
+      },
+      {
+        "name": "V4",
+        "type": "()"
+      }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "call_baba",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "piaglihm::piaglihm::TestEnum::<core::felt252>"
+      }
+    ],
+    "state_mutability": "external"
+  },
+  {
+    "type": "function",
+    "name": "call_pia",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "piaglihm::piaglihm::TestEnum::<core::felt252>"
+      }
+    ],
+    "state_mutability": "external"
+  },
+  {
+    "type": "enum",
+    "name": "core::option::Option::<core::felt252>",
+    "variants": [
+      {
+        "name": "Some",
+        "type": "core::felt252"
+      },
+      {
+        "name": "None",
+        "type": "()"
+      }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "call_bibi",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "core::option::Option::<core::felt252>"
+      }
+    ],
+    "state_mutability": "external"
+  },
+  {
+    "type": "function",
+    "name": "call_bobo",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "core::option::Option::<core::felt252>"
+      }
+    ],
+    "state_mutability": "external"
+  },
+  {
+    "type": "event",
+    "name": "piaglihm::piaglihm::Event",
+    "kind": "enum",
+    "variants": []
+  }
+]

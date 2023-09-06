@@ -28,5 +28,17 @@ syn = "2.0"
 # starknet
 starknet = "0.5.0"
 
-# misc
+
+
+# Dependencies for the testing app in src.
+[dependencies]
 anyhow = "1.0"
+tokio = { version = "1.15.0", features = ["full"] }
+url = "2.2.2"
+
+cairo-types.workspace = true
+cairo-type-parser.workspace = true
+abigen-macro.workspace = true
+
+starknet.workspace = true
+serde_json.workspace = true
