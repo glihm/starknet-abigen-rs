@@ -1,7 +1,7 @@
 [
   {
     "type": "struct",
-    "name": "piaglihm::piaglihm::PG",
+    "name": "contracts::c1::PG",
     "members": [
       {
         "name": "v1",
@@ -24,7 +24,7 @@
     ],
     "outputs": [
       {
-        "type": "piaglihm::piaglihm::PG"
+        "type": "contracts::c1::PG"
       }
     ],
     "state_mutability": "view"
@@ -45,7 +45,7 @@
   },
   {
     "type": "struct",
-    "name": "piaglihm::piaglihm::InnerOne",
+    "name": "contracts::c1::InnerOne",
     "members": [
       {
         "name": "a",
@@ -59,15 +59,15 @@
   },
   {
     "type": "struct",
-    "name": "piaglihm::piaglihm::ComplexOne",
+    "name": "contracts::c1::ComplexOne",
     "members": [
       {
         "name": "pg",
-        "type": "piaglihm::piaglihm::PG"
+        "type": "contracts::c1::PG"
       },
       {
         "name": "inner",
-        "type": "piaglihm::piaglihm::InnerOne"
+        "type": "contracts::c1::InnerOne"
       }
     ]
   },
@@ -77,23 +77,23 @@
     "inputs": [
       {
         "name": "pg",
-        "type": "piaglihm::piaglihm::PG"
+        "type": "contracts::c1::PG"
       },
       {
         "name": "inner",
-        "type": "piaglihm::piaglihm::InnerOne"
+        "type": "contracts::c1::InnerOne"
       }
     ],
     "outputs": [
       {
-        "type": "piaglihm::piaglihm::ComplexOne"
+        "type": "contracts::c1::ComplexOne"
       }
     ],
     "state_mutability": "external"
   },
   {
     "type": "struct",
-    "name": "piaglihm::piaglihm::TypesInTypes::<core::integer::u256>",
+    "name": "contracts::c1::TypesInTypes::<core::integer::u256>",
     "members": [
       {
         "name": "a",
@@ -111,12 +111,12 @@
     "inputs": [
       {
         "name": "a",
-        "type": "piaglihm::piaglihm::TypesInTypes::<core::integer::u256>"
+        "type": "contracts::c1::TypesInTypes::<core::integer::u256>"
       }
     ],
     "outputs": [
       {
-        "type": "piaglihm::piaglihm::TypesInTypes::<core::integer::u256>"
+        "type": "contracts::c1::TypesInTypes::<core::integer::u256>"
       }
     ],
     "state_mutability": "external"
@@ -144,11 +144,11 @@
   },
   {
     "type": "struct",
-    "name": "core::array::Span::<(core::felt252, piaglihm::piaglihm::PG)>",
+    "name": "core::array::Span::<(core::felt252, contracts::c1::PG)>",
     "members": [
       {
         "name": "snapshot",
-        "type": "@core::array::Array::<(core::felt252, piaglihm::piaglihm::PG)>"
+        "type": "@core::array::Array::<(core::felt252, contracts::c1::PG)>"
       }
     ]
   },
@@ -158,14 +158,14 @@
     "inputs": [],
     "outputs": [
       {
-        "type": "(core::array::Span::<(core::felt252, piaglihm::piaglihm::PG)>, core::felt252)"
+        "type": "(core::array::Span::<(core::felt252, contracts::c1::PG)>, core::felt252)"
       }
     ],
     "state_mutability": "external"
   },
   {
     "type": "enum",
-    "name": "piaglihm::piaglihm::TestEnum::<core::felt252>",
+    "name": "contracts::c1::TestEnum::<core::felt252>",
     "variants": [
       {
         "name": "V1",
@@ -191,7 +191,40 @@
     "inputs": [],
     "outputs": [
       {
-        "type": "piaglihm::piaglihm::TestEnum::<core::felt252>"
+        "type": "contracts::c1::TestEnum::<core::felt252>"
+      }
+    ],
+    "state_mutability": "external"
+  },
+  {
+    "type": "enum",
+    "name": "contracts::c1::TestEnum::<core::integer::u256>",
+    "variants": [
+      {
+        "name": "V1",
+        "type": "core::integer::u256"
+      },
+      {
+        "name": "V2",
+        "type": "core::integer::u128"
+      },
+      {
+        "name": "V3",
+        "type": "core::array::Array::<core::felt252>"
+      },
+      {
+        "name": "V4",
+        "type": "()"
+      }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "call_baba2",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "contracts::c1::TestEnum::<core::integer::u256>"
       }
     ],
     "state_mutability": "external"
@@ -202,7 +235,7 @@
     "inputs": [],
     "outputs": [
       {
-        "type": "piaglihm::piaglihm::TestEnum::<core::felt252>"
+        "type": "contracts::c1::TestEnum::<core::felt252>"
       }
     ],
     "state_mutability": "external"
@@ -245,7 +278,7 @@
   },
   {
     "type": "event",
-    "name": "piaglihm::piaglihm::Event",
+    "name": "contracts::c1::Event",
     "kind": "enum",
     "variants": []
   }
