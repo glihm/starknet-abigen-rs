@@ -1,5 +1,5 @@
-use crate::{Result};
-use alloc::{vec::Vec};
+use crate::Result;
+use alloc::vec::Vec;
 use starknet::core::types::FieldElement;
 
 // TODO: add the serialize_to method to only push data

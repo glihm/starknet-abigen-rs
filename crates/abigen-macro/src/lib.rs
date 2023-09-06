@@ -1,22 +1,22 @@
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
+use quote::quote;
+use serde_json;
+use starknet::accounts::Call;
+use starknet::core::types::contract::*;
+use starknet::core::types::*;
+use std::collections::HashMap;
+use std::fs;
+use std::path::Path;
 use syn::{
     braced,
     ext::IdentExt,
     parenthesized,
     parse::{Error, Parse, ParseStream, Result},
+    parse_macro_input,
     punctuated::Punctuated,
     Ident, LitInt, LitStr, Token, Type,
-    parse_macro_input,
 };
-use std::fs;
-use std::path::Path;
-use serde_json;
-use starknet::core::types::*;
-use starknet::core::types::contract::*;
-use quote::quote;
-use starknet::accounts::Call;
-use std::collections::HashMap;
 
 mod expand;
 
@@ -53,7 +53,8 @@ pub fn abigen(input: TokenStream) -> TokenStream {
 
     let abi_str = fs::read_to_string(file_path).expect("Can't load abi file");
 
-    let abi: Vec<AbiEntry> = serde_json::from_str(&abi_str).expect("Json is not formatted as expected");
+    let abi: Vec<AbiEntry> =
+        serde_json::from_str(&abi_str).expect("Json is not formatted as expected");
 
     let mut tokens: Vec<TokenStream2> = vec![];
 
@@ -80,17 +81,17 @@ pub fn abigen(input: TokenStream) -> TokenStream {
         match entry {
             AbiEntry::Struct(s) => {
                 println!("{:?}", s);
-            },
+            }
             AbiEntry::Function(f) => {
                 println!("{:?}", f);
-            },
+            }
             AbiEntry::Enum(e) => {
                 println!("{:?}", e);
-            },
+            }
             AbiEntry::Event(ev) => {
                 println!("{:?}", ev);
-            },
-            _ => ()
+            }
+            _ => (),
         }
     }
 

@@ -1,5 +1,4 @@
-use alloc::string::{String};
-
+use alloc::string::String;
 
 /// Cairo types result.
 pub type Result<T> = core::result::Result<T, Error>;
@@ -13,5 +12,4 @@ pub enum Error {
     Serialize(String),
     /// Error during deserialization.
     Deserialize(String),
-    
 }

@@ -32,5 +32,5 @@
 //         pub struct #struct_name {
 //             #(#fields),*
 //         }
-//     });    
+//     });
 // }

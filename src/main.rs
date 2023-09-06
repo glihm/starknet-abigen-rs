@@ -1,12 +1,12 @@
-use anyhow::Result;
-use tokio::sync::RwLock as AsyncRwLock;
-use starknet::core::types::*;
-use starknet::core::types::contract::AbiEntry;
-use serde_json;
-use starknet::providers::{jsonrpc::HttpTransport, AnyProvider, JsonRpcClient, Provider};
 use abigen_macro::abigen;
-use url::Url;
+use anyhow::Result;
+use serde_json;
+use starknet::core::types::contract::AbiEntry;
+use starknet::core::types::*;
+use starknet::providers::{jsonrpc::HttpTransport, AnyProvider, JsonRpcClient, Provider};
 use std::collections::HashMap;
+use tokio::sync::RwLock as AsyncRwLock;
+use url::Url;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -17,4 +17,3 @@ async fn main() -> Result<()> {
 
     Ok(())
 }
-
