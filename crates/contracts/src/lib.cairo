@@ -96,4 +96,9 @@ mod c1 {
     fn call_bobo(ref self: ContractState) -> Option<felt252> {
         Option::None
     }
+
+    #[external(v0)]
+    fn call_bok(ref self: ContractState) -> (felt252, felt252) {
+        (1, 2)
+    }
 }
