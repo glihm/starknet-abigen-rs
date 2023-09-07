@@ -366,6 +366,36 @@ mod tests {
     }
 
     #[test]
+    fn test_serialize_array_nested() {
+        let v: Vec<Vec<u32>> = vec![vec![1, 2], vec![3]];
+        let felts = Vec::<Vec::<u32>>::serialize(&v);
+        assert_eq!(felts.len(), 6);
+        assert_eq!(felts[0], FieldElement::TWO);
+        assert_eq!(felts[1], FieldElement::TWO);
+        assert_eq!(felts[2], FieldElement::ONE);
+        assert_eq!(felts[3], FieldElement::TWO);
+        assert_eq!(felts[4], FieldElement::ONE);
+        assert_eq!(felts[5], FieldElement::THREE);
+    }
+
+    #[test]
+    fn test_deserialize_array_nested() {
+        let felts: Vec<FieldElement> = vec![
+            FieldElement::TWO,
+            FieldElement::TWO,
+            FieldElement::ONE,
+            FieldElement::TWO,
+            FieldElement::ONE,
+            FieldElement::THREE,
+        ];
+
+        let vals = Vec::<Vec::<u32>>::deserialize(&felts, 0).unwrap();
+        assert_eq!(vals.len(), 2);
+        assert_eq!(vals[0], vec![1, 2]);
+        assert_eq!(vals[1], vec![3]);
+    }
+
+    #[test]
     fn test_serialize_array_tuple() {
         let v: Vec<(u32, FieldElement)> = vec![(12, FieldElement::TWO)];
         let felts = Vec::<(u32, FieldElement)>::serialize(&v);
