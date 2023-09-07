@@ -39,7 +39,7 @@ impl Expandable for CairoEnum {
 
         for (i, val) in self.variants.iter().enumerate() {
             let variant_name = str_to_ident(&val.0);
-            let ty = str_to_type(&val.1.to_rust_item_path(true));
+            let ty = str_to_type(&val.1.to_rust_item_path());
             if val.1 == AbiType::Basic("()".to_string()) {
                 serializations.push(quote! {
                     #enum_name::#variant_name => usize::serialize(&#i)

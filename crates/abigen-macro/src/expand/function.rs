@@ -1,6 +1,7 @@
 use crate::expand::utils::{str_to_ident, str_to_type};
 use crate::Expandable;
 use cairo_type_parser::CairoFunction;
+use cairo_type_parser::abi_type::AbiType;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 use starknet::core::utils::get_selector_from_name;
@@ -21,7 +22,7 @@ impl Expandable for CairoFunction {
             // TODO: perhaps anyhow is not the best here, custom error may be better?
             Some(o) => {
                 let oty = str_to_type(&o.to_rust_type());
-                quote!(-> anyhow::Result<#oty>)
+                quote!(-> cairo_types::Result<#oty>)
             },
             None => quote!(),
         };
@@ -41,7 +42,7 @@ impl Expandable for CairoFunction {
         let mut serializations: Vec<TokenStream2> = vec![];
         for (name, abi_type) in &self.inputs {
             let name = str_to_ident(&name);
-            let ty = str_to_type(&abi_type.to_rust_item_path(true));
+            let ty = str_to_type(&abi_type.to_rust_item_path());
             serializations.push(quote! {
                 calldata.extend(#ty::serialize(&#name));
             });
@@ -49,13 +50,14 @@ impl Expandable for CairoFunction {
 
         let out_res = match &self.output {
             Some(o) => {
-                let out_item_path = str_to_type(&o.to_rust_item_path(true));
-                quote!(#out_item_path::deserialize(r, 0))
+                let out_item_path = str_to_type(&o.to_rust_item_path());
+                match o {
+                    AbiType::Tuple(_) => quote!(<#out_item_path>::deserialize(r, 0)),
+                    _ => quote!(#out_item_path::deserialize(&r, 0)),
+                }
             },
             None => quote!()
         };
-
-        println!("OUTPUT {:?}", out_res.to_string());
 
         match &self.state_mutability {
             StateMutability::View => quote! {
@@ -72,7 +74,10 @@ impl Expandable for CairoFunction {
                             },
                             BlockId::Tag(BlockTag::Pending),
                         )
-                        .await?;
+                        .await.map_err(
+                            |err|
+                            cairo_types::Error::Deserialize(
+                                format!("Deserialization error {:}", err)))?;
 
                     #out_res
                 }

@@ -41,7 +41,7 @@ impl Expandable for CairoStruct {
             let name = str_to_ident(&name);
             names.push(quote!(#name));
 
-            let ty = str_to_type(&member.to_rust_item_path(true));
+            let ty = str_to_type(&member.to_rust_item_path());
 
             if is_first {
                 sizes.push(quote!(#ty::serialized_size(&rust.#name)));

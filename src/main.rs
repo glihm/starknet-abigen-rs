@@ -20,6 +20,8 @@ async fn main() -> Result<()> {
     let address = FieldElement::ZERO;
     let contract = ContractA::new(address, provider);
 
+    contract.hello_world(FieldElement::ZERO).await.expect("Fail call hello world");
+
     let pg = PG {
         v1: FieldElement::THREE,
         v2: 1122_u128,

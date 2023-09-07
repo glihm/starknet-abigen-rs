@@ -83,7 +83,7 @@ impl AbiType {
 
     /// TODO: check if this can be factorize in some way with the function above.
     /// Like passing if we want the item_path or not, and the is_first.
-    pub fn to_rust_item_path(&self, is_first: bool) -> String {
+    pub fn to_rust_item_path(&self) -> String {
         let mut rust_type = String::new();
         let type_str = self.get_type_name_only();
 
@@ -95,13 +95,7 @@ impl AbiType {
         // Only Tuple or Nested from here.
 
         match type_str.as_str() {
-            "|tuple|" => {
-                if is_first {
-                    rust_type.push_str("<(")
-                } else {
-                    rust_type.push_str("(")
-                }
-            }
+            "|tuple|" => rust_type.push_str("("),
             "Span" => rust_type.push_str("Vec::<"),
             "Array" => rust_type.push_str("Vec::<"),
             _ => {
@@ -112,10 +106,10 @@ impl AbiType {
         };
 
         match self {
-            AbiType::Nested(_, inner) => rust_type.push_str(&inner.to_rust_item_path(false)),
+            AbiType::Nested(_, inner) => rust_type.push_str(&inner.to_rust_item_path()),
             AbiType::Tuple(inners) => {
                 for (idx, inner) in inners.iter().enumerate() {
-                    rust_type.push_str(&inner.to_rust_item_path(false));
+                    rust_type.push_str(&inner.to_rust_item_path());
                     if idx < inners.len() - 1 {
                         rust_type.push_str(", ");
                     }
@@ -125,19 +119,12 @@ impl AbiType {
         };
 
         match type_str.as_str() {
-            "|tuple|" => {
-                if is_first {
-                    rust_type.push_str(")>")
-                } else {
-                    rust_type.push_str(")")
-                }
-            }
+            "|tuple|" => rust_type.push_str(")"),
             "Span" => rust_type.push('>'),
             "Array" => rust_type.push('>'),
             _ => (), // Nothing to do here, we only close nested tuple/array.
         }
 
-        println!("-----------------------\n{:?} | {:?} | {:?}\n", self, type_str, rust_type.to_string());
         rust_type.to_string()
     }
 
@@ -397,7 +384,7 @@ mod tests {
             Box::new(AbiType::Basic("core::felt252".to_string())),
         );
         assert_eq!(
-            t.to_rust_item_path(true),
+            t.to_rust_item_path(),
             "Vec::<starknet::core::types::FieldElement>"
         );
 
@@ -409,7 +396,7 @@ mod tests {
             )),
         );
         assert_eq!(
-            t.to_rust_item_path(true),
+            t.to_rust_item_path(),
             "Vec::<Vec::<starknet::core::types::FieldElement>>"
         );
     }
@@ -421,7 +408,7 @@ mod tests {
             AbiType::Basic("core::integer::u128".to_string()),
         ]);
         assert_eq!(
-            t.to_rust_item_path(true),
+            t.to_rust_item_path(),
             "<(starknet::core::types::FieldElement, u128)>"
         );
 
@@ -433,7 +420,7 @@ mod tests {
             ])),
         );
         assert_eq!(
-            t.to_rust_item_path(true),
+            t.to_rust_item_path(),
             "Vec::<(starknet::core::types::FieldElement, u32)>"
         );
 
@@ -447,7 +434,7 @@ mod tests {
             ],
         );
         assert_eq!(
-            t.to_rust_item_path(true),
+            t.to_rust_item_path(),
             "<(Vec::<starknet::core::types::FieldElement>, u32)>"
         );
     }
