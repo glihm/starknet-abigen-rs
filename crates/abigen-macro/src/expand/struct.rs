@@ -43,17 +43,25 @@ impl Expandable for CairoStruct {
 
             let ty = str_to_type(&member.to_rust_item_path());
 
+            // Tuples type used as rust type path must be surrounded
+            // by LT/GT.
+            let ty_punctuated = match member {
+                AbiType::Tuple(_) => quote!(<#ty>),
+                _ => quote!(#ty)
+            };
+
             if is_first {
-                sizes.push(quote!(#ty::serialized_size(&rust.#name)));
+                sizes.push(quote!(#ty_punctuated::serialized_size(&rust.#name)));
                 is_first = false;
             } else {
-                sizes.push(quote!(+ #ty::serialized_size(&rust.#name)));
+                sizes.push(quote!(+ #ty_punctuated::serialized_size(&rust.#name)));
             }
 
-            sers.push(quote!(out.extend(#ty::serialize(&rust.#name));));
+            sers.push(quote!(out.extend(#ty_punctuated::serialize(&rust.#name));));
+
             desers.push(quote! {
-                let #name = #ty::deserialize(felts, offset)?;
-                offset += #ty::serialized_size(&#name);
+                let #name = #ty_punctuated::deserialize(felts, offset)?;
+                offset += #ty_punctuated::serialized_size(&#name);
             });
         }
 

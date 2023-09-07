@@ -409,7 +409,7 @@ mod tests {
         ]);
         assert_eq!(
             t.to_rust_item_path(),
-            "<(starknet::core::types::FieldElement, u128)>"
+            "(starknet::core::types::FieldElement, u128)"
         );
 
         let t = AbiType::Nested(
@@ -435,7 +435,7 @@ mod tests {
         );
         assert_eq!(
             t.to_rust_item_path(),
-            "<(Vec::<starknet::core::types::FieldElement>, u32)>"
+            "(Vec::<starknet::core::types::FieldElement>, u32)"
         );
     }
 

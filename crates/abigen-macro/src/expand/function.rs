@@ -52,6 +52,8 @@ impl Expandable for CairoFunction {
             Some(o) => {
                 let out_item_path = str_to_type(&o.to_rust_item_path());
                 match o {
+                    // Tuples type used as rust type path must be surrounded
+                    // by LT/GT.
                     AbiType::Tuple(_) => quote!(<#out_item_path>::deserialize(r, 0)),
                     _ => quote!(#out_item_path::deserialize(&r, 0)),
                 }

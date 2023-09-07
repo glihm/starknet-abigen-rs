@@ -40,6 +40,14 @@ impl Expandable for CairoEnum {
         for (i, val) in self.variants.iter().enumerate() {
             let variant_name = str_to_ident(&val.0);
             let ty = str_to_type(&val.1.to_rust_item_path());
+
+            // Tuples type used as rust type path must be surrounded
+            // by LT/GT.
+            let ty_punctuated = match val.1 {
+                AbiType::Tuple(_) => quote!(<#ty>),
+                _ => quote!(#ty)
+            };
+
             if val.1 == AbiType::Basic("()".to_string()) {
                 serializations.push(quote! {
                     #enum_name::#variant_name => usize::serialize(&#i)
@@ -55,16 +63,16 @@ impl Expandable for CairoEnum {
                     #enum_name::#variant_name(val) => {
                         let mut temp = vec![];
                         temp.extend(usize::serialize(&#i));
-                        temp.extend(#ty::serialize(val));
+                        temp.extend(#ty_punctuated::serialize(val));
                         temp
                     }
                 });
                 deserializations.push(quote! {
-                    #i => Ok(#enum_name::#variant_name(#ty::deserialize(felts, offset + 1)?))
+                    #i => Ok(#enum_name::#variant_name(#ty_punctuated::deserialize(felts, offset + 1)?))
                 });
                 // +1 because we have to handle the variant index also.
                 serialized_sizes.push(quote! {
-                    #enum_name::#variant_name(val) => #ty::serialized_size(val) + 1
+                    #enum_name::#variant_name(val) => #ty_punctuated::serialized_size(val) + 1
                 })
             }
         }
