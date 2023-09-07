@@ -11,31 +11,26 @@ impl Expandable for CairoFunction {
         let func_name = str_to_ident(&self.name.get_type_name_only());
 
         let mut inputs: Vec<TokenStream2> = vec![];
-        let mut outputs: Vec<TokenStream2> = vec![];
         for (name, abi_type) in &self.inputs {
             let name = str_to_ident(&name);
             let ty = str_to_type(&abi_type.to_rust_type());
             inputs.push(quote!(#name:#ty));
         }
 
-        for abi_type in &self.outputs {
-            let ty = str_to_type(&abi_type.to_rust_type());
-            outputs.push(quote!(#ty));
-        }
-
-        let final_outputs = if outputs.len() > 0 {
-            quote! {
-                -> anyhow::Result<#(#outputs),*>
-            }
-        } else {
-            quote!()
+        let output = match &self.output {
+            // TODO: perhaps anyhow is not the best here, custom error may be better?
+            Some(o) => {
+                let oty = str_to_type(&o.to_rust_type());
+                quote!(-> anyhow::Result<#oty>)
+            },
+            None => quote!(),
         };
 
         quote! {
             pub async fn #func_name(
                 &self,
                 #(#inputs),*
-            ) #final_outputs
+            ) #output
         }
     }
 
@@ -52,9 +47,15 @@ impl Expandable for CairoFunction {
             });
         }
 
-        // TODO: check if it's possible to have several output...
-        // as the output is a type, so, how can we have more than one output?
-        // Are tuples are splitted outputs?
+        let out_res = match &self.output {
+            Some(o) => {
+                let out_item_path = str_to_type(&o.to_rust_item_path(true));
+                quote!(#out_item_path::deserialize(r, 0))
+            },
+            None => quote!()
+        };
+
+        println!("OUTPUT {:?}", out_res.to_string());
 
         match &self.state_mutability {
             StateMutability::View => quote! {
@@ -73,7 +74,7 @@ impl Expandable for CairoFunction {
                         )
                         .await?;
 
-                    // deserialize the result now to return the type of output.
+                    #out_res
                 }
             },
             StateMutability::External => quote! {},
@@ -104,7 +105,7 @@ mod tests {
                     AbiType::Basic("core::felt252".to_string()),
                 ),
             ],
-            outputs: vec![AbiType::Basic("core::felt252".to_string())],
+            output: Some(AbiType::Basic("core::felt252".to_string())),
         };
         let te1 = cf.expand_decl();
         let tef1: TokenStream = quote!(
@@ -129,7 +130,7 @@ mod tests {
                     AbiType::Basic("core::felt252".to_string()),
                 ),
             ],
-            outputs: vec![AbiType::Basic("core::felt252".to_string())],
+            output: Some(AbiType::Basic("core::felt252".to_string())),
         };
         let te1 = cf.expand_impl();
 
@@ -144,7 +145,7 @@ mod tests {
                 calldata.extend(starknet::core::types::FieldElement::serialize(&v1));
                 calldata.extend(starknet::core::types::FieldElement::serialize(&v2));
 
-                self.provider
+                let r = self.provider
                     .call(
                         FunctionCall {
                             contract_address: self.address,
@@ -153,7 +154,9 @@ mod tests {
                         },
                         BlockId::Tag(BlockTag::Pending),
                     )
-                    .await?
+                    .await?;
+
+                starknet::core::types::FieldElement::deserialize(r, 0)
             }
         );
 

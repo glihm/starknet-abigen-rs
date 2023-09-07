@@ -33,5 +33,6 @@ pub struct CairoFunction {
     pub name: AbiType,
     pub state_mutability: StateMutability,
     pub inputs: Vec<(String, AbiType)>,
-    pub outputs: Vec<AbiType>,
+    // For now, only one output type is supported (or none).
+    pub output: Option<AbiType>,
 }

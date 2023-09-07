@@ -108,11 +108,21 @@ pub fn abigen(input: TokenStream) -> TokenStream {
 
                 tokens.push(cairo_entry.expand_decl());
                 tokens.push(cairo_entry.expand_impl());
-
-                // println!("{:?}", s);
-                // println!("{:?}", cairo_entry);
             }
             AbiEntry::Function(f) => {
+                // Outputs is usually only one type. It's called "outputs"
+                // to be generic. So for now we only keep the first output type (if any).
+                //
+                // TODO: ask to Starkware if there is a case where several outputs
+                // are returned. As the functions only have one output type (which can be
+                // nested, of course).
+                let output;
+                if f.outputs.len() > 0 {
+                    output = Some(AbiType::from_string(&f.outputs[0].r#type));
+                } else {
+                    output = None;
+                }
+
                 let cairo_entry = CairoFunction {
                     name: AbiType::from_string(&f.name),
                     state_mutability: f.state_mutability,
@@ -121,14 +131,8 @@ pub fn abigen(input: TokenStream) -> TokenStream {
                         .iter()
                         .map(|i| (i.name.clone(), AbiType::from_string(&i.r#type)))
                         .collect(),
-                    outputs: f
-                        .outputs
-                        .iter()
-                        .map(|o| AbiType::from_string(&o.r#type))
-                        .collect(),
+                    output,
                 };
-
-                println!("{:?}", cairo_entry);
 
                 functions.push(cairo_entry.expand_impl());
             }
@@ -147,11 +151,8 @@ pub fn abigen(input: TokenStream) -> TokenStream {
 
                 tokens.push(cairo_entry.expand_decl());
                 tokens.push(cairo_entry.expand_impl());
-
-                // println!("{:?}", e);
             }
             AbiEntry::Event(ev) => {
-                // println!("{:?}", ev);
             }
             _ => (),
         }
