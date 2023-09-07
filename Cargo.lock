@@ -6,6 +6,8 @@ version = 3
 name = "abigen-macro"
 version = "0.1.0"
 dependencies = [
+ "cairo-type-parser",
+ "cairo-types",
  "proc-macro2",
  "quote",
  "serde",
