@@ -1,10 +1,8 @@
 use crate::ty::CairoType;
 use crate::Result;
 use alloc::{format, vec, vec::Vec};
-use core::marker::PhantomData;
 use starknet::core::types::FieldElement;
 
-/// FieldElement - `felt252`
 impl CairoType for FieldElement {
     type RustType = Self;
 
@@ -17,11 +15,8 @@ impl CairoType for FieldElement {
     }
 }
 
-/// Bool - `bool`
-pub struct Bool;
-
-impl CairoType for Bool {
-    type RustType = bool;
+impl CairoType for bool {
+    type RustType = Self;
 
     fn serialize(rust: &Self::RustType) -> Vec<FieldElement> {
         vec![FieldElement::from(*rust as u32)]
@@ -36,11 +31,9 @@ impl CairoType for Bool {
     }
 }
 
-/// U8 - `u8`
-pub struct U8;
-
-impl CairoType for U8 {
-    type RustType = u8;
+// TODO: write a macro to impl the trait for uints and ints.
+impl CairoType for u8 {
+    type RustType = Self;
 
     fn serialize(rust: &Self::RustType) -> Vec<FieldElement> {
         vec![FieldElement::from(*rust)]
@@ -51,11 +44,8 @@ impl CairoType for U8 {
     }
 }
 
-/// U16 - `u16`
-pub struct U16;
-
-impl CairoType for U16 {
-    type RustType = u16;
+impl CairoType for u16 {
+    type RustType = Self;
 
     fn serialize(rust: &Self::RustType) -> Vec<FieldElement> {
         vec![FieldElement::from(*rust)]
@@ -66,11 +56,8 @@ impl CairoType for U16 {
     }
 }
 
-/// U32 - `u32`
-pub struct U32;
-
-impl CairoType for U32 {
-    type RustType = u32;
+impl CairoType for u32 {
+    type RustType = Self;
 
     fn serialize(rust: &Self::RustType) -> Vec<FieldElement> {
         vec![FieldElement::from(*rust)]
@@ -82,11 +69,8 @@ impl CairoType for U32 {
     }
 }
 
-/// U64 - `u64`
-pub struct U64;
-
-impl CairoType for U64 {
-    type RustType = u64;
+impl CairoType for u64 {
+    type RustType = Self;
 
     fn serialize(rust: &Self::RustType) -> Vec<FieldElement> {
         vec![FieldElement::from(*rust)]
@@ -97,11 +81,8 @@ impl CairoType for U64 {
     }
 }
 
-/// U128 - `u128`
-pub struct U128;
-
-impl CairoType for U128 {
-    type RustType = u128;
+impl CairoType for u128 {
+    type RustType = Self;
 
     fn serialize(rust: &Self::RustType) -> Vec<FieldElement> {
         vec![FieldElement::from(*rust)]
@@ -113,13 +94,11 @@ impl CairoType for U128 {
 }
 
 /// Array<CairoType> - `Array<T>`
-pub struct Array<T: CairoType>(PhantomData<T>);
-
-impl<T, U> CairoType for Array<T>
+impl<T, RT> CairoType for Vec<T>
 where
-    T: CairoType<RustType = U>,
+    T: CairoType<RustType = RT>,
 {
-    type RustType = Vec<U>;
+    type RustType = Vec<RT>;
 
     const SERIALIZED_SIZE: Option<usize> = None;
 
@@ -140,7 +119,7 @@ where
         let len: usize = usize::from_str_radix(format!("{:x}", felts[offset]).as_str(), 16)
             .expect("First felt of an array must fit into usize");
 
-        let mut out: Vec<U> = vec![];
+        let mut out: Vec<RT> = vec![];
         let mut offset = offset + 1;
 
         loop {
@@ -148,7 +127,7 @@ where
                 break;
             }
 
-            let rust: U = T::deserialize(felts, offset)?;
+            let rust: RT = T::deserialize(felts, offset)?;
             offset += T::serialized_size(&rust);
             out.push(rust);
         }
@@ -159,9 +138,7 @@ where
 
 /// Tuple - `tuple`
 /// TODO: write a macro to automatically handle more tuple lengths.
-pub struct Tuple2<T: CairoType, U: CairoType>(PhantomData<T>, PhantomData<U>);
-
-impl<T, RT, U, RU> CairoType for Tuple2<T, U>
+impl<T, RT, U, RU> CairoType for (T, U)
 where
     T: CairoType<RustType = RT>,
     U: CairoType<RustType = RU>,
@@ -231,12 +208,12 @@ mod tests {
     #[test]
     fn test_serialize_bool() {
         let v = true;
-        let felts = Bool::serialize(&v);
+        let felts = bool::serialize(&v);
         assert_eq!(felts.len(), 1);
         assert_eq!(felts[0], FieldElement::ONE);
 
         let v = false;
-        let felts = Bool::serialize(&v);
+        let felts = bool::serialize(&v);
         assert_eq!(felts.len(), 1);
         assert_eq!(felts[0], FieldElement::ZERO);
     }
@@ -244,15 +221,15 @@ mod tests {
     #[test]
     fn test_deserialize_bool() {
         let felts = vec![FieldElement::ZERO, FieldElement::ONE, FieldElement::TWO]; // allocating in the heap.
-        assert_eq!(Bool::deserialize(&felts, 0).unwrap(), false);
-        assert_eq!(Bool::deserialize(&felts, 1).unwrap(), true);
-        assert_eq!(Bool::deserialize(&felts, 2).unwrap(), false);
+        assert_eq!(bool::deserialize(&felts, 0).unwrap(), false);
+        assert_eq!(bool::deserialize(&felts, 1).unwrap(), true);
+        assert_eq!(bool::deserialize(&felts, 2).unwrap(), false);
     }
 
     #[test]
     fn test_serialize_u8() {
         let v = 12_u8;
-        let felts = U8::serialize(&v);
+        let felts = u8::serialize(&v);
         assert_eq!(felts.len(), 1);
         assert_eq!(felts[0], FieldElement::from(12 as u8));
     }
@@ -260,14 +237,14 @@ mod tests {
     #[test]
     fn test_deserialize_u8() {
         let felts = vec![FieldElement::from(12_u8), FieldElement::from(10_u8)];
-        assert_eq!(U8::deserialize(&felts, 0).unwrap(), 12);
-        assert_eq!(U8::deserialize(&felts, 1).unwrap(), 10);
+        assert_eq!(u8::deserialize(&felts, 0).unwrap(), 12);
+        assert_eq!(u8::deserialize(&felts, 1).unwrap(), 10);
     }
 
     #[test]
     fn test_serialize_u32() {
         let v = 123_u32;
-        let felts = U32::serialize(&v);
+        let felts = u32::serialize(&v);
         assert_eq!(felts.len(), 1);
         assert_eq!(felts[0], FieldElement::from(123 as u32));
     }
@@ -275,7 +252,7 @@ mod tests {
     #[test]
     fn test_serialize_u16() {
         let v = 12_u16;
-        let felts = U16::serialize(&v);
+        let felts = u16::serialize(&v);
         assert_eq!(felts.len(), 1);
         assert_eq!(felts[0], FieldElement::from(12 as u16));
     }
@@ -283,21 +260,21 @@ mod tests {
     #[test]
     fn test_deserialize_u16() {
         let felts = vec![FieldElement::from(12_u16), FieldElement::from(10_u8)];
-        assert_eq!(U8::deserialize(&felts, 0).unwrap(), 12);
-        assert_eq!(U8::deserialize(&felts, 1).unwrap(), 10);
+        assert_eq!(u16::deserialize(&felts, 0).unwrap(), 12);
+        assert_eq!(u16::deserialize(&felts, 1).unwrap(), 10);
     }
 
     #[test]
     fn test_deserialize_u32() {
         let felts = vec![FieldElement::from(123_u32), FieldElement::from(99_u32)];
-        assert_eq!(U32::deserialize(&felts, 0).unwrap(), 123);
-        assert_eq!(U32::deserialize(&felts, 1).unwrap(), 99);
+        assert_eq!(u32::deserialize(&felts, 0).unwrap(), 123);
+        assert_eq!(u32::deserialize(&felts, 1).unwrap(), 99);
     }
 
     #[test]
     fn test_serialize_u64() {
         let v = 123_u64;
-        let felts = U64::serialize(&v);
+        let felts = u64::serialize(&v);
         assert_eq!(felts.len(), 1);
         assert_eq!(felts[0], FieldElement::from(123 as u64));
     }
@@ -305,14 +282,14 @@ mod tests {
     #[test]
     fn test_deserialize_u64() {
         let felts = vec![FieldElement::from(123_u64), FieldElement::from(99_u64)];
-        assert_eq!(U64::deserialize(&felts, 0).unwrap(), 123);
-        assert_eq!(U64::deserialize(&felts, 1).unwrap(), 99);
+        assert_eq!(u64::deserialize(&felts, 0).unwrap(), 123);
+        assert_eq!(u64::deserialize(&felts, 1).unwrap(), 99);
     }
 
     #[test]
     fn test_serialize_u128() {
         let v = 123_u128;
-        let felts = U128::serialize(&v);
+        let felts = u128::serialize(&v);
         assert_eq!(felts.len(), 1);
         assert_eq!(felts[0], FieldElement::from(123 as u128));
     }
@@ -320,14 +297,14 @@ mod tests {
     #[test]
     fn test_deserialize_u128() {
         let felts = vec![FieldElement::from(123_u128), FieldElement::from(99_u128)];
-        assert_eq!(U128::deserialize(&felts, 0).unwrap(), 123);
-        assert_eq!(U128::deserialize(&felts, 1).unwrap(), 99);
+        assert_eq!(u128::deserialize(&felts, 0).unwrap(), 123);
+        assert_eq!(u128::deserialize(&felts, 1).unwrap(), 99);
     }
 
     #[test]
     fn test_serialize_tuple2() {
         let v = (FieldElement::ONE, 128_u32);
-        let felts = Tuple2::<FieldElement, U32>::serialize(&v);
+        let felts = <(FieldElement, u32)>::serialize(&v);
         assert_eq!(felts.len(), 2);
         assert_eq!(felts[0], FieldElement::ONE);
         assert_eq!(felts[1], FieldElement::from(128_u32));
@@ -336,7 +313,7 @@ mod tests {
     #[test]
     fn test_deserialize_tuple2() {
         let felts = vec![FieldElement::THREE, 99_u32.into()];
-        let vals = Tuple2::<FieldElement, U32>::deserialize(&felts, 0).unwrap();
+        let vals = <(FieldElement, u32)>::deserialize(&felts, 0).unwrap();
         assert_eq!(vals.0, FieldElement::THREE);
         assert_eq!(vals.1, 99_u32);
     }
@@ -344,7 +321,7 @@ mod tests {
     #[test]
     fn test_serialize_array() {
         let v: Vec<u32> = vec![1, 2, 3];
-        let felts = Array::<U32>::serialize(&v);
+        let felts = Vec::<u32>::serialize(&v);
         assert_eq!(felts.len(), 4);
         assert_eq!(felts[0], FieldElement::from(3_u32));
         assert_eq!(felts[1], FieldElement::ONE);
@@ -353,7 +330,7 @@ mod tests {
 
         let v: Vec<U256> = vec![U256 { low: 1, high: 0 }, U256 { low: 2, high: 0 }];
 
-        let felts = Array::<U256>::serialize(&v);
+        let felts = Vec::<U256>::serialize(&v);
         assert_eq!(felts.len(), 5);
         assert_eq!(felts[1], FieldElement::ONE);
         assert_eq!(felts[2], FieldElement::ZERO);
@@ -369,7 +346,7 @@ mod tests {
             FieldElement::from(9988_u32),
         ];
 
-        let vals = Array::<U32>::deserialize(&felts, 0).unwrap();
+        let vals = Vec::<u32>::deserialize(&felts, 0).unwrap();
         assert_eq!(vals.len(), 2);
         assert_eq!(vals[0], 123_u32);
         assert_eq!(vals[1], 9988_u32);
@@ -382,9 +359,32 @@ mod tests {
             FieldElement::from(0_u32),
         ];
 
-        let vals = Array::<U256>::deserialize(&felts, 0).unwrap();
+        let vals = Vec::<U256>::deserialize(&felts, 0).unwrap();
         assert_eq!(vals.len(), 2);
         assert_eq!(vals[0], U256 { low: 1, high: 0 });
         assert_eq!(vals[1], U256 { low: 2, high: 0 });
+    }
+
+    #[test]
+    fn test_serialize_array_tuple() {
+        let v: Vec<(u32, FieldElement)> = vec![(12, FieldElement::TWO)];
+        let felts = Vec::<(u32, FieldElement)>::serialize(&v);
+        assert_eq!(felts.len(), 3);
+        assert_eq!(felts[0], FieldElement::from(1_u32));
+        assert_eq!(felts[1], FieldElement::from(12_u32));
+        assert_eq!(felts[2], FieldElement::TWO);
+    }
+
+    #[test]
+    fn test_deserialize_array_tuple() {
+        let felts: Vec::<FieldElement> = vec![
+            FieldElement::from(1_u32),
+            FieldElement::from(12_u32),
+            FieldElement::TWO,
+        ];
+
+        let vals = Vec::<(u32, FieldElement)>::deserialize(&felts, 0).unwrap();
+        assert_eq!(vals.len(), 1);
+        assert_eq!(vals[0], (12, FieldElement::TWO));
     }
 }
