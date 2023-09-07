@@ -84,7 +84,8 @@ impl AbiType {
         rust_type.to_string()
     }
 
-    ///
+    /// TODO: check if this can be factorize in some way with the function above.
+    /// Like passing if we want the item_path or not, and the is_first.
     pub fn to_rust_item_path(&self, is_first: bool) -> String {
         let mut rust_type = String::new();
         let type_str = self.get_type_name_only();
