@@ -18,6 +18,9 @@ use syn::{
     Ident, LitInt, LitStr, Token, Type,
 };
 
+use cairo_type_parser::abi_type::AbiType;
+use cairo_type_parser::{CairoAbiEntry, CairoStruct};
+
 mod expand;
 
 trait Expandable {
@@ -85,16 +88,35 @@ pub fn abigen(input: TokenStream) -> TokenStream {
     for entry in abi {
         match entry {
             AbiEntry::Struct(s) => {
-                println!("{:?}", s);
+                // Span is skipped as represented as Vec.
+                // TODO: also skip the u256 which should be implemented
+                // directly in cairo type.
+                if s.name.contains("array::Span") {
+                    continue;
+                }
+
+                let cairo_entry = CairoStruct {
+                    name: AbiType::from_string(&s.name),
+                    members: s.members.iter().map(|m| (m.name.clone(), AbiType::from_string(&m.r#type))).collect()
+                };
+
+                tokens.push(cairo_entry.expand_decl());
+                tokens.push(cairo_entry.expand_impl());
+
+                // println!("{:?}", s);
+                // println!("{:?}", cairo_entry);
             }
             AbiEntry::Function(f) => {
-                println!("{:?}", f);
+                // println!("{:?}", f);
             }
             AbiEntry::Enum(e) => {
-                println!("{:?}", e);
+                // TODO: also skip Option, Result and other
+                // very basic enums of Cairo that must be implemented
+                // directly in CairoType.
+                // println!("{:?}", e);
             }
             AbiEntry::Event(ev) => {
-                println!("{:?}", ev);
+                // println!("{:?}", ev);
             }
             _ => (),
         }

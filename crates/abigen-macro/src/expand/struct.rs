@@ -21,7 +21,7 @@ impl Expandable for CairoStruct {
         }
 
         quote! {
-            #[derive(Debug)]
+            #[derive(Debug, PartialEq)]
             pub struct #struct_name {
                 #(#members),*
             }
@@ -72,7 +72,7 @@ impl Expandable for CairoStruct {
                     out
                 }
 
-                fn deserialize(felts: &[FieldElement], offset: usize) -> Result<Self::RustType> {
+                fn deserialize(felts: &[FieldElement], offset: usize) -> cairo_types::Result<Self::RustType> {
                     let mut offset = offset;
                     #(#desers)*
                     Ok(#struct_name {
