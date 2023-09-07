@@ -1,5 +1,5 @@
 use crate::Expandable;
-use crate::utils::{str_to_ident, str_to_ident};
+use crate::expand::utils::{str_to_ident, str_to_type};
 
 use cairo_type_parser::abi_type::AbiType;
 use cairo_type_parser::{CairoAbiEntry, CairoStruct};
@@ -15,9 +15,9 @@ impl Expandable for CairoStruct {
         let mut members: Vec<TokenStream2> = vec![];
         for (name, member) in &self.members {
             let name = str_to_ident(&name);
-            let ty = str_to_type(member.to_rust_type());
+            let ty = str_to_type(&member.to_rust_type());
 
-            members.push(quote!(#name: #synty));
+            members.push(quote!(#name: #ty));
         }
 
         quote!{
