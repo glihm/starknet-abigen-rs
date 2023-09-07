@@ -20,6 +20,11 @@ use syn::{
 
 mod expand;
 
+trait Expandable {
+    fn expand_decl() -> TokenStream2;
+    fn expand_impl() -> TokenStream2;
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct ContractAbi {
     name: Ident,
