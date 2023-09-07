@@ -28,8 +28,6 @@ syn = "2.0"
 # starknet
 starknet = "0.5.0"
 
-
-
 # Dependencies for the testing app in src.
 [dependencies]
 anyhow = "1.0"

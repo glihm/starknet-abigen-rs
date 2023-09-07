@@ -63,3 +63,20 @@ async fn main() -> Result<()> {
 
     Ok(())
 }
+
+/*
+    let mut calldata = vec![];
+    calldata.extend(starknet::core::types::FieldElement::serialize(&FieldElement::ONE));
+    calldata.extend(starknet::core::types::FieldElement::serialize(&FieldElement::TWO));
+
+    let r = provider
+        .call(
+            FunctionCall {
+                contract_address: FieldElement::from_hex_be("0x1234").unwrap(),
+                entry_point_selector: starknet::macros::selector!("my_func"),
+                calldata,
+            },
+            BlockId::Tag(BlockTag::Pending),
+        )
+        .await?;
+*/

@@ -158,8 +158,34 @@ mod tests {
             ],
         };
 
+        #[rustfmt::skip]
         let target = quote! {
-            impl CairoType for MyStruct { type RustType = Self ; const SERIALIZED_SIZE : std :: option :: Option < usize > = None ; # [inline] fn serialized_size (rust : & Self :: RustType) -> usize { starknet :: core :: types :: FieldElement :: serialized_size (& rust . a) + u64 :: serialized_size (& rust . b) } fn serialize (rust : & Self :: RustType) -> Vec < FieldElement > { let mut out : Vec < FieldElement > = vec ! [] ; out . extend (starknet :: core :: types :: FieldElement :: serialize (& rust . a)) ; out . extend (u64 :: serialize (& rust . b)) ; out } fn deserialize (felts : & [FieldElement] , offset : usize) -> cairo_types :: Result < Self :: RustType > { let mut offset = offset ; let a = starknet :: core :: types :: FieldElement :: deserialize (felts , offset) ? ; offset += starknet :: core :: types :: FieldElement :: serialized_size (& a) ; let b = u64 :: deserialize (felts , offset) ? ; offset += u64 :: serialized_size (& b) ; Ok (MyStruct { a , b }) } }
+            impl CairoType for MyStruct {
+                type RustType = Self ;
+
+                const SERIALIZED_SIZE : std :: option :: Option < usize > = None ;
+                #[inline] fn serialized_size (rust : & Self :: RustType) -> usize {
+                    starknet::core::types::FieldElement::serialized_size(&rust.a)
+                        + u64::serialized_size(&rust.b)
+                }
+
+                fn serialize (rust: &Self::RustType) -> Vec <FieldElement> {
+                    let mut out : Vec < FieldElement > = vec ! [];
+                    out.extend(starknet::core::types::FieldElement::serialize(&rust.a));
+                    out.extend(u64::serialize(&rust.b));
+                    out
+                }
+
+                fn deserialize(felts: &[FieldElement], offset: usize) -> cairo_types::Result<Self::RustType> {
+                    let mut offset = offset;
+                    let a = starknet::core::types::FieldElement::deserialize(felts, offset)?;
+                    offset += starknet::core::types::FieldElement::serialized_size(&a);
+                    let b = u64::deserialize(felts, offset)?;
+                    offset += u64::serialized_size(&b);
+
+                    Ok(MyStruct {a , b} )
+                }
+            }
         };
 
         let ts = cs.expand_impl();

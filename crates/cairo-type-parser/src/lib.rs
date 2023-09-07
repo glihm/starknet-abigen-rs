@@ -33,6 +33,7 @@ pub struct CairoEnum {
 
 #[derive(Debug)]
 pub struct CairoFunction {
+    // TODO: perhaps the name can be a regular string.
     pub name: AbiType,
     pub state_mutability: CairoFunctionStateMutability,
     pub inputs: Vec<(String, AbiType)>,
