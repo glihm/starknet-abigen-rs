@@ -18,7 +18,7 @@ use syn::{
     Ident, LitInt, LitStr, Token, Type,
 };
 
-use cairo_type_parser::abi_type::AbiType;
+use cairo_type_parser::{abi_type::AbiType, CairoEnum};
 use cairo_type_parser::{CairoAbiEntry, CairoStruct};
 
 mod expand;
@@ -97,7 +97,11 @@ pub fn abigen(input: TokenStream) -> TokenStream {
 
                 let cairo_entry = CairoStruct {
                     name: AbiType::from_string(&s.name),
-                    members: s.members.iter().map(|m| (m.name.clone(), AbiType::from_string(&m.r#type))).collect()
+                    members: s
+                        .members
+                        .iter()
+                        .map(|m| (m.name.clone(), AbiType::from_string(&m.r#type)))
+                        .collect(),
                 };
 
                 tokens.push(cairo_entry.expand_decl());
@@ -107,12 +111,24 @@ pub fn abigen(input: TokenStream) -> TokenStream {
                 // println!("{:?}", cairo_entry);
             }
             AbiEntry::Function(f) => {
-                // println!("{:?}", f);
+                println!("{:?}", f);
             }
             AbiEntry::Enum(e) => {
                 // TODO: also skip Option, Result and other
                 // very basic enums of Cairo that must be implemented
                 // directly in CairoType.
+                let cairo_entry = CairoEnum {
+                    name: AbiType::from_string(&e.name),
+                    variants: e
+                        .variants
+                        .iter()
+                        .map(|v| (v.name.clone(), AbiType::from_string(&v.r#type)))
+                        .collect(),
+                };
+
+                tokens.push(cairo_entry.expand_decl());
+                tokens.push(cairo_entry.expand_impl());
+
                 // println!("{:?}", e);
             }
             AbiEntry::Event(ev) => {

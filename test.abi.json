@@ -197,28 +197,6 @@
     "state_mutability": "external"
   },
   {
-    "type": "enum",
-    "name": "contracts::c1::TestEnum::<core::integer::u256>",
-    "variants": [
-      {
-        "name": "V1",
-        "type": "core::integer::u256"
-      },
-      {
-        "name": "V2",
-        "type": "core::integer::u128"
-      },
-      {
-        "name": "V3",
-        "type": "core::array::Array::<core::felt252>"
-      },
-      {
-        "name": "V4",
-        "type": "()"
-      }
-    ]
-  },
-  {
     "type": "function",
     "name": "call_baba2",
     "inputs": [],

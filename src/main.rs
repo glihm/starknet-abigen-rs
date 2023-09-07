@@ -1,5 +1,7 @@
 use abigen_macro::abigen;
 use anyhow::Result;
+use cairo_types::ty::CairoType;
+use cairo_types::Result as CairoResult;
 use serde_json;
 use starknet::core::types::contract::AbiEntry;
 use starknet::core::types::*;
@@ -7,8 +9,6 @@ use starknet::providers::{jsonrpc::HttpTransport, AnyProvider, JsonRpcClient, Pr
 use std::collections::HashMap;
 use tokio::sync::RwLock as AsyncRwLock;
 use url::Url;
-use cairo_types::ty::CairoType;
-use cairo_types::Result as CairoResult;
 
 abigen!(ContractA, "./test.abi.json");
 
@@ -22,8 +22,15 @@ async fn main() -> Result<()> {
         v2: 1122_u128,
     };
 
+    let test_enum = TestEnum::V1(FieldElement::THREE);
+
+    assert_eq!(TestEnum::serialized_size(&pg), 1);
+
     assert_eq!(PG::serialized_size(&pg), 2);
-    assert_eq!(PG::serialize(&pg), vec![FieldElement::THREE, 1122_u128.into()]);
+    assert_eq!(
+        PG::serialize(&pg),
+        vec![FieldElement::THREE, 1122_u128.into()]
+    );
 
     let felts = vec![FieldElement::THREE, 1122_u128.into()];
     assert_eq!(PG::deserialize(&felts, 0).unwrap(), pg);

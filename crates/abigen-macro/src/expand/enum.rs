@@ -2,6 +2,7 @@ use crate::expand::utils::{str_to_ident, str_to_type};
 use crate::Expandable;
 use cairo_type_parser::CairoEnum;
 
+use cairo_type_parser::abi_type::AbiType;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 
@@ -14,8 +15,11 @@ impl Expandable for CairoEnum {
         for (name, abi_type) in &self.variants {
             let name = str_to_ident(&name);
             let ty = str_to_type(&abi_type.to_rust_type());
-
-            variants.push(quote!(#name(#ty)));
+            if abi_type == &AbiType::Basic("()".to_string()) {
+                variants.push(quote!(#name));
+            } else {
+                variants.push(quote!(#name(#ty)));
+            }
         }
 
         quote! {
@@ -27,36 +31,38 @@ impl Expandable for CairoEnum {
     fn expand_impl(&self) -> TokenStream2 {
         let enum_name = str_to_ident(&self.name.get_type_name_only());
 
-        let serialized_sizes: Vec<_> = self
-            .variants
-            .iter()
-            .map(|variant| {
-                let variant_name = str_to_ident(&variant.0);
-                quote! {
-                    #enum_name::#variant_name(val) => <_ as CairoType>::serialized_size(val)
-                }
-            })
-            .collect();
+        let mut serialized_sizes: Vec<TokenStream2> = vec![];
+        let mut serializations: Vec<TokenStream2> = vec![];
+        let mut deserializations: Vec<TokenStream2> = vec![];
 
-        let serializations: Vec<_> = self
-            .variants
-            .iter()
-            .map(|variant| {
-                let variant_name = str_to_ident(&variant.0);
-                quote! {
-                    #enum_name::#variant_name(val) => <_ as CairoType>::serialize(val)
-                }
-            })
-            .collect();
-
-        let deserializations: Vec<_> = self.variants.iter().map(|variant| {
-                let variant_name = str_to_ident(&variant.0);
-                quote! {
-                    if condition_for_variant(#variant_name) {
-                        return Ok(#enum_name::#variant_name(<_ as CairoType>::deserialize(felts, offset)?));
+        for (i, val) in self.variants.iter().enumerate() {
+            let variant_name = str_to_ident(&val.0);
+            let ty = str_to_type(&val.1.to_rust_item_path(true));
+            if val.1 == AbiType::Basic("()".to_string()) {
+                serializations.push(quote! {
+                    #enum_name::#variant_name(val) => u8::serialize(#i)
+                });
+                deserializations.push(quote! {
+                    #i => #enum_name::#variant_name
+                });
+                serialized_sizes.push(quote! {
+                    #enum_name::#variant_name(val) => 1
+                });
+            } else {
+                serializations.push(quote! {
+                    #enum_name::#variant_name(val) => {
+                        u8::serialize(#i);
+                        #ty::serialize(val);
                     }
-                }
-            }).collect();
+                });
+                deserializations.push(quote! {
+                    #i => #ty::deserialize(felts, offset + 1)
+                });
+                serialized_sizes.push(quote! {
+                    #enum_name::#variant_name(val) => #ty::serialized_size(val)
+                })
+            }
+        }
 
         quote! {
             impl CairoType for #enum_name {
@@ -77,9 +83,12 @@ impl Expandable for CairoEnum {
                     }
                 }
 
-                fn deserialize(felts: &[FieldElement], offset: usize) -> Result<Self::RustType> {
-                    #(#deserializations)*
-                    Err("Failed to deserialize variant.".into())
+                fn deserialize(felts: &[FieldElement], offset: usize) -> cairo_types::Result<Self::RustType> {
+                    let index:u32 = felts[offset].try_into().unwrap();
+                    match index {
+                        #(#deserializations),*
+                    }
+
                 }
             }
         }
@@ -112,7 +121,7 @@ mod tests {
         let tes1: TokenStream = quote!(
             pub enum MyEnum {
                 V1(starknet::core::types::FieldElement),
-                V2(starknet::core::types::FieldElement)
+                V2(starknet::core::types::FieldElement),
             }
         );
 
@@ -188,10 +197,10 @@ mod tests {
                 V1(
                     (
                         starknet::core::types::FieldElement,
-                        starknet::core::types::FieldElement
-                    )
+                        starknet::core::types::FieldElement,
+                    ),
                 ),
-                V2(starknet::core::types::FieldElement)
+                V2(starknet::core::types::FieldElement),
             }
         );
 
