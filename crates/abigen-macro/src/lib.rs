@@ -21,8 +21,8 @@ use syn::{
 mod expand;
 
 trait Expandable {
-    fn expand_decl() -> TokenStream2;
-    fn expand_impl() -> TokenStream2;
+    fn expand_decl(&self) -> TokenStream2;
+    fn expand_impl(&self) -> TokenStream2;
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

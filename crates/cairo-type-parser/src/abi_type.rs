@@ -3,6 +3,8 @@ use std::str::Chars;
 
 // TODO: add more validation for invalid chars in a type string.
 
+// TODO: change String into &str.
+
 /// Abi types are strings that represent cairo types.
 /// It's important to note that, due to the serialization,
 /// the cairo types are flatten into the ABI json file.
