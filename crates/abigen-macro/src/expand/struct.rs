@@ -61,6 +61,8 @@ impl Expandable for CairoStruct {
             impl CairoType for #struct_name {
                 type RustType = Self;
 
+                const SERIALIZED_SIZE: std::option::Option<usize> = None;
+
                 #[inline]
                 fn serialized_size(rust: &Self::RustType) -> usize {
                     #(#sizes) *
