@@ -28,5 +28,25 @@ async fn main() -> Result<()> {
     let felts = vec![FieldElement::THREE, 1122_u128.into()];
     assert_eq!(PG::deserialize(&felts, 0).unwrap(), pg);
 
+    let v = vec![FieldElement::ONE, FieldElement::TWO];
+    assert_eq!(Vec::<FieldElement>::serialized_size(&v), 3);
+
+    let v = vec![FieldElement::ONE];
+    assert_eq!(Vec::<FieldElement>::serialized_size(&v), 2);
+
+    let v = vec![];
+    assert_eq!(Vec::<FieldElement>::serialized_size(&v), 1);
+
+    let vv = vec![vec![FieldElement::ONE, FieldElement::TWO]];
+    assert_eq!(Vec::<Vec::<FieldElement>>::serialized_size(&vv), 4);
+
+    let tt = TypesInTypes {
+        a: vec![vec![FieldElement::TWO]],
+        b: u256 { low: 1, high: 0 }
+    };
+
+    println!("{:?}", TypesInTypes::serialize(&tt).len());
+    assert_eq!(TypesInTypes::serialized_size(&tt), 5);
+
     Ok(())
 }

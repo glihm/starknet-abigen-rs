@@ -106,7 +106,7 @@ where
     fn serialized_size(rust: &Self::RustType) -> usize {
         let data = rust;
         // 1 + because the length is always the first felt.
-        1 + data.iter().map(T::serialized_size).sum::<usize>() + (T::DYNAMIC as usize * data.len())
+        1 + data.iter().map(T::serialized_size).sum::<usize>()
     }
 
     fn serialize(rust: &Self::RustType) -> Vec<FieldElement> {
