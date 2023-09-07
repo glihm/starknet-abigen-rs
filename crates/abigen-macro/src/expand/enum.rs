@@ -27,8 +27,6 @@ impl Expandable for CairoEnum {
     fn expand_impl(&self) -> TokenStream2 {
         let enum_name = str_to_ident(&self.name.get_type_name_only());
 
-        let mut variants: Vec<TokenStream2> = vec![];
-
         let serialized_sizes: Vec<_> = self
             .variants
             .iter()
@@ -96,7 +94,7 @@ mod tests {
     use quote::quote;
 
     #[test]
-    fn test_1() {
+    fn test_decl_basic() {
         let ce = CairoEnum {
             name: AbiType::Basic("MyEnum".to_string()),
             variants: vec![
@@ -114,27 +112,44 @@ mod tests {
         let tes1: TokenStream = quote!(
             pub enum MyEnum {
                 V1(starknet::core::types::FieldElement),
-                V2(starknet::core::types::FieldElement),
+                V2(starknet::core::types::FieldElement)
             }
         );
 
         assert_eq!(te1.to_string(), tes1.to_string());
+    }
+    #[test]
+    fn test_impl_basic() {
+        let ce = CairoEnum {
+            name: AbiType::Basic("MyEnum".to_string()),
+            variants: vec![
+                (
+                    "V1".to_string(),
+                    AbiType::Basic("core::felt252".to_string()),
+                ),
+                (
+                    "V2".to_string(),
+                    AbiType::Basic("core::felt252".to_string()),
+                ),
+            ],
+        };
 
         let te2 = ce.expand_impl();
         let tes2: TokenStream = quote!(
-            impl CairoType for MyEnum
-            { type RustType = MyEnum ;
-              const SERIALIZED_SIZE : Option < usize > = None ;
+            impl CairoType for MyEnum{
+            type RustType = MyEnum;
+            const SERIALIZED_SIZE : Option <usize> = None ;
+
             # [inline]
-            fn serialized_size (rust : & Self :: RustType) -> usize {
+            fn serialized_size (rust : &Self::RustType) -> usize {
                  match rust {
-                    MyEnum :: V1 (val) => < _ as CairoType > :: serialized_size (val) ,
-                    MyEnum :: V2 (val) => < _ as CairoType > :: serialized_size (val)
+                    MyEnum::V1 (val) => < _ as CairoType >::serialized_size(val) ,
+                    MyEnum::V2 (val) => < _ as CairoType >::serialized_size(val)
                 } }
             fn serialize (rust : & Self :: RustType) -> Vec < FieldElement > {
                 match rust {
-                    MyEnum :: V1 (val) => < _ as CairoType > :: serialize (val) ,
-                    MyEnum :: V2 (val) => < _ as CairoType > :: serialize (val) }
+                    MyEnum::V1 (val) => < _ as CairoType >::serialize(val) ,
+                    MyEnum::V2 (val) => < _ as CairoType >::serialize(val) }
                 }
             fn deserialize (felts : & [FieldElement] , offset : usize) -> Result < Self :: RustType > {
                 if condition_for_variant (V1) {
@@ -146,5 +161,40 @@ mod tests {
         );
 
         assert_eq!(te2.to_string(), tes2.to_string())
+    }
+
+    #[test]
+    fn test_decl_tuple() {
+        let ce = CairoEnum {
+            name: AbiType::Basic("MyEnum".to_string()),
+            variants: vec![
+                (
+                    "V1".to_string(),
+                    AbiType::Tuple(vec![
+                        AbiType::Basic("core::felt252".to_string()),
+                        AbiType::Basic("core::felt252".to_string()),
+                    ]),
+                ),
+                (
+                    "V2".to_string(),
+                    AbiType::Basic("core::felt252".to_string()),
+                ),
+            ],
+        };
+
+        let te1 = ce.expand_decl();
+        let tes1: TokenStream = quote!(
+            pub enum MyEnum {
+                V1(
+                    (
+                        starknet::core::types::FieldElement,
+                        starknet::core::types::FieldElement
+                    )
+                ),
+                V2(starknet::core::types::FieldElement)
+            }
+        );
+
+        assert_eq!(te1.to_string(), tes1.to_string());
     }
 }
