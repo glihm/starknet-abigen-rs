@@ -5,5 +5,5 @@ extern crate alloc;
 mod error;
 pub use error::{Error, Result};
 
-mod ty;
-mod types;
+pub mod ty;
+pub mod types;
