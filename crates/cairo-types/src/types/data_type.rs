@@ -112,7 +112,7 @@ impl CairoType for U128 {
     }
 }
 
-/// Array<FieldElement> - `Array<felt252>`
+/// Array<CairoType> - `Array<T>`
 pub struct Array<T: CairoType>(PhantomData<T>);
 
 impl<T, U> CairoType for Array<T>
@@ -154,6 +154,43 @@ where
         }
 
         Ok(out)
+    }
+}
+
+/// Tuple - `tuple`
+/// TODO: write a macro to automatically handle more tuple lengths.
+pub struct Tuple2<T: CairoType, U: CairoType>(PhantomData<T>, PhantomData<U>);
+
+impl<T, RT, U, RU> CairoType for Tuple2<T, U>
+where
+    T: CairoType<RustType = RT>,
+    U: CairoType<RustType = RU>,
+{
+    type RustType = (RT, RU);
+
+    const SERIALIZED_SIZE: Option<usize> = None;
+
+    #[inline]
+    fn serialized_size(rust: &Self::RustType) -> usize {
+        T::serialized_size(&rust.0) + U::serialized_size(&rust.1)
+    }
+
+    fn serialize(rust: &Self::RustType) -> Vec<FieldElement> {
+        let mut out: Vec<FieldElement> = vec![];
+        out.extend(T::serialize(&rust.0));
+        out.extend(U::serialize(&rust.1));
+        out
+    }
+
+    fn deserialize(felts: &[FieldElement], offset: usize) -> Result<Self::RustType> {
+        let mut offset = offset;
+
+        let rust0: RT = T::deserialize(felts, offset)?;
+        offset += T::serialized_size(&rust0);
+
+        let rust1: RU = U::deserialize(felts, offset)?;
+
+        Ok((rust0, rust1))
     }
 }
 
@@ -285,6 +322,23 @@ mod tests {
         let felts = vec![FieldElement::from(123_u128), FieldElement::from(99_u128)];
         assert_eq!(U128::deserialize(&felts, 0).unwrap(), 123);
         assert_eq!(U128::deserialize(&felts, 1).unwrap(), 99);
+    }
+
+    #[test]
+    fn test_serialize_tuple2() {
+        let v = (FieldElement::ONE, 128_u32);
+        let felts = Tuple2::<FieldElement, U32>::serialize(&v);
+        assert_eq!(felts.len(), 2);
+        assert_eq!(felts[0], FieldElement::ONE);
+        assert_eq!(felts[1], FieldElement::from(128_u32));
+    }
+
+    #[test]
+    fn test_deserialize_tuple2() {
+        let felts = vec![FieldElement::THREE, 99_u32.into()];
+        let vals = Tuple2::<FieldElement, U32>::deserialize(&felts, 0).unwrap();
+        assert_eq!(vals.0, FieldElement::THREE);
+        assert_eq!(vals.1, 99_u32);
     }
 
     #[test]

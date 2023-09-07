@@ -9,7 +9,7 @@ use std::str::Chars;
 ///
 /// TODO: change to consider Unit as a Basic type? `Basic("()".to_string())`.
 #[derive(Debug, PartialEq)]
-enum AbiType {
+pub enum AbiType {
     Basic(String),
     Nested(String, Vec<AbiType>),
     Tuple(Vec<AbiType>),
@@ -17,10 +17,85 @@ enum AbiType {
 }
 
 impl AbiType {
+    /// Extracts the type name from a string,
+    /// ignoring the modules.
+    ///
+    /// # Examples
+    ///
+    /// core::felt252 -> felt252
+    /// core::array::Array -> Array
+    pub fn get_type_name_only(&self) -> String {
+        let name = match self {
+            AbiType::Basic(n) => n,
+            AbiType::Nested(n, _) => n,
+            AbiType::Tuple(_) => return "|tuple|".to_string(),
+            AbiType::Unit => return "|unit|".to_string(),
+        };
+
+        name.split("::").last().unwrap_or(&name).to_string()
+    }
+
+    ///
+    pub fn to_rust_type(&self) -> String {
+        let mut rust_type = String::new();
+        let type_str = self.get_type_name_only();
+
+        match self {
+            AbiType::Basic(_) => return AbiType::to_rust_basic_types(&type_str),
+            AbiType::Unit => return "()".to_string(),
+            _ => (),
+        };
+
+        // Only Tuple or Nested from here.
+
+        match type_str.as_str() {
+            "|tuple|" => rust_type.push('('),
+            "Span" => rust_type.push_str("Vec<"),
+            "Array" => rust_type.push_str("Vec<"),
+            _ => {
+                // Structs can be nested, but the type is flatten
+                // for each member. So we can only return the type name.
+                return type_str.to_string();
+            }
+        };
+
+        match self {
+            AbiType::Nested(_, inners) => {
+                inners.iter().for_each(|inner| rust_type.push_str(&inner.to_rust_type()))
+            },
+            AbiType::Tuple(inners) => {
+                for (idx, inner) in inners.iter().enumerate() {
+                    rust_type.push_str(&inner.to_rust_type());
+                    if idx < inners.len() - 1 {
+                        rust_type.push_str(", ");
+                    }
+                }
+            }
+            _ => ()
+        };
+
+        match type_str.as_str() {
+            "|tuple|" => rust_type.push(')'),
+            "Span" => rust_type.push('>'),
+            "Array" => rust_type.push('>'),
+            _ => (), // Nothing to do here, we only close nested tuple/array.
+        }
+
+        rust_type.to_string()
+    }
+
     /// Creates an [`AbiType`] from a string.
-    fn from_string(type_string: &str) -> AbiType {
+    pub fn from_string(type_string: &str) -> AbiType {
         let mut chars = type_string.chars().peekable();
         Self::parse_type(&mut chars)
+    }
+
+    ///
+    fn to_rust_basic_types(type_string: &str) -> String {
+        match type_string {
+            "felt252" => "starknet::core::types::FieldElement".to_string(),
+            _ => type_string.to_string(),
+        }
     }
 
     /// Parses characters of a string to extract [`AbiType`].
@@ -149,6 +224,85 @@ impl AbiType {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_get_type_name_only() {
+        let t = AbiType::Basic("u32".to_string());
+        assert_eq!(t.get_type_name_only(), "u32");
+
+        let t = AbiType::Nested("MyStruct".to_string(), vec![]);
+        assert_eq!(t.get_type_name_only(), "MyStruct");
+
+        let t = AbiType::Tuple(vec![]);
+        assert_eq!(t.get_type_name_only(), "|tuple|");
+
+        let t = AbiType::Unit;
+        assert_eq!(t.get_type_name_only(), "|unit|");
+    }
+
+    #[test]
+    fn test_get_type_name_only_modules() {
+        let t = AbiType::Basic("core::felt252".to_string());
+        assert_eq!(t.get_type_name_only(), "felt252");
+
+        let t = AbiType::Nested("core::array::Array".to_string(),
+                                vec![AbiType::Basic("core::felt252".to_string())]);
+        assert_eq!(t.get_type_name_only(), "Array");
+    }
+
+    #[test]
+    fn test_to_rust_type_basic() {
+        let t = AbiType::Unit;
+        assert_eq!(t.to_rust_type(), "()");
+
+        let t = AbiType::Basic("core::felt252".to_string());
+        assert_eq!(t.to_rust_type(), "starknet::core::types::FieldElement");
+
+        let t = AbiType::Basic("u32".to_string());
+        assert_eq!(t.to_rust_type(), "u32");
+    }
+
+    #[test]
+    fn test_to_rust_type_tuple() {
+        let t = AbiType::Tuple(vec![
+            AbiType::Basic("core::felt252".to_string()),
+            AbiType::Basic("core::integer::u32".to_string()),
+        ]);
+        assert_eq!(t.to_rust_type(), "(starknet::core::types::FieldElement, u32)");
+
+        let t = AbiType::Tuple(vec![
+            AbiType::Basic("core::felt252".to_string()),
+            AbiType::Basic("core::integer::u32".to_string()),
+            AbiType::Basic("core::integer::u8".to_string()),
+        ]);
+        assert_eq!(t.to_rust_type(), "(starknet::core::types::FieldElement, u32, u8)");
+    }
+
+    #[test]
+    fn test_to_rust_type_nested() {
+        let t = AbiType::Nested("core::array::Array".to_string(), vec![
+            AbiType::Basic("core::felt252".to_string())
+        ]);
+        assert_eq!(t.to_rust_type(), "Vec<starknet::core::types::FieldElement>");
+
+        let t = AbiType::Nested("core::array::Array".to_string(), vec![
+            AbiType::Nested("core::array::Array".to_string(), vec![
+                AbiType::Basic("core::felt252".to_string())
+            ])
+        ]);
+        assert_eq!(t.to_rust_type(), "Vec<Vec<starknet::core::types::FieldElement>>");
+    }
+
+    #[test]
+    fn test_to_rust_type_nested_tuple() {
+        let t = AbiType::Nested("core::array::Array".to_string(), vec![
+            AbiType::Tuple(vec![
+                AbiType::Basic("core::felt252".to_string()),
+                AbiType::Basic("core::integer::u128".to_string()),
+            ])
+        ]);
+        assert_eq!(t.to_rust_type(), "Vec<(starknet::core::types::FieldElement, u128)>");
+    }
 
     #[test]
     fn test_basic_type() {
