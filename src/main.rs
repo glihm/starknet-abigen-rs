@@ -9,6 +9,8 @@ use starknet::providers::{jsonrpc::HttpTransport, AnyProvider, JsonRpcClient, Pr
 use std::collections::HashMap;
 use tokio::sync::RwLock as AsyncRwLock;
 use url::Url;
+use starknet::accounts::SingleOwnerAccount;
+use starknet::signers::{LocalWallet, SigningKey};
 
 abigen!(ContractA, "./test.abi.json");
 
@@ -16,9 +18,18 @@ abigen!(ContractA, "./test.abi.json");
 async fn main() -> Result<()> {
     let rpc_url = Url::parse("http://0.0.0.0:5050")?;
     let provider = AnyProvider::JsonRpcHttp(JsonRpcClient::new(HttpTransport::new(rpc_url)));
+    let chain_id = provider.chain_id().await?;
 
-    let address = FieldElement::ZERO;
-    let contract = ContractA::new(address, provider);
+    let account_address = FieldElement::from_hex_be(
+        "0x3ee9e18edc71a6df30ac3aca2e0b02a198fbce19b7480a63a0d71cbd76652e0").unwrap();
+    let signer = wallet_from_private_key(FieldElement::from_hex_be(
+        "0x300001800000000300000180000000000030000000000003006001800006600").unwrap());
+
+    
+    let account = SingleOwnerAccount::new(&provider, signer, account_address, chain_id);
+
+    let contract_address = FieldElement::ZERO;
+    let contract = ContractA::new(contract_address, provider, Some(account));
 
     contract.hello_world(FieldElement::ZERO).await.expect("Fail call hello world");
 
@@ -69,19 +80,21 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-/*
-    let mut calldata = vec![];
-    calldata.extend(starknet::core::types::FieldElement::serialize(&FieldElement::ONE));
-    calldata.extend(starknet::core::types::FieldElement::serialize(&FieldElement::TWO));
-
-    let r = provider
-        .call(
-            FunctionCall {
-                contract_address: FieldElement::from_hex_be("0x1234").unwrap(),
-                entry_point_selector: starknet::macros::selector!("my_func"),
-                calldata,
-            },
-            BlockId::Tag(BlockTag::Pending),
-        )
-        .await?;
-*/
+// TODO: Check the class between cairo option and std option.
+// we need to pre-declare option in cairo-types and use it with the path cairo_types::Option.
+/// Returns a local wallet from a private key, if provided.
+fn wallet_from_private_key(private_key: &std::option::Option<String>) -> std::option::Option<LocalWallet> {
+    if let Some(pk) = private_key {
+        let private_key = match FieldElement::from_hex_be(pk) {
+            Ok(p) => p,
+            Err(e) => {
+                println!("Error importing private key: {:?}", e);
+                return None;
+            }
+        };
+        let key = SigningKey::from_secret_scalar(private_key);
+        Some(LocalWallet::from_signing_key(key))
+    } else {
+        None
+    }
+}

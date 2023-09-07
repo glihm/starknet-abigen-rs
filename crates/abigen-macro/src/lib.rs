@@ -2,7 +2,6 @@ use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 use serde_json;
-use starknet::accounts::Call;
 use starknet::core::types::contract::*;
 use starknet::core::types::*;
 use std::collections::HashMap;
@@ -66,20 +65,27 @@ pub fn abigen(input: TokenStream) -> TokenStream {
 
     let mut tokens: Vec<TokenStream2> = vec![];
 
+    // TODO: fix imports. Do we want to import everything at the top
+    // of the contract, and put the contract inside a module?
+
     tokens.push(quote! {
         #[derive(Debug)]
         pub struct #contract_name {
-            address: starknet::core::types::FieldElement,
+            pub address: starknet::core::types::FieldElement,
             provider: starknet::providers::AnyProvider,
+            account: std::option::Option<starknet::accounts::SingleOwnerAccount>,
         }
 
         impl #contract_name {
-            fn new(address: starknet::core::types::FieldElement,
-                   provider: starknet::providers::AnyProvider
+            pub fn new(
+                address: starknet::core::types::FieldElement,
+                provider: starknet::providers::AnyProvider,
+                account: std::option::Option<starknet::accounts::SingleOwnerAccount>,
             ) -> #contract_name {
                 #contract_name {
                     address,
                     provider,
+                    account,
                 }
             }
         }

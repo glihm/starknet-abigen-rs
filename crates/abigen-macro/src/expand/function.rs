@@ -18,13 +18,21 @@ impl Expandable for CairoFunction {
             inputs.push(quote!(#name:#ty));
         }
 
-        let output = match &self.output {
-            // TODO: perhaps anyhow is not the best here, custom error may be better?
-            Some(o) => {
-                let oty = str_to_type(&o.to_rust_type());
-                quote!(-> cairo_types::Result<#oty>)
+        let output = match self.state_mutability {
+            StateMutability::View => match &self.output {
+                // TODO: perhaps anyhow is not the best here, custom error may be better?
+                Some(o) => {
+                    let oty = str_to_type(&o.to_rust_type());
+                    quote!(-> cairo_types::Result<#oty>)
+                },
+                None => quote!(),
             },
-            None => quote!(),
+            StateMutability::External => {
+                // Only the TX hash is returned on success.
+                // TODO: switch this cairo_types::Result.. it should
+                // be something like cairo_contracts::Result.
+                quote!(-> cairo_types::Result<starknet::core::types::FieldElement>)
+            }
         };
 
         quote! {
@@ -69,7 +77,7 @@ impl Expandable for CairoFunction {
 
                     let r = self.provider
                         .call(
-                            FunctionCall {
+                            starknet::core::types::FunctionCall {
                                 contract_address: self.address,
                                 entry_point_selector: starknet::macros::selector!(#func_name),
                                 calldata,
@@ -84,7 +92,43 @@ impl Expandable for CairoFunction {
                     #out_res
                 }
             },
-            StateMutability::External => quote! {},
+            StateMutability::External => quote! {
+                // TODO: How can we add Fee configuration + estimate fee out of the box.
+                // maybe two methods are generated, one for actually running, the other
+                // for estimate the fees.
+                // Or, we can add a config struct as the last argument? Or directly
+                // at the initialization of the contract, we can give a config for
+                // fees (manual, estimated + scale factor).
+                // The estimate only may be done at the function level, to avoid
+                // altering the contract instance itself and hence races.
+                #decl {
+                    let account = match self.account {
+                        Some(a) => a,
+                        // TODO: better error handling with custom error type.
+                        None => return cairo_types::Error::Deserialize("An account is required to invoke".to_string()),
+                    };
+
+                    let mut calldata = vec![];
+                    #(#serializations)*
+
+                    let calls = vec![starknet::accounts::Call {
+                        to: self.address,
+                        selector: starknet::macros::selector!(#func_name),
+                        calldata,
+                    }];
+
+                    let execution = account.execute(calls).fee_estimate_multiplier(2f64);
+                    // TODO: we can have manual fee here, or it can also be estimate only.
+                    let max_fee = execution.estimate_fee().await?.overall_fee.into();
+
+                    let invoke_tx = execution
+                        .max_fee(max_fee)
+                        .send().await?.transaction_hash;
+
+                    // TODO: add an option to watch and wait for the tx to have a receipt?
+                    Ok(invoke_tx)
+                }
+            },
         }
     }
 }
@@ -154,7 +198,7 @@ mod tests {
 
                 let r = self.provider
                     .call(
-                        FunctionCall {
+                        starknet::core::types::FunctionCall {
                             contract_address: self.address,
                             entry_point_selector: starknet::macros::selector!("my_func"),
                             calldata,
