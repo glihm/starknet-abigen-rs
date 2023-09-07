@@ -129,9 +129,10 @@ mod tests {
         };
         let te1 = ce.expand_decl();
         let tes1: TokenStream = quote!(
+            #[derive(Debug, PartialEq)]
             pub enum MyEnum {
                 V1(starknet::core::types::FieldElement),
-                V2(starknet::core::types::FieldElement),
+                V2(starknet::core::types::FieldElement)
             }
         );
 
@@ -155,28 +156,7 @@ mod tests {
 
         let te2 = ce.expand_impl();
         let tes2: TokenStream = quote!(
-            impl CairoType for MyEnum{
-            type RustType = MyEnum;
-            const SERIALIZED_SIZE : Option <usize> = None ;
-
-            # [inline]
-            fn serialized_size (rust : &Self::RustType) -> usize {
-                 match rust {
-                    MyEnum::V1 (val) => < _ as CairoType >::serialized_size(val) ,
-                    MyEnum::V2 (val) => < _ as CairoType >::serialized_size(val)
-                } }
-            fn serialize (rust : & Self :: RustType) -> Vec < FieldElement > {
-                match rust {
-                    MyEnum::V1 (val) => < _ as CairoType >::serialize(val) ,
-                    MyEnum::V2 (val) => < _ as CairoType >::serialize(val) }
-                }
-            fn deserialize (felts : & [FieldElement] , offset : usize) -> Result < Self :: RustType > {
-                if condition_for_variant (V1) {
-                    return Ok (MyEnum :: V1 (< _ as CairoType > :: deserialize (felts , offset) ?)) ;
-                } if condition_for_variant (V2) {
-                    return Ok (MyEnum :: V2 (< _ as CairoType > :: deserialize (felts , offset) ?)) ;
-                } Err ("Failed to deserialize variant.".into())}
-            }
+            impl CairoType for MyEnum { type RustType = MyEnum ; const SERIALIZED_SIZE : std :: option :: Option < usize > = std :: option :: Option :: None ; # [inline] fn serialized_size (rust : & Self :: RustType) -> usize { match rust { MyEnum :: V1 (val) => starknet :: core :: types :: FieldElement :: serialized_size (val) + 1 , MyEnum :: V2 (val) => starknet :: core :: types :: FieldElement :: serialized_size (val) + 1 } } fn serialize (rust : & Self :: RustType) -> Vec < FieldElement > { match rust { MyEnum :: V1 (val) => { let mut temp = vec ! [] ; temp . extend (usize :: serialize (& 0usize)) ; temp . extend (starknet :: core :: types :: FieldElement :: serialize (val)) ; temp } , MyEnum :: V2 (val) => { let mut temp = vec ! [] ; temp . extend (usize :: serialize (& 1usize)) ; temp . extend (starknet :: core :: types :: FieldElement :: serialize (val)) ; temp } } } fn deserialize (felts : & [FieldElement] , offset : usize) -> cairo_types :: Result < Self :: RustType > { let index : u128 = felts [offset] . try_into () . unwrap () ; match index as usize { 0usize => Ok (MyEnum :: V1 (starknet :: core :: types :: FieldElement :: deserialize (felts , offset + 1) ?)) , 1usize => Ok (MyEnum :: V2 (starknet :: core :: types :: FieldElement :: deserialize (felts , offset + 1) ?)) , _ => panic ! ("Index not handle for {}" , "MyEnum") } } }
         );
 
         assert_eq!(te2.to_string(), tes2.to_string())
@@ -203,14 +183,15 @@ mod tests {
 
         let te1 = ce.expand_decl();
         let tes1: TokenStream = quote!(
+            #[derive(Debug, PartialEq)]
             pub enum MyEnum {
                 V1(
                     (
                         starknet::core::types::FieldElement,
-                        starknet::core::types::FieldElement,
-                    ),
+                        starknet::core::types::FieldElement
+                    )
                 ),
-                V2(starknet::core::types::FieldElement),
+                V2(starknet::core::types::FieldElement)
             }
         );
 
