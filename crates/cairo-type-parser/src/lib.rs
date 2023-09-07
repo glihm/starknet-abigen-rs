@@ -4,13 +4,9 @@ use proc_macro2::TokenStream as TokenStream2;
 use std::collections::HashMap;
 use syn::Type;
 
-use abi_type::AbiType;
+use starknet::core::types::contract::StateMutability;
 
-#[derive(Debug)]
-pub enum CairoFunctionStateMutability {
-    View,
-    External,
-}
+use abi_type::AbiType;
 
 #[derive(Debug)]
 pub enum CairoAbiEntry {
@@ -35,7 +31,7 @@ pub struct CairoEnum {
 pub struct CairoFunction {
     // TODO: perhaps the name can be a regular string.
     pub name: AbiType,
-    pub state_mutability: CairoFunctionStateMutability,
+    pub state_mutability: StateMutability,
     pub inputs: Vec<(String, AbiType)>,
     pub outputs: Vec<AbiType>,
 }

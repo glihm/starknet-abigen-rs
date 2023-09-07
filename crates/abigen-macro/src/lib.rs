@@ -19,7 +19,7 @@ use syn::{
 };
 
 use cairo_type_parser::{abi_type::AbiType, CairoEnum};
-use cairo_type_parser::{CairoAbiEntry, CairoStruct};
+use cairo_type_parser::{CairoAbiEntry, CairoStruct, CairoFunction};
 
 mod expand;
 
@@ -85,6 +85,8 @@ pub fn abigen(input: TokenStream) -> TokenStream {
         }
     });
 
+    let mut functions = vec![];
+
     for entry in abi {
         match entry {
             AbiEntry::Struct(s) => {
@@ -111,7 +113,24 @@ pub fn abigen(input: TokenStream) -> TokenStream {
                 // println!("{:?}", cairo_entry);
             }
             AbiEntry::Function(f) => {
-                println!("{:?}", f);
+                let cairo_entry = CairoFunction {
+                    name: AbiType::from_string(&f.name),
+                    state_mutability: f.state_mutability,
+                    inputs: f
+                        .inputs
+                        .iter()
+                        .map(|i| (i.name.clone(), AbiType::from_string(&i.r#type)))
+                        .collect(),
+                    outputs: f
+                        .outputs
+                        .iter()
+                        .map(|o| AbiType::from_string(&o.r#type))
+                        .collect(),
+                };
+
+                println!("{:?}", cairo_entry);
+
+                functions.push(cairo_entry.expand_impl());
             }
             AbiEntry::Enum(e) => {
                 // TODO: also skip Option, Result and other
@@ -137,6 +156,12 @@ pub fn abigen(input: TokenStream) -> TokenStream {
             _ => (),
         }
     }
+
+    tokens.push(quote! {
+        impl #contract_name {
+            #(#functions)*
+        }
+    });
 
     let expanded = quote! {
         #(#tokens)*
