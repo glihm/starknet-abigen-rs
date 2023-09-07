@@ -23,13 +23,15 @@ impl Expandable for CairoEnum {
         }
 
         quote! {
+            #[derive(Debug, PartialEq)]
             pub enum #enum_name {
                 #(#variants),*
             }
         }
     }
     fn expand_impl(&self) -> TokenStream2 {
-        let enum_name = str_to_ident(&self.name.get_type_name_only());
+        let name_str = &self.name.get_type_name_only();
+        let enum_name = str_to_ident(name_str);
 
         let mut serialized_sizes: Vec<TokenStream2> = vec![];
         let mut serializations: Vec<TokenStream2> = vec![];
@@ -51,18 +53,25 @@ impl Expandable for CairoEnum {
             } else {
                 serializations.push(quote! {
                     #enum_name::#variant_name(val) => {
-                        usize::serialize(&#i);
-                        #ty::serialize(val)
+                        let mut temp = vec![];
+                        temp.extend(usize::serialize(&#i));
+                        temp.extend(#ty::serialize(val));
+                        temp
                     }
                 });
                 deserializations.push(quote! {
-                    #i => #ty::deserialize(felts, offset + 1)
+                    #i => Ok(#enum_name::#variant_name(#ty::deserialize(felts, offset + 1)?))
                 });
+                // +1 because we have to handle the variant index also.
                 serialized_sizes.push(quote! {
-                    #enum_name::#variant_name(val) => #ty::serialized_size(val)
+                    #enum_name::#variant_name(val) => #ty::serialized_size(val) + 1
                 })
             }
         }
+
+        deserializations.push(quote! {
+           _ => panic!("Index not handle for {}", #name_str)
+        });
 
         quote! {
             impl CairoType for #enum_name {

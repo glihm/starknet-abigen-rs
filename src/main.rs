@@ -24,7 +24,13 @@ async fn main() -> Result<()> {
 
     let test_enum = TestEnum::V1(FieldElement::THREE);
 
-    assert_eq!(TestEnum::serialized_size(&test_enum), 1);
+    assert_eq!(TestEnum::serialized_size(&test_enum), 2);
+    assert_eq!(
+        TestEnum::serialize(&test_enum),
+        vec![FieldElement::ZERO, FieldElement::THREE]
+    );
+    let test_enum_des = vec![FieldElement::ZERO, FieldElement::THREE];
+    assert_eq!(TestEnum::deserialize(&test_enum_des, 0).unwrap(), test_enum);
 
     assert_eq!(PG::serialized_size(&pg), 2);
     assert_eq!(
