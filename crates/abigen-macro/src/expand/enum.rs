@@ -40,19 +40,19 @@ impl Expandable for CairoEnum {
             let ty = str_to_type(&val.1.to_rust_item_path(true));
             if val.1 == AbiType::Basic("()".to_string()) {
                 serializations.push(quote! {
-                    #enum_name::#variant_name(val) => u8::serialize(#i)
+                    #enum_name::#variant_name => usize::serialize(&#i)
                 });
                 deserializations.push(quote! {
-                    #i => #enum_name::#variant_name
+                    #i => Ok(#enum_name::#variant_name)
                 });
                 serialized_sizes.push(quote! {
-                    #enum_name::#variant_name(val) => 1
+                    #enum_name::#variant_name => 1
                 });
             } else {
                 serializations.push(quote! {
                     #enum_name::#variant_name(val) => {
-                        u8::serialize(#i);
-                        #ty::serialize(val);
+                        usize::serialize(&#i);
+                        #ty::serialize(val)
                     }
                 });
                 deserializations.push(quote! {
@@ -68,7 +68,7 @@ impl Expandable for CairoEnum {
             impl CairoType for #enum_name {
                 type RustType = #enum_name;
 
-                const SERIALIZED_SIZE: Option<usize> = None;
+                const SERIALIZED_SIZE: std::option::Option<usize> = std::option::Option::None;
 
                 #[inline]
                 fn serialized_size(rust: &Self::RustType) -> usize {
@@ -78,14 +78,15 @@ impl Expandable for CairoEnum {
                 }
 
                 fn serialize(rust: &Self::RustType) -> Vec<FieldElement> {
+
                     match rust {
                         #(#serializations),*
                     }
                 }
 
                 fn deserialize(felts: &[FieldElement], offset: usize) -> cairo_types::Result<Self::RustType> {
-                    let index:u32 = felts[offset].try_into().unwrap();
-                    match index {
+                    let index:u128 = felts[offset].try_into().unwrap();
+                    match index as usize {
                         #(#deserializations),*
                     }
 

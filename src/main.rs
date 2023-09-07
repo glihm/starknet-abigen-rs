@@ -24,7 +24,7 @@ async fn main() -> Result<()> {
 
     let test_enum = TestEnum::V1(FieldElement::THREE);
 
-    assert_eq!(TestEnum::serialized_size(&pg), 1);
+    assert_eq!(TestEnum::serialized_size(&test_enum), 1);
 
     assert_eq!(PG::serialized_size(&pg), 2);
     assert_eq!(
@@ -49,7 +49,7 @@ async fn main() -> Result<()> {
 
     let tt = TypesInTypes {
         a: vec![vec![FieldElement::TWO]],
-        b: u256 { low: 1, high: 0 }
+        b: u256 { low: 1, high: 0 },
     };
 
     println!("{:?}", TypesInTypes::serialize(&tt).len());

@@ -93,6 +93,19 @@ impl CairoType for u128 {
     }
 }
 
+impl CairoType for usize {
+    type RustType = Self;
+
+    fn serialize(rust: &Self::RustType) -> Vec<FieldElement> {
+        vec![FieldElement::from(*rust)]
+    }
+
+    fn deserialize(felts: &[FieldElement], offset: usize) -> Result<Self::RustType> {
+        let temp: u128 = felts[offset].try_into().unwrap();
+        Ok(temp as usize)
+    }
+}
+
 /// Array<CairoType> - `Array<T>`
 impl<T, RT> CairoType for Vec<T>
 where
@@ -368,7 +381,7 @@ mod tests {
     #[test]
     fn test_serialize_array_nested() {
         let v: Vec<Vec<u32>> = vec![vec![1, 2], vec![3]];
-        let felts = Vec::<Vec::<u32>>::serialize(&v);
+        let felts = Vec::<Vec<u32>>::serialize(&v);
         assert_eq!(felts.len(), 6);
         assert_eq!(felts[0], FieldElement::TWO);
         assert_eq!(felts[1], FieldElement::TWO);
@@ -389,7 +402,7 @@ mod tests {
             FieldElement::THREE,
         ];
 
-        let vals = Vec::<Vec::<u32>>::deserialize(&felts, 0).unwrap();
+        let vals = Vec::<Vec<u32>>::deserialize(&felts, 0).unwrap();
         assert_eq!(vals.len(), 2);
         assert_eq!(vals[0], vec![1, 2]);
         assert_eq!(vals[1], vec![3]);
@@ -407,7 +420,7 @@ mod tests {
 
     #[test]
     fn test_deserialize_array_tuple() {
-        let felts: Vec::<FieldElement> = vec![
+        let felts: Vec<FieldElement> = vec![
             FieldElement::from(1_u32),
             FieldElement::from(12_u32),
             FieldElement::TWO,
