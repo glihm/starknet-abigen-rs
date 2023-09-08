@@ -18,4 +18,5 @@ jobs:
       - run: cargo test -p cairo-types
       - run: cargo test -p cairo-type-parser
       - run: cargo test -p abigen-macro
+      - run: rustup component add rustfmt
       - run: cargo fmt
