@@ -138,10 +138,9 @@ impl AbiType {
     fn to_rust_basic_types(type_string: &str) -> String {
         match type_string {
             "felt252" => "starknet::core::types::FieldElement".to_string(),
-            // TODO: add a strong typing for those types that are felt252 under the hood.
-            "ContractAddress" => "starknet::core::types::FieldElement".to_string(),
-            "ClassHash" => "starknet::core::types::FieldElement".to_string(),
-            "EthAddress" => "starknet::core::types::FieldElement".to_string(),
+            "ContractAddress" => "cairo_types::types::starknet::ContractAddress".to_string(),
+            "ClassHash" => "cairo_types::types::starknet::ClassHash".to_string(),
+            "EthAddress" => "cairo_types::types::starknet::EthAddress".to_string(),
             _ => type_string.to_string(),
         }
     }
