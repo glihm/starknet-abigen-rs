@@ -3,6 +3,30 @@ use crate::Result;
 use alloc::{format, vec, vec::Vec};
 use starknet::core::types::FieldElement;
 
+macro_rules! implement_trait_for_unsigned {
+    ($type:ty) => {
+        impl CairoType for $type {
+            type RustType = Self;
+
+            fn serialize(rust: &Self::RustType) -> Vec<FieldElement> {
+                vec![FieldElement::from(*rust)]
+            }
+
+            fn deserialize(felts: &[FieldElement], offset: usize) -> Result<Self::RustType> {
+                let temp: u128 = felts[offset].try_into().unwrap();
+                Ok(temp as $type)
+            }
+        }
+    };
+}
+
+implement_trait_for_unsigned!(u8);
+implement_trait_for_unsigned!(u16);
+implement_trait_for_unsigned!(u32);
+implement_trait_for_unsigned!(u64);
+implement_trait_for_unsigned!(u128);
+implement_trait_for_unsigned!(usize);
+
 impl CairoType for FieldElement {
     type RustType = Self;
 
@@ -28,81 +52,6 @@ impl CairoType for bool {
         } else {
             Ok(false)
         }
-    }
-}
-
-// TODO: write a macro to impl the trait for uints and ints.
-impl CairoType for u8 {
-    type RustType = Self;
-
-    fn serialize(rust: &Self::RustType) -> Vec<FieldElement> {
-        vec![FieldElement::from(*rust)]
-    }
-
-    fn deserialize(felts: &[FieldElement], offset: usize) -> Result<Self::RustType> {
-        Ok(felts[offset].try_into().unwrap())
-    }
-}
-
-impl CairoType for u16 {
-    type RustType = Self;
-
-    fn serialize(rust: &Self::RustType) -> Vec<FieldElement> {
-        vec![FieldElement::from(*rust)]
-    }
-
-    fn deserialize(felts: &[FieldElement], offset: usize) -> Result<Self::RustType> {
-        Ok(felts[offset].try_into().unwrap())
-    }
-}
-
-impl CairoType for u32 {
-    type RustType = Self;
-
-    fn serialize(rust: &Self::RustType) -> Vec<FieldElement> {
-        vec![FieldElement::from(*rust)]
-    }
-
-    fn deserialize(felts: &[FieldElement], offset: usize) -> Result<Self::RustType> {
-        // TODO: Convert error type to match
-        Ok(felts[offset].try_into().unwrap())
-    }
-}
-
-impl CairoType for u64 {
-    type RustType = Self;
-
-    fn serialize(rust: &Self::RustType) -> Vec<FieldElement> {
-        vec![FieldElement::from(*rust)]
-    }
-
-    fn deserialize(felts: &[FieldElement], offset: usize) -> Result<Self::RustType> {
-        Ok(felts[offset].try_into().unwrap())
-    }
-}
-
-impl CairoType for u128 {
-    type RustType = Self;
-
-    fn serialize(rust: &Self::RustType) -> Vec<FieldElement> {
-        vec![FieldElement::from(*rust)]
-    }
-
-    fn deserialize(felts: &[FieldElement], offset: usize) -> Result<Self::RustType> {
-        Ok(felts[offset].try_into().unwrap())
-    }
-}
-
-impl CairoType for usize {
-    type RustType = Self;
-
-    fn serialize(rust: &Self::RustType) -> Vec<FieldElement> {
-        vec![FieldElement::from(*rust)]
-    }
-
-    fn deserialize(felts: &[FieldElement], offset: usize) -> Result<Self::RustType> {
-        let temp: u128 = felts[offset].try_into().unwrap();
-        Ok(temp as usize)
     }
 }
 
