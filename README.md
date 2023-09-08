@@ -27,7 +27,7 @@ cargo run
 ## Cairo - Rust similarity
 
 We've tried to leverage the similarity between Rust and Cairo.
-With this in mind, the binding are generated to be as natural as possible from a Rust perspective.
+With this in mind, the bindings are generated to be as natural as possible from a Rust perspective.
 
 So most of the types are Rust types, and the basic value for us is the `FieldElement` from `starknet-rs`.
 Except few exceptions like `ContractAddress, ClassHash and EthAddress`, which a custom structs to map those
@@ -113,12 +113,20 @@ abigen!(MyContract, "./mycontract.abi.json")
 
 #[tokio::main]
 async fn main() -> Result<()> {
-
     let rpc_url = Url::parse("http://0.0.0.0:5050")?;
 
-    // Work in progress to avoid this duplication.
     let provider =
         AnyProvider::JsonRpcHttp(JsonRpcClient::new(HttpTransport::new(rpc_url.clone())));
+
+    let contract_address = FieldElement::from_hex_be(
+        "0x0546a164c8d10fd38652b6426ef7be159965deb9a0cbf3e8a899f8a42fd86761",
+    ).unwrap();
+
+    // Call.
+    let contract_caller = MyContract::new_caller(contract_address, provider).await?;
+    let val = contract_caller.get_val().await?;
+
+    // Work in progress to avoid this duplication.
     let provider2 =
         AnyProvider::JsonRpcHttp(JsonRpcClient::new(HttpTransport::new(rpc_url.clone())));
 
@@ -130,13 +138,7 @@ async fn main() -> Result<()> {
         "0x0000001800000000300000180000000000030000000000003006001800006600".to_string(),
     )).unwrap();
 
-    let contract_address = FieldElement::from_hex_be(
-        "0x0546a164c8d10fd38652b6426ef7be159965deb9a0cbf3e8a899f8a42fd86761",
-    ).unwrap();
-
-    let contract_caller = MyContract::new_caller(contract_address, provider).await?;
-    let val = contract_caller.get_val().await?;
-
+    // Invoke.
     let contract_invoker =
         MyContract::new_invoker(contract_address, provider2, account_address, signer).await?;
     contract_invoker.set_val(FieldElement::TWO).await?;
