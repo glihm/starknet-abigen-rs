@@ -15,8 +15,6 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly
-      - run: cargo test -p cairo-types
-      - run: cargo test -p cairo-type-parser
-      - run: cargo test -p abigen-macro
+      - run: cargo test --workspace
       - run: rustup component add rustfmt
       - run: cargo fmt
