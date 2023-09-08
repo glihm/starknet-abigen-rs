@@ -29,9 +29,9 @@ impl Expandable for CairoFunction {
             },
             StateMutability::External => {
                 // Only the TX hash is returned on success.
-                // TODO: switch this cairo_types::Result.. it should
-                // be something like cairo_contracts::Result.
-                quote!(-> cairo_types::Result<starknet::core::types::FieldElement>)
+                // TODO: go away from anyhow? Should it
+                // be something like cairo_contracts::Result?
+                quote!(-> anyhow::Result<starknet::core::types::FieldElement>)
             }
         };
 
@@ -102,11 +102,21 @@ impl Expandable for CairoFunction {
                 // The estimate only may be done at the function level, to avoid
                 // altering the contract instance itself and hence races.
                 #decl {
-                    let account = match self.account {
-                        Some(a) => a,
-                        // TODO: better error handling with custom error type.
-                        None => return cairo_types::Error::Deserialize("An account is required to invoke".to_string()),
+                    // TODO: I don't know how to easily store the SingleOwnerAccount
+                    // and it's generic types without complexifiying the whole typing.
+                    // So it's constructed at every call. There is surely a better approach.
+                    let (account_address, signer) = match (self.account_address, &self.signer) {
+                        (Some(a), Some(s)) => (a, s),
+                        // TODO: better error handling here.
+                        _ => return Err(anyhow::anyhow!("Account address and signer are required to send invoke transactions"))
                     };
+
+                    let account = starknet::accounts::SingleOwnerAccount::new(
+                        &self.provider,
+                        signer,
+                        account_address,
+                        self.chain_id
+                    );
 
                     let mut calldata = vec![];
                     #(#serializations)*

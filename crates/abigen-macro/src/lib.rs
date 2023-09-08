@@ -73,20 +73,43 @@ pub fn abigen(input: TokenStream) -> TokenStream {
         pub struct #contract_name {
             pub address: starknet::core::types::FieldElement,
             provider: starknet::providers::AnyProvider,
-            account: std::option::Option<starknet::accounts::SingleOwnerAccount>,
+            account_address: std::option::Option<starknet::core::types::FieldElement>,
+            signer: std::option::Option<starknet::signers::LocalWallet>,
+            chain_id: starknet::core::types::FieldElement,
         }
 
+        // TODO: Perhaps better than anyhow, a custom error?
         impl #contract_name {
-            pub fn new(
+            pub async fn new_caller(
                 address: starknet::core::types::FieldElement,
                 provider: starknet::providers::AnyProvider,
-                account: std::option::Option<starknet::accounts::SingleOwnerAccount>,
-            ) -> #contract_name {
-                #contract_name {
+            ) -> anyhow::Result<#contract_name> {
+                let chain_id = provider.chain_id().await?;
+
+                Ok(#contract_name {
                     address,
                     provider,
-                    account,
-                }
+                    account_address: None,
+                    signer: None,
+                    chain_id,
+                })
+            }
+
+            pub async fn new_invoker(
+                address: starknet::core::types::FieldElement,
+                provider: starknet::providers::AnyProvider,
+                account_address: starknet::core::types::FieldElement,
+                signer: starknet::signers::LocalWallet,
+            ) -> anyhow::Result<#contract_name> {
+                let chain_id = provider.chain_id().await?;
+
+                Ok(#contract_name {
+                    address,
+                    provider,
+                    account_address: Some(account_address),
+                    signer: Some(signer),
+                    chain_id,
+                })
             }
         }
     });

@@ -9,7 +9,7 @@ use starknet::providers::{jsonrpc::HttpTransport, AnyProvider, JsonRpcClient, Pr
 use std::collections::HashMap;
 use tokio::sync::RwLock as AsyncRwLock;
 use url::Url;
-use starknet::accounts::SingleOwnerAccount;
+use starknet::accounts::{Account, SingleOwnerAccount};
 use starknet::signers::{LocalWallet, SigningKey};
 
 abigen!(ContractA, "./test.abi.json");
@@ -17,21 +17,21 @@ abigen!(ContractA, "./test.abi.json");
 #[tokio::main]
 async fn main() -> Result<()> {
     let rpc_url = Url::parse("http://0.0.0.0:5050")?;
-    let provider = AnyProvider::JsonRpcHttp(JsonRpcClient::new(HttpTransport::new(rpc_url)));
+    let provider = AnyProvider::JsonRpcHttp(JsonRpcClient::new(HttpTransport::new(rpc_url.clone())));
+    let provider2 = AnyProvider::JsonRpcHttp(JsonRpcClient::new(HttpTransport::new(rpc_url)));
+
     let chain_id = provider.chain_id().await?;
 
     let account_address = FieldElement::from_hex_be(
         "0x3ee9e18edc71a6df30ac3aca2e0b02a198fbce19b7480a63a0d71cbd76652e0").unwrap();
-    let signer = wallet_from_private_key(FieldElement::from_hex_be(
-        "0x300001800000000300000180000000000030000000000003006001800006600").unwrap());
-
-    
-    let account = SingleOwnerAccount::new(&provider, signer, account_address, chain_id);
+    let signer = wallet_from_private_key(&Some("0x300001800000000300000180000000000030000000000003006001800006600".to_string())).unwrap();    
+    // let account = SingleOwnerAccount::new(&provider, signer, account_address, chain_id);
 
     let contract_address = FieldElement::ZERO;
-    let contract = ContractA::new(contract_address, provider, Some(account));
+    let contract_caller = ContractA::new_caller(contract_address, provider).await?;
+    let contract_invoker = ContractA::new_invoker(contract_address, provider2, account_address, signer).await?;
 
-    contract.hello_world(FieldElement::ZERO).await.expect("Fail call hello world");
+    contract_caller.hello_world(FieldElement::ZERO).await.expect("Fail call hello world");
 
     let pg = PG {
         v1: FieldElement::THREE,
