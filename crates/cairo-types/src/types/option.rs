@@ -4,8 +4,8 @@
 //! To follow the serialization rule, `Some` has index 0, and `None` index 1.
 //!
 //! https://github.com/starkware-libs/cairo/blob/main/corelib/src/option.cairo#L6
+use crate::error::{Error, Result};
 use crate::ty::CairoType;
-use crate::error::{Result, Error};
 use starknet::core::types::FieldElement;
 
 impl<T, RT> CairoType for Option<T>
@@ -21,7 +21,7 @@ where
             Some(r) => {
                 out.push(FieldElement::ZERO);
                 out.extend(T::serialize(r));
-            },
+            }
             None => out.push(FieldElement::ONE),
         };
 
@@ -37,7 +37,9 @@ where
         } else if idx == FieldElement::ONE {
             Ok(Option::None)
         } else {
-            Err(Error::Deserialize("Option is expected 0 or 1 index only".to_string()))
+            Err(Error::Deserialize(
+                "Option is expected 0 or 1 index only".to_string(),
+            ))
         }
     }
 }
@@ -62,7 +64,11 @@ mod tests {
         let o = Option::<u32>::deserialize(&felts, 0).unwrap();
         assert_eq!(o, Some(u32::MAX));
 
-        let felts = vec![FieldElement::THREE, FieldElement::ZERO, FieldElement::from(u32::MAX)];
+        let felts = vec![
+            FieldElement::THREE,
+            FieldElement::ZERO,
+            FieldElement::from(u32::MAX),
+        ];
         let o = Option::<u32>::deserialize(&felts, 1).unwrap();
         assert_eq!(o, Some(u32::MAX));
     }
