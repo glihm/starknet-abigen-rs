@@ -2,6 +2,11 @@ use crate::Result;
 use alloc::vec::Vec;
 use starknet::core::types::FieldElement;
 
+/// Basic cairo structs that are already implemented inside
+/// this crate.
+/// They can be ignored when abigen macro is used.
+pub const CAIRO_BASIC_STRUCTS: [&str; 2] = ["Span", "Option"];
+
 // TODO: add the serialize_to method to only push data
 // to an existing vec:
 // serialize_to(rust: &Self::RustType, out: &mut Vec<FieldElement>).

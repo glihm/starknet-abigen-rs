@@ -11,6 +11,7 @@ use syn::{
 
 use cairo_type_parser::{abi_type::AbiType, CairoEnum};
 use cairo_type_parser::{CairoFunction, CairoStruct};
+use cairo_types::ty::CAIRO_BASIC_STRUCTS;
 
 mod expand;
 
@@ -125,13 +126,6 @@ pub fn abigen(input: TokenStream) -> TokenStream {
     for entry in abi {
         match entry {
             AbiEntry::Struct(s) => {
-                // Span is skipped as represented as Vec.
-                // TODO: also skip the u256 which should be implemented
-                // directly in cairo type.
-                if s.name.contains("array::Span") {
-                    continue;
-                }
-
                 let cairo_entry = CairoStruct {
                     name: AbiType::from_string(&s.name),
                     members: s
@@ -140,6 +134,10 @@ pub fn abigen(input: TokenStream) -> TokenStream {
                         .map(|m| (m.name.clone(), AbiType::from_string(&m.r#type)))
                         .collect(),
                 };
+
+                if CAIRO_BASIC_STRUCTS.contains(&cairo_entry.name.get_type_name_only().as_str()) {
+                    continue;
+                }
 
                 tokens.push(cairo_entry.expand_decl());
                 tokens.push(cairo_entry.expand_impl());

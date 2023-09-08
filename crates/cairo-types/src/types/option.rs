@@ -6,9 +6,9 @@
 //! https://github.com/starkware-libs/cairo/blob/main/corelib/src/option.cairo#L6
 use crate::error::{Error, Result};
 use crate::ty::CairoType;
-use starknet::core::types::FieldElement;
-use alloc::{vec, vec::Vec};
 use alloc::string::ToString;
+use alloc::{vec, vec::Vec};
+use starknet::core::types::FieldElement;
 
 impl<T, RT> CairoType for Option<T>
 where
