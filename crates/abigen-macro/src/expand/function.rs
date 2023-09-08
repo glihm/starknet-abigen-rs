@@ -169,7 +169,7 @@ mod tests {
         };
         let te1 = cf.expand_decl();
         let tef1: TokenStream = quote!(
-            pub async fn my_func(&self, v1: starknet::core::types::FieldElement, v2: starknet::core::types::FieldElement) -> anyhow::Result<starknet::core::types::FieldElement>
+            pub async fn my_func(&self ,v1: starknet::core::types::FieldElement, v2: starknet::core::types::FieldElement) -> cairo_types::Result<starknet::core::types::FieldElement>
         );
 
         assert_eq!(te1.to_string(), tef1.to_string());
@@ -200,7 +200,7 @@ mod tests {
                 &self,
                 v1: starknet::core::types::FieldElement,
                 v2: starknet::core::types::FieldElement
-            ) -> anyhow::Result<starknet::core::types::FieldElement> {
+            ) -> cairo_types::Result<starknet::core::types::FieldElement> {
                 let mut calldata = vec![];
                 calldata.extend(starknet::core::types::FieldElement::serialize(&v1));
                 calldata.extend(starknet::core::types::FieldElement::serialize(&v2));
@@ -214,9 +214,9 @@ mod tests {
                         },
                         BlockId::Tag(BlockTag::Pending),
                     )
-                    .await?;
+                    .await.map_err(|err| cairo_types::Error::Deserialize(format!("Deserialization error {:}" , err)))?;
 
-                starknet::core::types::FieldElement::deserialize(r, 0)
+                starknet::core::types::FieldElement::deserialize(&r, 0)
             }
         );
 
