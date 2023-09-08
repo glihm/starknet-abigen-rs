@@ -65,7 +65,7 @@ impl Expandable for CairoStruct {
         }
 
         quote! {
-            impl CairoType for #struct_name {
+            impl cairo_types::CairoType for #struct_name {
                 type RustType = Self;
 
                 const SERIALIZED_SIZE: std::option::Option<usize> = None;
@@ -75,13 +75,13 @@ impl Expandable for CairoStruct {
                     #(#sizes) *
                 }
 
-                fn serialize(rust: &Self::RustType) -> Vec<FieldElement> {
-                    let mut out: Vec<FieldElement> = vec![];
+                fn serialize(rust: &Self::RustType) -> Vec<starknet::core::types::FieldElement> {
+                    let mut out: Vec<starknet::core::types::FieldElement> = vec![];
                     #(#sers)*
                     out
                 }
 
-                fn deserialize(felts: &[FieldElement], offset: usize) -> cairo_types::Result<Self::RustType> {
+                fn deserialize(felts: &[starknet::core::types::FieldElement], offset: usize) -> cairo_types::Result<Self::RustType> {
                     let mut offset = offset;
                     #(#desers)*
                     Ok(#struct_name {
@@ -164,7 +164,7 @@ mod tests {
 
         #[rustfmt::skip]
         let target = quote! {
-            impl CairoType for MyStruct {
+            impl cairo_types::CairoType for MyStruct {
                 type RustType = Self ;
 
                 const SERIALIZED_SIZE : std :: option :: Option < usize > = None ;
@@ -173,14 +173,14 @@ mod tests {
                         + u64::serialized_size(&rust.b)
                 }
 
-                fn serialize (rust: &Self::RustType) -> Vec <FieldElement> {
-                    let mut out : Vec < FieldElement > = vec ! [];
+                fn serialize (rust: &Self::RustType) -> Vec <starknet::core::types::FieldElement> {
+                    let mut out : Vec<starknet::core::types::FieldElement> = vec ! [];
                     out.extend(starknet::core::types::FieldElement::serialize(&rust.a));
                     out.extend(u64::serialize(&rust.b));
                     out
                 }
 
-                fn deserialize(felts: &[FieldElement], offset: usize) -> cairo_types::Result<Self::RustType> {
+                fn deserialize(felts: &[starknet::core::types::FieldElement], offset: usize) -> cairo_types::Result<Self::RustType> {
                     let mut offset = offset;
                     let a = starknet::core::types::FieldElement::deserialize(felts, offset)?;
                     offset += starknet::core::types::FieldElement::serialized_size(&a);

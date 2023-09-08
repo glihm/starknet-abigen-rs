@@ -6,4 +6,6 @@ mod error;
 pub use error::{Error, Result};
 
 pub mod ty;
+pub use ty::CairoType;
+
 pub mod types;

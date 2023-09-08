@@ -5,7 +5,8 @@ use starknet::core::types::FieldElement;
 /// Basic cairo structs that are already implemented inside
 /// this crate.
 /// They can be ignored when abigen macro is used.
-pub const CAIRO_BASIC_STRUCTS: [&str; 2] = ["Span", "Option"];
+pub const CAIRO_BASIC_STRUCTS: [&str; 1] = ["Span"];
+pub const CAIRO_BASIC_ENUMS: [&str; 1] = ["Option"];
 
 // TODO: add the serialize_to method to only push data
 // to an existing vec:

@@ -1,3 +1,5 @@
+mod tests;
+
 use abigen_macro::abigen;
 use anyhow::Result;
 use cairo_types::ty::CairoType;

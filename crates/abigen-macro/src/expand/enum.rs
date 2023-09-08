@@ -82,7 +82,7 @@ impl Expandable for CairoEnum {
         });
 
         quote! {
-            impl CairoType for #enum_name {
+            impl cairo_types::CairoType for #enum_name {
                 type RustType = #enum_name;
 
                 const SERIALIZED_SIZE: std::option::Option<usize> = std::option::Option::None;
@@ -94,14 +94,14 @@ impl Expandable for CairoEnum {
                     }
                 }
 
-                fn serialize(rust: &Self::RustType) -> Vec<FieldElement> {
+                fn serialize(rust: &Self::RustType) -> Vec<starknet::core::types::FieldElement> {
 
                     match rust {
                         #(#serializations),*
                     }
                 }
 
-                fn deserialize(felts: &[FieldElement], offset: usize) -> cairo_types::Result<Self::RustType> {
+                fn deserialize(felts: &[starknet::core::types::FieldElement], offset: usize) -> cairo_types::Result<Self::RustType> {
                     let index:u128 = felts[offset].try_into().unwrap();
                     match index as usize {
                         #(#deserializations),*
@@ -168,7 +168,7 @@ mod tests {
 
         #[rustfmt::skip]
         let tes2: TokenStream = quote!(
-            impl CairoType for MyEnum {
+            impl cairo_types::CairoType for MyEnum {
                 type RustType = MyEnum;
 
                 const SERIALIZED_SIZE: std::option::Option<usize> = std::option::Option::None ;
@@ -179,7 +179,7 @@ mod tests {
                     }
                 }
 
-                fn serialize(rust: &Self::RustType) -> Vec<FieldElement> {
+                fn serialize(rust: &Self::RustType) -> Vec<starknet::core::types::FieldElement> {
                     match rust {
                         MyEnum::V1 (val) => {
                             let mut temp = vec![];
@@ -196,7 +196,7 @@ mod tests {
                     }
                 }
 
-                fn deserialize (felts: &[FieldElement] , offset: usize) -> cairo_types::Result<Self::RustType> {
+                fn deserialize (felts: &[starknet::core::types::FieldElement] , offset: usize) -> cairo_types::Result<Self::RustType> {
                     let index: u128 = felts[offset].try_into().unwrap();
 
                     match index as usize {

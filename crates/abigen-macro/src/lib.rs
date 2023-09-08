@@ -11,7 +11,7 @@ use syn::{
 
 use cairo_type_parser::{abi_type::AbiType, CairoEnum};
 use cairo_type_parser::{CairoFunction, CairoStruct};
-use cairo_types::ty::CAIRO_BASIC_STRUCTS;
+use cairo_types::ty::{CAIRO_BASIC_ENUMS, CAIRO_BASIC_STRUCTS};
 
 mod expand;
 
@@ -37,7 +37,6 @@ impl Parse for ContractAbi {
         // therefore, the path will always be rooted on the cargo manifest
         // directory. Eventually we can use the `Span::source_file` API to
         // have a better experience.
-
         let contents = input.parse::<LitStr>()?;
         match serde_json::from_str(&contents.value()) {
             Ok(abi_json) => Ok(ContractAbi {
@@ -91,6 +90,7 @@ pub fn abigen(input: TokenStream) -> TokenStream {
                 address: starknet::core::types::FieldElement,
                 provider: starknet::providers::AnyProvider,
             ) -> anyhow::Result<#contract_name> {
+                use starknet::providers::Provider;
                 let chain_id = provider.chain_id().await?;
 
                 Ok(#contract_name {
@@ -108,6 +108,7 @@ pub fn abigen(input: TokenStream) -> TokenStream {
                 account_address: starknet::core::types::FieldElement,
                 signer: starknet::signers::LocalWallet,
             ) -> anyhow::Result<#contract_name> {
+                use starknet::providers::Provider;
                 let chain_id = provider.chain_id().await?;
 
                 Ok(#contract_name {
@@ -181,6 +182,10 @@ pub fn abigen(input: TokenStream) -> TokenStream {
                         .map(|v| (v.name.clone(), AbiType::from_string(&v.r#type)))
                         .collect(),
                 };
+
+                if CAIRO_BASIC_ENUMS.contains(&cairo_entry.name.get_type_name_only().as_str()) {
+                    continue;
+                }
 
                 tokens.push(cairo_entry.expand_decl());
                 tokens.push(cairo_entry.expand_impl());
