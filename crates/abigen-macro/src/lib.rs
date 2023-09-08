@@ -18,7 +18,7 @@ use syn::{
 };
 
 use cairo_type_parser::{abi_type::AbiType, CairoEnum};
-use cairo_type_parser::{CairoAbiEntry, CairoStruct, CairoFunction};
+use cairo_type_parser::{CairoAbiEntry, CairoFunction, CairoStruct};
 
 mod expand;
 
@@ -30,7 +30,13 @@ trait Expandable {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct ContractAbi {
     name: Ident,
-    abi_file: LitStr,
+    source: AbiSource,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum AbiSource {
+    File(LitStr),
+    Inline(LitStr),
 }
 
 impl Parse for ContractAbi {
@@ -46,19 +52,48 @@ impl Parse for ContractAbi {
         // therefore, the path will always be rooted on the cargo manifest
         // directory. Eventually we can use the `Span::source_file` API to
         // have a better experience.
-        let abi_file = input.parse::<LitStr>()?;
 
-        Ok(ContractAbi { name, abi_file })
+        // Peek to see if the string is inline JSON or a file path
+        let lookahead = input.fork();
+        let potential_content = lookahead.parse::<LitStr>()?;
+        let binding = potential_content.value();
+        let content_value = binding.trim();
+
+        if looks_like_json(&content_value) {
+            let content = input.parse::<LitStr>()?;
+            Ok(ContractAbi {
+                name,
+                source: AbiSource::Inline(content),
+            })
+        } else {
+            let abi_file = input.parse::<LitStr>()?;
+            Ok(ContractAbi {
+                name,
+                source: AbiSource::File(abi_file),
+            })
+        }
     }
+}
+
+fn looks_like_json(s: &str) -> bool {
+    s.starts_with('{')
+        || s.starts_with('[')
+        || s.starts_with('"')
+        || s.starts_with("true")
+        || s.starts_with("false")
+        || s.starts_with("null")
+        || s.chars().next().map(|c| c.is_digit(10)).unwrap_or(false)
 }
 
 #[proc_macro]
 pub fn abigen(input: TokenStream) -> TokenStream {
     let contract_abi = parse_macro_input!(input as ContractAbi);
-    let file_path = contract_abi.abi_file.value();
     let contract_name = contract_abi.name;
 
-    let abi_str = fs::read_to_string(file_path).expect("Can't load abi file");
+    let abi_str = match contract_abi.source {
+        AbiSource::File(path) => fs::read_to_string(path.value()).expect("Can't load abi file"),
+        AbiSource::Inline(contents) => contents.value(),
+    };
 
     let abi: Vec<AbiEntry> =
         serde_json::from_str(&abi_str).expect("Json is not formatted as expected");
@@ -79,6 +114,7 @@ pub fn abigen(input: TokenStream) -> TokenStream {
         }
 
         // TODO: Perhaps better than anyhow, a custom error?
+        // TODO: Make provider reference
         impl #contract_name {
             pub async fn new_caller(
                 address: starknet::core::types::FieldElement,
@@ -181,8 +217,7 @@ pub fn abigen(input: TokenStream) -> TokenStream {
                 tokens.push(cairo_entry.expand_decl());
                 tokens.push(cairo_entry.expand_impl());
             }
-            AbiEntry::Event(ev) => {
-            }
+            AbiEntry::Event(ev) => {}
             _ => (),
         }
     }
