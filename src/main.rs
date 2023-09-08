@@ -13,308 +13,308 @@ use tokio::sync::RwLock as AsyncRwLock;
 use url::Url;
 
 // Both working fine
-// abigen!(ContractA, "./test.abi.json");
-abigen!(
-    ContractA,
-    r#"[
-  {
-    "type": "function",
-    "name": "get_val",
-    "inputs": [],
-    "outputs": [
-      {
-        "type": "core::felt252"
-      }
-    ],
-    "state_mutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "set_val",
-    "inputs": [
-      {
-        "name": "v",
-        "type": "core::felt252"
-      }
-    ],
-    "outputs": [],
-    "state_mutability": "external"
-  },
-  {
-    "type": "struct",
-    "name": "contracts::c1::PG",
-    "members": [
-      {
-        "name": "v1",
-        "type": "core::felt252"
-      },
-      {
-        "name": "v2",
-        "type": "core::integer::u128"
-      }
-    ]
-  },
-  {
-    "type": "function",
-    "name": "hello_world",
-    "inputs": [
-      {
-        "name": "value",
-        "type": "core::felt252"
-      }
-    ],
-    "outputs": [
-      {
-        "type": "contracts::c1::PG"
-      }
-    ],
-    "state_mutability": "view"
-  },
-  {
-    "type": "struct",
-    "name": "core::integer::u256",
-    "members": [
-      {
-        "name": "low",
-        "type": "core::integer::u128"
-      },
-      {
-        "name": "high",
-        "type": "core::integer::u128"
-      }
-    ]
-  },
-  {
-    "type": "struct",
-    "name": "contracts::c1::InnerOne",
-    "members": [
-      {
-        "name": "a",
-        "type": "core::integer::u256"
-      },
-      {
-        "name": "b",
-        "type": "core::array::Array::<core::felt252>"
-      }
-    ]
-  },
-  {
-    "type": "struct",
-    "name": "contracts::c1::ComplexOne",
-    "members": [
-      {
-        "name": "pg",
-        "type": "contracts::c1::PG"
-      },
-      {
-        "name": "inner",
-        "type": "contracts::c1::InnerOne"
-      }
-    ]
-  },
-  {
-    "type": "function",
-    "name": "call_test",
-    "inputs": [
-      {
-        "name": "pg",
-        "type": "contracts::c1::PG"
-      },
-      {
-        "name": "inner",
-        "type": "contracts::c1::InnerOne"
-      }
-    ],
-    "outputs": [
-      {
-        "type": "contracts::c1::ComplexOne"
-      }
-    ],
-    "state_mutability": "external"
-  },
-  {
-    "type": "struct",
-    "name": "contracts::c1::TypesInTypes::<core::integer::u256>",
-    "members": [
-      {
-        "name": "a",
-        "type": "core::array::Array::<core::array::Array::<core::felt252>>"
-      },
-      {
-        "name": "b",
-        "type": "core::integer::u256"
-      }
-    ]
-  },
-  {
-    "type": "function",
-    "name": "call_bla",
-    "inputs": [
-      {
-        "name": "a",
-        "type": "contracts::c1::TypesInTypes::<core::integer::u256>"
-      }
-    ],
-    "outputs": [
-      {
-        "type": "contracts::c1::TypesInTypes::<core::integer::u256>"
-      }
-    ],
-    "state_mutability": "external"
-  },
-  {
-    "type": "struct",
-    "name": "core::array::Span::<core::felt252>",
-    "members": [
-      {
-        "name": "snapshot",
-        "type": "@core::array::Array::<core::felt252>"
-      }
-    ]
-  },
-  {
-    "type": "function",
-    "name": "call_bou",
-    "inputs": [],
-    "outputs": [
-      {
-        "type": "(core::array::Span::<core::felt252>, core::felt252)"
-      }
-    ],
-    "state_mutability": "external"
-  },
-  {
-    "type": "struct",
-    "name": "core::array::Span::<(core::felt252, contracts::c1::PG)>",
-    "members": [
-      {
-        "name": "snapshot",
-        "type": "@core::array::Array::<(core::felt252, contracts::c1::PG)>"
-      }
-    ]
-  },
-  {
-    "type": "function",
-    "name": "call_bii",
-    "inputs": [],
-    "outputs": [
-      {
-        "type": "(core::array::Span::<(core::felt252, contracts::c1::PG)>, core::felt252)"
-      }
-    ],
-    "state_mutability": "external"
-  },
-  {
-    "type": "enum",
-    "name": "contracts::c1::TestEnum::<core::felt252>",
-    "variants": [
-      {
-        "name": "V1",
-        "type": "core::felt252"
-      },
-      {
-        "name": "V2",
-        "type": "core::integer::u128"
-      },
-      {
-        "name": "V3",
-        "type": "core::array::Array::<core::felt252>"
-      },
-      {
-        "name": "V4",
-        "type": "()"
-      }
-    ]
-  },
-  {
-    "type": "function",
-    "name": "call_baba",
-    "inputs": [],
-    "outputs": [
-      {
-        "type": "contracts::c1::TestEnum::<core::felt252>"
-      }
-    ],
-    "state_mutability": "external"
-  },
-  {
-    "type": "function",
-    "name": "call_baba2",
-    "inputs": [],
-    "outputs": [
-      {
-        "type": "contracts::c1::TestEnum::<core::integer::u256>"
-      }
-    ],
-    "state_mutability": "external"
-  },
-  {
-    "type": "function",
-    "name": "call_pia",
-    "inputs": [],
-    "outputs": [
-      {
-        "type": "contracts::c1::TestEnum::<core::felt252>"
-      }
-    ],
-    "state_mutability": "external"
-  },
-  {
-    "type": "enum",
-    "name": "core::option::Option::<core::felt252>",
-    "variants": [
-      {
-        "name": "Some",
-        "type": "core::felt252"
-      },
-      {
-        "name": "None",
-        "type": "()"
-      }
-    ]
-  },
-  {
-    "type": "function",
-    "name": "call_bibi",
-    "inputs": [],
-    "outputs": [
-      {
-        "type": "core::option::Option::<core::felt252>"
-      }
-    ],
-    "state_mutability": "external"
-  },
-  {
-    "type": "function",
-    "name": "call_bobo",
-    "inputs": [],
-    "outputs": [
-      {
-        "type": "core::option::Option::<core::felt252>"
-      }
-    ],
-    "state_mutability": "external"
-  },
-  {
-    "type": "function",
-    "name": "call_bok",
-    "inputs": [],
-    "outputs": [
-      {
-        "type": "(core::felt252, core::felt252)"
-      }
-    ],
-    "state_mutability": "external"
-  },
-  {
-    "type": "event",
-    "name": "contracts::c1::Event",
-    "kind": "enum",
-    "variants": []
-  }
-]
-"#
-);
+abigen!(ContractA, "./test.abi.json");
+// abigen!(
+//     ContractA,
+//     r#"[
+//   {
+//     "type": "function",
+//     "name": "get_val",
+//     "inputs": [],
+//     "outputs": [
+//       {
+//         "type": "core::felt252"
+//       }
+//     ],
+//     "state_mutability": "view"
+//   },
+//   {
+//     "type": "function",
+//     "name": "set_val",
+//     "inputs": [
+//       {
+//         "name": "v",
+//         "type": "core::felt252"
+//       }
+//     ],
+//     "outputs": [],
+//     "state_mutability": "external"
+//   },
+//   {
+//     "type": "struct",
+//     "name": "contracts::c1::PG",
+//     "members": [
+//       {
+//         "name": "v1",
+//         "type": "core::felt252"
+//       },
+//       {
+//         "name": "v2",
+//         "type": "core::integer::u128"
+//       }
+//     ]
+//   },
+//   {
+//     "type": "function",
+//     "name": "hello_world",
+//     "inputs": [
+//       {
+//         "name": "value",
+//         "type": "core::felt252"
+//       }
+//     ],
+//     "outputs": [
+//       {
+//         "type": "contracts::c1::PG"
+//       }
+//     ],
+//     "state_mutability": "view"
+//   },
+//   {
+//     "type": "struct",
+//     "name": "core::integer::u256",
+//     "members": [
+//       {
+//         "name": "low",
+//         "type": "core::integer::u128"
+//       },
+//       {
+//         "name": "high",
+//         "type": "core::integer::u128"
+//       }
+//     ]
+//   },
+//   {
+//     "type": "struct",
+//     "name": "contracts::c1::InnerOne",
+//     "members": [
+//       {
+//         "name": "a",
+//         "type": "core::integer::u256"
+//       },
+//       {
+//         "name": "b",
+//         "type": "core::array::Array::<core::felt252>"
+//       }
+//     ]
+//   },
+//   {
+//     "type": "struct",
+//     "name": "contracts::c1::ComplexOne",
+//     "members": [
+//       {
+//         "name": "pg",
+//         "type": "contracts::c1::PG"
+//       },
+//       {
+//         "name": "inner",
+//         "type": "contracts::c1::InnerOne"
+//       }
+//     ]
+//   },
+//   {
+//     "type": "function",
+//     "name": "call_test",
+//     "inputs": [
+//       {
+//         "name": "pg",
+//         "type": "contracts::c1::PG"
+//       },
+//       {
+//         "name": "inner",
+//         "type": "contracts::c1::InnerOne"
+//       }
+//     ],
+//     "outputs": [
+//       {
+//         "type": "contracts::c1::ComplexOne"
+//       }
+//     ],
+//     "state_mutability": "external"
+//   },
+//   {
+//     "type": "struct",
+//     "name": "contracts::c1::TypesInTypes::<core::integer::u256>",
+//     "members": [
+//       {
+//         "name": "a",
+//         "type": "core::array::Array::<core::array::Array::<core::felt252>>"
+//       },
+//       {
+//         "name": "b",
+//         "type": "core::integer::u256"
+//       }
+//     ]
+//   },
+//   {
+//     "type": "function",
+//     "name": "call_bla",
+//     "inputs": [
+//       {
+//         "name": "a",
+//         "type": "contracts::c1::TypesInTypes::<core::integer::u256>"
+//       }
+//     ],
+//     "outputs": [
+//       {
+//         "type": "contracts::c1::TypesInTypes::<core::integer::u256>"
+//       }
+//     ],
+//     "state_mutability": "external"
+//   },
+//   {
+//     "type": "struct",
+//     "name": "core::array::Span::<core::felt252>",
+//     "members": [
+//       {
+//         "name": "snapshot",
+//         "type": "@core::array::Array::<core::felt252>"
+//       }
+//     ]
+//   },
+//   {
+//     "type": "function",
+//     "name": "call_bou",
+//     "inputs": [],
+//     "outputs": [
+//       {
+//         "type": "(core::array::Span::<core::felt252>, core::felt252)"
+//       }
+//     ],
+//     "state_mutability": "external"
+//   },
+//   {
+//     "type": "struct",
+//     "name": "core::array::Span::<(core::felt252, contracts::c1::PG)>",
+//     "members": [
+//       {
+//         "name": "snapshot",
+//         "type": "@core::array::Array::<(core::felt252, contracts::c1::PG)>"
+//       }
+//     ]
+//   },
+//   {
+//     "type": "function",
+//     "name": "call_bii",
+//     "inputs": [],
+//     "outputs": [
+//       {
+//         "type": "(core::array::Span::<(core::felt252, contracts::c1::PG)>, core::felt252)"
+//       }
+//     ],
+//     "state_mutability": "external"
+//   },
+//   {
+//     "type": "enum",
+//     "name": "contracts::c1::TestEnum::<core::felt252>",
+//     "variants": [
+//       {
+//         "name": "V1",
+//         "type": "core::felt252"
+//       },
+//       {
+//         "name": "V2",
+//         "type": "core::integer::u128"
+//       },
+//       {
+//         "name": "V3",
+//         "type": "core::array::Array::<core::felt252>"
+//       },
+//       {
+//         "name": "V4",
+//         "type": "()"
+//       }
+//     ]
+//   },
+//   {
+//     "type": "function",
+//     "name": "call_baba",
+//     "inputs": [],
+//     "outputs": [
+//       {
+//         "type": "contracts::c1::TestEnum::<core::felt252>"
+//       }
+//     ],
+//     "state_mutability": "external"
+//   },
+//   {
+//     "type": "function",
+//     "name": "call_baba2",
+//     "inputs": [],
+//     "outputs": [
+//       {
+//         "type": "contracts::c1::TestEnum::<core::integer::u256>"
+//       }
+//     ],
+//     "state_mutability": "external"
+//   },
+//   {
+//     "type": "function",
+//     "name": "call_pia",
+//     "inputs": [],
+//     "outputs": [
+//       {
+//         "type": "contracts::c1::TestEnum::<core::felt252>"
+//       }
+//     ],
+//     "state_mutability": "external"
+//   },
+//   {
+//     "type": "enum",
+//     "name": "core::option::Option::<core::felt252>",
+//     "variants": [
+//       {
+//         "name": "Some",
+//         "type": "core::felt252"
+//       },
+//       {
+//         "name": "None",
+//         "type": "()"
+//       }
+//     ]
+//   },
+//   {
+//     "type": "function",
+//     "name": "call_bibi",
+//     "inputs": [],
+//     "outputs": [
+//       {
+//         "type": "core::option::Option::<core::felt252>"
+//       }
+//     ],
+//     "state_mutability": "external"
+//   },
+//   {
+//     "type": "function",
+//     "name": "call_bobo",
+//     "inputs": [],
+//     "outputs": [
+//       {
+//         "type": "core::option::Option::<core::felt252>"
+//       }
+//     ],
+//     "state_mutability": "external"
+//   },
+//   {
+//     "type": "function",
+//     "name": "call_bok",
+//     "inputs": [],
+//     "outputs": [
+//       {
+//         "type": "(core::felt252, core::felt252)"
+//       }
+//     ],
+//     "state_mutability": "external"
+//   },
+//   {
+//     "type": "event",
+//     "name": "contracts::c1::Event",
+//     "kind": "enum",
+//     "variants": []
+//   }
+// ]
+// "#
+// );
 abigen!(
     ContractB,
     r#"

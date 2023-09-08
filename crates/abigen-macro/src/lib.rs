@@ -27,23 +27,15 @@ trait Expandable {
     fn expand_impl(&self) -> TokenStream2;
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug)]
 pub(crate) struct ContractAbi {
     name: Ident,
-    source: AbiSource,
+    abi: Vec<AbiEntry>,
 }
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-enum AbiSource {
-    File(LitStr),
-    Inline(LitStr),
-}
-
 impl Parse for ContractAbi {
     fn parse(input: ParseStream) -> Result<Self> {
         // name
         let name = input.parse::<Ident>()?;
-
         input.parse::<Token![,]>()?;
 
         // abi (from ether-rs crate).
@@ -53,50 +45,36 @@ impl Parse for ContractAbi {
         // directory. Eventually we can use the `Span::source_file` API to
         // have a better experience.
 
-        // Peek to see if the string is inline JSON or a file path
-        let lookahead = input.fork();
-        let potential_content = lookahead.parse::<LitStr>()?;
-        let binding = potential_content.value();
-        let content_value = binding.trim();
-
-        if looks_like_json(&content_value) {
-            let content = input.parse::<LitStr>()?;
-            Ok(ContractAbi {
+        let contents = input.parse::<LitStr>()?;
+        match serde_json::from_str(&contents.value()) {
+            Ok(abi_json) => Ok(ContractAbi {
                 name,
-                source: AbiSource::Inline(content),
-            })
-        } else {
-            let abi_file = input.parse::<LitStr>()?;
-            Ok(ContractAbi {
-                name,
-                source: AbiSource::File(abi_file),
-            })
+                abi: abi_json,
+            }),
+            Err(_) => {
+                let path = contents;
+                match fs::read_to_string(path.value()) {
+                    Ok(abi_str) => {
+                        let abi_json = serde_json::from_str(&abi_str).map_err(|e| {
+                            syn::Error::new(path.span(), format!("JSON error: {}", e))
+                        })?;
+                        Ok(ContractAbi {
+                            name,
+                            abi: abi_json,
+                        })
+                    }
+                    Err(err) => Err(syn::Error::new(path.span(), format!("File error: {}", err))),
+                }
+            }
         }
     }
-}
-
-fn looks_like_json(s: &str) -> bool {
-    s.starts_with('{')
-        || s.starts_with('[')
-        || s.starts_with('"')
-        || s.starts_with("true")
-        || s.starts_with("false")
-        || s.starts_with("null")
-        || s.chars().next().map(|c| c.is_digit(10)).unwrap_or(false)
 }
 
 #[proc_macro]
 pub fn abigen(input: TokenStream) -> TokenStream {
     let contract_abi = parse_macro_input!(input as ContractAbi);
     let contract_name = contract_abi.name;
-
-    let abi_str = match contract_abi.source {
-        AbiSource::File(path) => fs::read_to_string(path.value()).expect("Can't load abi file"),
-        AbiSource::Inline(contents) => contents.value(),
-    };
-
-    let abi: Vec<AbiEntry> =
-        serde_json::from_str(&abi_str).expect("Json is not formatted as expected");
+    let abi = contract_abi.abi;
 
     let mut tokens: Vec<TokenStream2> = vec![];
 
