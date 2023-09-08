@@ -19,7 +19,7 @@ mod c1 {
 
     #[storage]
     struct Storage {
-        
+        val: felt252,
     }
 
     #[derive(Serde, Drop)]
@@ -38,6 +38,16 @@ mod c1 {
     struct PG {
         v1: felt252,
         v2: u128,
+    }
+
+    #[external(v0)]
+    fn get_val(self: @ContractState) -> felt252 {
+        self.val.read()
+    }
+
+    #[external(v0)]
+    fn set_val(ref self: ContractState, v: felt252) {
+        self.val.write(v);
     }
 
     #[external(v0)]

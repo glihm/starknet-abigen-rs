@@ -1,5 +1,28 @@
 [
   {
+    "type": "function",
+    "name": "get_val",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "core::felt252"
+      }
+    ],
+    "state_mutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "set_val",
+    "inputs": [
+      {
+        "name": "v",
+        "type": "core::felt252"
+      }
+    ],
+    "outputs": [],
+    "state_mutability": "external"
+  },
+  {
     "type": "struct",
     "name": "contracts::c1::PG",
     "members": [
@@ -255,37 +278,20 @@
     "state_mutability": "external"
   },
   {
+    "type": "function",
+    "name": "call_bok",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "(core::felt252, core::felt252)"
+      }
+    ],
+    "state_mutability": "external"
+  },
+  {
     "type": "event",
     "name": "contracts::c1::Event",
     "kind": "enum",
     "variants": []
-  },
-  {
-    "type": "struct",
-    "name": "mymod::MyStruct1",
-    "members": [
-      {
-        "name": "a",
-        "type": "(core::integer::u32, core::integer::u32)"
-      }
-    ]
-  },
-  {
-    "type": "enum",
-    "name": "contract1::MyEnum123",
-    "variants": [
-      {
-        "name": "M1",
-        "type": "(core::felt252, core::integer::u32)"
-      },
-      {
-        "name": "M2",
-        "type": "core::integer::u128"
-      },
-      {
-        "name": "M3",
-        "type": "core::array::Span<core::integer::u32>"
-      }
-    ]
   }
 ]

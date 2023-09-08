@@ -23,15 +23,28 @@ async fn main() -> Result<()> {
     let chain_id = provider.chain_id().await?;
 
     let account_address = FieldElement::from_hex_be(
-        "0x3ee9e18edc71a6df30ac3aca2e0b02a198fbce19b7480a63a0d71cbd76652e0").unwrap();
-    let signer = wallet_from_private_key(&Some("0x300001800000000300000180000000000030000000000003006001800006600".to_string())).unwrap();    
-    // let account = SingleOwnerAccount::new(&provider, signer, account_address, chain_id);
+        "0x517ececd29116499f4a1b64b094da79ba08dfd54a3edaa316134c41f8160973").unwrap();
+    let signer = wallet_from_private_key(&Some("0x0000001800000000300000180000000000030000000000003006001800006600".to_string())).unwrap();    
 
-    let contract_address = FieldElement::ZERO;
+    let contract_address = FieldElement::from_hex_be("0x0546a164c8d10fd38652b6426ef7be159965deb9a0cbf3e8a899f8a42fd86761").unwrap();
+
     let contract_caller = ContractA::new_caller(contract_address, provider).await?;
     let contract_invoker = ContractA::new_invoker(contract_address, provider2, account_address, signer).await?;
 
-    contract_caller.hello_world(FieldElement::ZERO).await.expect("Fail call hello world");
+    let pr = contract_caller.hello_world(FieldElement::THREE).await.expect("Fail call hello world");
+    assert_eq!(pr.v1, FieldElement::THREE);
+    assert_eq!(pr.v2, 11_u128);
+
+
+    let v_init = contract_caller.get_val().await.expect("Fail call get val");
+    assert_eq!(v_init, FieldElement::ZERO);
+    contract_invoker.set_val(FieldElement::TWO).await.expect("Fail call set val");
+    let v_set = contract_caller.get_val().await.expect("Fail call get val");
+    assert_eq!(v_set, FieldElement::TWO);
+
+    contract_invoker.hello_world(FieldElement::THREE).await.expect("Fail call hello world");
+    assert_eq!(pr.v1, FieldElement::THREE);
+    assert_eq!(pr.v2, 11_u128);
 
     let pg = PG {
         v1: FieldElement::THREE,
