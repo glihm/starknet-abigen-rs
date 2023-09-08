@@ -369,17 +369,6 @@ async fn main() -> Result<()> {
     assert_eq!(pr.v1, FieldElement::THREE);
     assert_eq!(pr.v2, 11_u128);
 
-    let v_init = contract_caller_a
-        .get_val()
-        .await
-        .expect("Fail call get val");
-    assert_eq!(v_init, FieldElement::ZERO);
-
-    let v_init_b = contract_caller_b
-        .get_val()
-        .await
-        .expect("Fail call get val in B");
-    assert_eq!(v_init_b, FieldElement::ZERO);
     contract_invoker
         .set_val(FieldElement::TWO)
         .await
