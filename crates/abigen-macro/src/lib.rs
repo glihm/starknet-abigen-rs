@@ -3,22 +3,14 @@ use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 use serde_json;
 use starknet::core::types::contract::*;
-use starknet::core::types::*;
-use std::collections::HashMap;
 use std::fs;
-use std::path::Path;
 use syn::{
-    braced,
-    ext::IdentExt,
-    parenthesized,
-    parse::{Error, Parse, ParseStream, Result},
-    parse_macro_input,
-    punctuated::Punctuated,
-    Ident, LitInt, LitStr, Token, Type,
+    parse::{Parse, ParseStream, Result},
+    parse_macro_input, Ident, LitStr, Token,
 };
 
 use cairo_type_parser::{abi_type::AbiType, CairoEnum};
-use cairo_type_parser::{CairoAbiEntry, CairoStruct, CairoFunction};
+use cairo_type_parser::{CairoFunction, CairoStruct};
 
 mod expand;
 
@@ -27,17 +19,15 @@ trait Expandable {
     fn expand_impl(&self) -> TokenStream2;
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug)]
 pub(crate) struct ContractAbi {
     name: Ident,
-    abi_file: LitStr,
+    abi: Vec<AbiEntry>,
 }
-
 impl Parse for ContractAbi {
     fn parse(input: ParseStream) -> Result<Self> {
         // name
         let name = input.parse::<Ident>()?;
-
         input.parse::<Token![,]>()?;
 
         // abi (from ether-rs crate).
@@ -46,22 +36,37 @@ impl Parse for ContractAbi {
         // therefore, the path will always be rooted on the cargo manifest
         // directory. Eventually we can use the `Span::source_file` API to
         // have a better experience.
-        let abi_file = input.parse::<LitStr>()?;
 
-        Ok(ContractAbi { name, abi_file })
+        let contents = input.parse::<LitStr>()?;
+        match serde_json::from_str(&contents.value()) {
+            Ok(abi_json) => Ok(ContractAbi {
+                name,
+                abi: abi_json,
+            }),
+            Err(_) => {
+                let path = contents;
+                match fs::read_to_string(path.value()) {
+                    Ok(abi_str) => {
+                        let abi_json = serde_json::from_str(&abi_str).map_err(|e| {
+                            syn::Error::new(path.span(), format!("JSON error: {}", e))
+                        })?;
+                        Ok(ContractAbi {
+                            name,
+                            abi: abi_json,
+                        })
+                    }
+                    Err(err) => Err(syn::Error::new(path.span(), format!("File error: {}", err))),
+                }
+            }
+        }
     }
 }
 
 #[proc_macro]
 pub fn abigen(input: TokenStream) -> TokenStream {
     let contract_abi = parse_macro_input!(input as ContractAbi);
-    let file_path = contract_abi.abi_file.value();
     let contract_name = contract_abi.name;
-
-    let abi_str = fs::read_to_string(file_path).expect("Can't load abi file");
-
-    let abi: Vec<AbiEntry> =
-        serde_json::from_str(&abi_str).expect("Json is not formatted as expected");
+    let abi = contract_abi.abi;
 
     let mut tokens: Vec<TokenStream2> = vec![];
 
@@ -79,6 +84,7 @@ pub fn abigen(input: TokenStream) -> TokenStream {
         }
 
         // TODO: Perhaps better than anyhow, a custom error?
+        // TODO: Make provider reference
         impl #contract_name {
             pub async fn new_caller(
                 address: starknet::core::types::FieldElement,
@@ -181,8 +187,7 @@ pub fn abigen(input: TokenStream) -> TokenStream {
                 tokens.push(cairo_entry.expand_decl());
                 tokens.push(cairo_entry.expand_impl());
             }
-            AbiEntry::Event(ev) => {
-            }
+            AbiEntry::Event(_) => {}
             _ => (),
         }
     }

@@ -1,10 +1,9 @@
 use crate::expand::utils::{str_to_ident, str_to_type};
 use crate::Expandable;
-use cairo_type_parser::CairoFunction;
 use cairo_type_parser::abi_type::AbiType;
+use cairo_type_parser::CairoFunction;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
-use starknet::core::utils::get_selector_from_name;
 use starknet::core::types::contract::StateMutability;
 
 impl Expandable for CairoFunction {
@@ -24,7 +23,7 @@ impl Expandable for CairoFunction {
                 Some(o) => {
                     let oty = str_to_type(&o.to_rust_type());
                     quote!(-> cairo_types::Result<#oty>)
-                },
+                }
                 None => quote!(),
             },
             StateMutability::External => {
@@ -65,8 +64,8 @@ impl Expandable for CairoFunction {
                     AbiType::Tuple(_) => quote!(<#out_item_path>::deserialize(r, 0)),
                     _ => quote!(#out_item_path::deserialize(&r, 0)),
                 }
-            },
-            None => quote!()
+            }
+            None => quote!(),
         };
 
         match &self.state_mutability {
@@ -170,7 +169,7 @@ mod tests {
         };
         let te1 = cf.expand_decl();
         let tef1: TokenStream = quote!(
-            pub async fn my_func(&self, v1: starknet::core::types::FieldElement, v2: starknet::core::types::FieldElement) -> anyhow::Result<starknet::core::types::FieldElement>
+            pub async fn my_func(&self ,v1: starknet::core::types::FieldElement, v2: starknet::core::types::FieldElement) -> cairo_types::Result<starknet::core::types::FieldElement>
         );
 
         assert_eq!(te1.to_string(), tef1.to_string());
@@ -201,7 +200,7 @@ mod tests {
                 &self,
                 v1: starknet::core::types::FieldElement,
                 v2: starknet::core::types::FieldElement
-            ) -> anyhow::Result<starknet::core::types::FieldElement> {
+            ) -> cairo_types::Result<starknet::core::types::FieldElement> {
                 let mut calldata = vec![];
                 calldata.extend(starknet::core::types::FieldElement::serialize(&v1));
                 calldata.extend(starknet::core::types::FieldElement::serialize(&v2));
@@ -215,9 +214,9 @@ mod tests {
                         },
                         BlockId::Tag(BlockTag::Pending),
                     )
-                    .await?;
+                    .await.map_err(|err| cairo_types::Error::Deserialize(format!("Deserialization error {:}" , err)))?;
 
-                starknet::core::types::FieldElement::deserialize(r, 0)
+                starknet::core::types::FieldElement::deserialize(&r, 0)
             }
         );
 
