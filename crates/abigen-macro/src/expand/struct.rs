@@ -47,7 +47,7 @@ impl Expandable for CairoStruct {
             // by LT/GT.
             let ty_punctuated = match member {
                 AbiType::Tuple(_) => quote!(<#ty>),
-                _ => quote!(#ty)
+                _ => quote!(#ty),
             };
 
             if is_first {

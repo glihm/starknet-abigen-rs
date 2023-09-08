@@ -45,7 +45,7 @@ impl Expandable for CairoEnum {
             // by LT/GT.
             let ty_punctuated = match val.1 {
                 AbiType::Tuple(_) => quote!(<#ty>),
-                _ => quote!(#ty)
+                _ => quote!(#ty),
             };
 
             if val.1 == AbiType::Basic("()".to_string()) {

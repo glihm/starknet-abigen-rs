@@ -281,7 +281,10 @@ mod tests {
         let t = AbiType::Basic("u32".to_string());
         assert_eq!(t.get_type_name_only(), "u32");
 
-        let t = AbiType::Nested("MyStruct".to_string(), Box::new(AbiType::Basic("u32".to_string())));
+        let t = AbiType::Nested(
+            "MyStruct".to_string(),
+            Box::new(AbiType::Basic("u32".to_string())),
+        );
         assert_eq!(t.get_type_name_only(), "MyStruct");
 
         let t = AbiType::Tuple(vec![]);
@@ -357,8 +360,10 @@ mod tests {
             "Vec<Vec<starknet::core::types::FieldElement>>"
         );
 
-        let t = AbiType::Nested("mod1::mod2::MyStruct".to_string(),
-                                Box::new(AbiType::Basic("u32".to_string())));
+        let t = AbiType::Nested(
+            "mod1::mod2::MyStruct".to_string(),
+            Box::new(AbiType::Basic("u32".to_string())),
+        );
         assert_eq!(t.to_rust_type(), "MyStruct");
     }
 
@@ -424,15 +429,13 @@ mod tests {
             "Vec::<(starknet::core::types::FieldElement, u32)>"
         );
 
-        let t = AbiType::Tuple(
-            vec![
-                AbiType::Nested(
-                    "core::array::Span".to_string(),
-                    Box::new(AbiType::Basic("core::felt252".to_string()))
-                ),
-                AbiType::Basic("core::integer::u32".to_string()),
-            ],
-        );
+        let t = AbiType::Tuple(vec![
+            AbiType::Nested(
+                "core::array::Span".to_string(),
+                Box::new(AbiType::Basic("core::felt252".to_string())),
+            ),
+            AbiType::Basic("core::integer::u32".to_string()),
+        ]);
         assert_eq!(
             t.to_rust_item_path(),
             "(Vec::<starknet::core::types::FieldElement>, u32)"

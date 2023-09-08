@@ -1,11 +1,11 @@
 use crate::expand::utils::{str_to_ident, str_to_type};
 use crate::Expandable;
-use cairo_type_parser::CairoFunction;
 use cairo_type_parser::abi_type::AbiType;
+use cairo_type_parser::CairoFunction;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
-use starknet::core::utils::get_selector_from_name;
 use starknet::core::types::contract::StateMutability;
+use starknet::core::utils::get_selector_from_name;
 
 impl Expandable for CairoFunction {
     fn expand_decl(&self) -> TokenStream2 {
@@ -24,7 +24,7 @@ impl Expandable for CairoFunction {
                 Some(o) => {
                     let oty = str_to_type(&o.to_rust_type());
                     quote!(-> cairo_types::Result<#oty>)
-                },
+                }
                 None => quote!(),
             },
             StateMutability::External => {
@@ -65,8 +65,8 @@ impl Expandable for CairoFunction {
                     AbiType::Tuple(_) => quote!(<#out_item_path>::deserialize(r, 0)),
                     _ => quote!(#out_item_path::deserialize(&r, 0)),
                 }
-            },
-            None => quote!()
+            }
+            None => quote!(),
         };
 
         match &self.state_mutability {

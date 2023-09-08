@@ -334,7 +334,7 @@ mod tests {
     #[test]
     fn test_serialize_tuple2_array() {
         let v = (vec![FieldElement::ONE], 128_u32);
-        let felts = <(Vec::<FieldElement>, u32)>::serialize(&v);
+        let felts = <(Vec<FieldElement>, u32)>::serialize(&v);
         assert_eq!(felts.len(), 3);
         assert_eq!(felts[0], FieldElement::ONE);
         assert_eq!(felts[1], FieldElement::ONE);
@@ -344,7 +344,7 @@ mod tests {
     #[test]
     fn test_deserialize_tuple2_array() {
         let felts = vec![FieldElement::ONE, FieldElement::ONE, 99_u32.into()];
-        let vals = <(Vec::<FieldElement>, u32)>::deserialize(&felts, 0).unwrap();
+        let vals = <(Vec<FieldElement>, u32)>::deserialize(&felts, 0).unwrap();
         assert_eq!(vals.0, vec![FieldElement::ONE]);
         assert_eq!(vals.1, 99_u32);
     }
