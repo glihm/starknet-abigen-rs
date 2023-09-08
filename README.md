@@ -2,6 +2,41 @@
 
 This exploratory work aims at generating rust bindings from a contract ABI.
 
+## Run your self
+
+1. Start Katana
+   Make sure to use nightly version.
+
+```sh
+dojoup -v nightly
+```
+
+```sh
+katana
+```
+
+2.  Declare, deploy the contracts
+
+```sh
+cd crates/contracts
+```
+
+Make sure use scarb version 0.7.0
+
+```sh
+scarb build
+```
+
+```sh
+make setup
+```
+
+3. At root directory, run binary
+
+```sh
+cargo run
+```
+
 ## Considerations
 
 On Starknet, a contract's ABI is a flat representation of all the types and functions associated with the contract.
@@ -62,7 +97,9 @@ enum MyEnum {
 let a = MyEnum::V1(2_u128);
 let b = MyEnum::V2;
 ```
+
 Will be serialized as:
+
 ```
 a: [0, 2]
 b: [1]
@@ -77,7 +114,9 @@ The length is serialized first, and then the following elements.
 let a = array![];
 let b = array![1, 2];
 ```
+
 Will be serialized as:
+
 ```
 a: [0]
 b: [2, 1, 2]
@@ -100,7 +139,9 @@ let s = MyStruct {
     c: array![9],
 }
 ```
+
 Will be serialized as:
+
 ```
 [123, 1, 0, 1, 9]
 ```
@@ -126,4 +167,3 @@ But for now, the approach is inspired from `alloy`, but simpler and more hand ma
 This is a very early stage of the project. The idea is to have a first version that can be revised by the community and then enhanced.
 
 Hopefully one day we can have a great lib that can be integrated to `starknet-rs` or remain a stand alone crate which can be combined with `starknet-rs`.
-
