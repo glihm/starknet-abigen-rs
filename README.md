@@ -64,7 +64,7 @@ let felts = vec![FieldElement::ONE, FieldElement::TWO];
 let values = Vec::<u32>::deserialize(felts, 0).unwrap;
 ```
 
-Any time implementing the `CairoType` trait can be used this way.
+Any type implementing the `CairoType` trait can be used this way.
 
 ## Generate the binding for your contracts
 
