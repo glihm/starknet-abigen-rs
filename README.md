@@ -2,10 +2,9 @@
 
 This exploratory work aims at generating rust bindings from a contract ABI.
 
-## Run your self
+## Quick start
 
-1. Start Katana
-   Make sure to use nightly version.
+1. Terminal 1: Run Katana
 
 ```sh
 dojoup -v nightly
@@ -15,23 +14,13 @@ dojoup -v nightly
 katana
 ```
 
-2.  Declare, deploy the contracts
+2.  Terminal 2: Contracts setup
 
 ```sh
-cd crates/contracts
+cd crates/contracts && scarb build &&make setup
 ```
 
-Make sure use scarb version 0.7.0
-
-```sh
-scarb build
-```
-
-```sh
-make setup
-```
-
-3. At root directory, run binary
+3. Terminal 3: Run binary
 
 ```sh
 cargo run
