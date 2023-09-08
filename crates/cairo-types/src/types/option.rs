@@ -7,6 +7,8 @@
 use crate::error::{Error, Result};
 use crate::ty::CairoType;
 use starknet::core::types::FieldElement;
+use alloc::{vec, vec::Vec};
+use alloc::string::ToString;
 
 impl<T, RT> CairoType for Option<T>
 where
