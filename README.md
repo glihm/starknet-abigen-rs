@@ -17,14 +17,110 @@ katana
 2.  Terminal 2: Contracts setup
 
 ```sh
-cd crates/contracts && scarb build &&make setup
+cd crates/contracts && scarb build && make setup
 ```
-
-3. Terminal 3: Run binary
 
 ```sh
 cargo run
 ```
+
+## Generate the binding for your contracts
+
+1. If you have a large ABI, consider adding a file (at the same level of your `Cargo.toml`) with the `JSON` containing the ABI.
+Then you can load the whole file using:
+```rust
+abigen!(MyContract, "./mycontract.abi.json")
+```
+
+2. If you only want to make a quick call without too much setup, you can paste an ABI directly using:
+```rust
+abigen!(MyContract, r#"
+[
+  {
+    "type": "function",
+    "name": "get_val",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "core::felt252"
+      }
+    ],
+    "state_mutability": "view"
+  }
+]
+"#);
+```
+
+## Initialize the contract
+
+In starknet, we also have `call` and `invoke`. A `call` doesn't alter the state, and hence does not require an account + private key to sign.
+An `invoke` requires you to provide an account and a private key to sign and send the transaction.
+
+```rust
+use abigen_macro::abigen;
+use anyhow::Result;
+use cairo_types::ty::CairoType;
+
+use starknet::accounts::Account;
+
+use starknet::core::types::*;
+use starknet::providers::{jsonrpc::HttpTransport, AnyProvider, JsonRpcClient, Provider};
+use starknet::signers::{LocalWallet, SigningKey};
+
+abigen!(MyContract, "./mycontract.abi.json")
+
+#[tokio::main]
+async fn main() -> Result<()> {
+
+    let rpc_url = Url::parse("http://0.0.0.0:5050")?;
+
+    // Work in progress to avoid this duplication.
+    let provider =
+        AnyProvider::JsonRpcHttp(JsonRpcClient::new(HttpTransport::new(rpc_url.clone())));
+    let provider2 =
+        AnyProvider::JsonRpcHttp(JsonRpcClient::new(HttpTransport::new(rpc_url.clone())));
+
+    let account_address = FieldElement::from_hex_be(
+        "0x517ececd29116499f4a1b64b094da79ba08dfd54a3edaa316134c41f8160973",
+    ).unwrap();
+
+    let signer = wallet_from_private_key(&Some(
+        "0x0000001800000000300000180000000000030000000000003006001800006600".to_string(),
+    )).unwrap();
+
+    let contract_address = FieldElement::from_hex_be(
+        "0x0546a164c8d10fd38652b6426ef7be159965deb9a0cbf3e8a899f8a42fd86761",
+    ).unwrap();
+
+    let contract_caller = MyContract::new_caller(contract_address, provider).await?;
+    let val = contract_caller.get_val().await?;
+
+    let contract_invoker =
+        MyContract::new_invoker(contract_address, provider2, account_address, signer).await?;
+    contract_invoker.set_val(FieldElement::TWO).await?;
+}
+
+// Util function to create a LocalWallet.
+fn wallet_from_private_key(
+    private_key: &std::option::Option<String>,
+) -> std::option::Option<LocalWallet> {
+    if let Some(pk) = private_key {
+        let private_key = match FieldElement::from_hex_be(pk) {
+            Ok(p) => p,
+            Err(e) => {
+                println!("Error importing private key: {:?}", e);
+                return None;
+            }
+        };
+        let key = SigningKey::from_secret_scalar(private_key);
+        Some(LocalWallet::from_signing_key(key))
+    } else {
+        None
+    }
+}
+```
+
+This way of initializing the contract is not the final one, feel free to propose alternative in the issues.
 
 ## Considerations
 
