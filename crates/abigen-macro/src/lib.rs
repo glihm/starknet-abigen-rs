@@ -3,22 +3,14 @@ use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 use serde_json;
 use starknet::core::types::contract::*;
-use starknet::core::types::*;
-use std::collections::HashMap;
 use std::fs;
-use std::path::Path;
 use syn::{
-    braced,
-    ext::IdentExt,
-    parenthesized,
-    parse::{Error, Parse, ParseStream, Result},
-    parse_macro_input,
-    punctuated::Punctuated,
-    Ident, LitInt, LitStr, Token, Type,
+    parse::{Parse, ParseStream, Result},
+    parse_macro_input, Ident, LitStr, Token,
 };
 
 use cairo_type_parser::{abi_type::AbiType, CairoEnum};
-use cairo_type_parser::{CairoAbiEntry, CairoFunction, CairoStruct};
+use cairo_type_parser::{CairoFunction, CairoStruct};
 
 mod expand;
 
@@ -195,7 +187,7 @@ pub fn abigen(input: TokenStream) -> TokenStream {
                 tokens.push(cairo_entry.expand_decl());
                 tokens.push(cairo_entry.expand_impl());
             }
-            AbiEntry::Event(ev) => {}
+            AbiEntry::Event(_) => {}
             _ => (),
         }
     }

@@ -1,4 +1,4 @@
-use syn::{parse_str, Ident, Type, TypePath};
+use syn::{Ident, Type};
 
 ///
 pub fn str_to_ident(str_in: &str) -> Ident {

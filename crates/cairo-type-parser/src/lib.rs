@@ -1,9 +1,5 @@
 pub mod abi_type;
 
-use proc_macro2::TokenStream as TokenStream2;
-use std::collections::HashMap;
-use syn::Type;
-
 use starknet::core::types::contract::StateMutability;
 
 use abi_type::AbiType;

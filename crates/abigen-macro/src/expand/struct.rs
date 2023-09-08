@@ -2,11 +2,10 @@ use crate::expand::utils::{str_to_ident, str_to_type};
 use crate::Expandable;
 
 use cairo_type_parser::abi_type::AbiType;
-use cairo_type_parser::{CairoAbiEntry, CairoStruct};
+use cairo_type_parser::CairoStruct;
 
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
-use syn::{parse_quote, Ident, Type};
 
 impl Expandable for CairoStruct {
     fn expand_decl(&self) -> TokenStream2 {
@@ -98,10 +97,7 @@ impl Expandable for CairoStruct {
 mod tests {
     use super::*;
     use cairo_type_parser::abi_type::AbiType;
-    use cairo_type_parser::{CairoAbiEntry, CairoStruct};
-    use cairo_types::ty::CairoType;
-    use cairo_types::Result;
-    use starknet::core::types::*;
+    use cairo_type_parser::CairoStruct;
 
     #[test]
     fn test_decl_basic() {

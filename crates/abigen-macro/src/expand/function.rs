@@ -5,7 +5,6 @@ use cairo_type_parser::CairoFunction;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 use starknet::core::types::contract::StateMutability;
-use starknet::core::utils::get_selector_from_name;
 
 impl Expandable for CairoFunction {
     fn expand_decl(&self) -> TokenStream2 {

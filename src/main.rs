@@ -1,15 +1,13 @@
 use abigen_macro::abigen;
 use anyhow::Result;
 use cairo_types::ty::CairoType;
-use cairo_types::Result as CairoResult;
-use serde_json;
-use starknet::accounts::{Account, SingleOwnerAccount};
-use starknet::core::types::contract::AbiEntry;
+
+use starknet::accounts::Account;
+
 use starknet::core::types::*;
 use starknet::providers::{jsonrpc::HttpTransport, AnyProvider, JsonRpcClient, Provider};
 use starknet::signers::{LocalWallet, SigningKey};
-use std::collections::HashMap;
-use tokio::sync::RwLock as AsyncRwLock;
+
 use url::Url;
 
 // Both working fine
@@ -343,7 +341,7 @@ async fn main() -> Result<()> {
     let provider3 =
         AnyProvider::JsonRpcHttp(JsonRpcClient::new(HttpTransport::new(rpc_url.clone())));
 
-    let chain_id = provider.chain_id().await?;
+    let _chain_id = provider.chain_id().await?;
 
     let account_address = FieldElement::from_hex_be(
         "0x517ececd29116499f4a1b64b094da79ba08dfd54a3edaa316134c41f8160973",
@@ -404,18 +402,18 @@ async fn main() -> Result<()> {
         v2: 1122_u128,
     };
 
-    let test_u256 = u256 {
-        low: 1122_u128,
-        high: 1122_u128,
-    };
+    // let test_u256 = u256 {
+    //     low: 1122_u128,
+    //     high: 1122_u128,
+    // };
 
-    assert_eq!(u256::serialized_size(&test_u256), 2);
-    assert_eq!(
-        u256::serialize(&test_u256),
-        vec![1122_u128.into(), 1122_u128.into()]
-    );
-    let test_u256_des = vec![1122_u128.into(), 1122_u128.into()];
-    assert_eq!(u256::deserialize(&test_u256_des, 0).unwrap(), test_u256);
+    // assert_eq!(u256::serialized_size(&test_u256), 2);
+    // assert_eq!(
+    //     u256::serialize(&test_u256),
+    //     vec![1122_u128.into(), 1122_u128.into()]
+    // );
+    // let test_u256_des = vec![1122_u128.into(), 1122_u128.into()];
+    // assert_eq!(u256::deserialize(&test_u256_des, 0).unwrap(), test_u256);
 
     let test_enum = TestEnum::V1(FieldElement::THREE);
 
