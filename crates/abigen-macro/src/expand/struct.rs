@@ -40,7 +40,7 @@ impl Expandable for CairoStruct {
             let name = str_to_ident(&name);
             names.push(quote!(#name));
 
-            let ty = str_to_type(&member.to_rust_item_path());
+            let ty = str_to_type(&member.to_rust_type_path());
 
             // Tuples type used as rust type path must be surrounded
             // by LT/GT.

@@ -49,7 +49,7 @@ impl Expandable for CairoFunction {
         let mut serializations: Vec<TokenStream2> = vec![];
         for (name, abi_type) in &self.inputs {
             let name = str_to_ident(&name);
-            let ty = str_to_type(&abi_type.to_rust_item_path());
+            let ty = str_to_type(&abi_type.to_rust_type_path());
             serializations.push(quote! {
                 calldata.extend(#ty::serialize(&#name));
             });
@@ -57,12 +57,12 @@ impl Expandable for CairoFunction {
 
         let out_res = match &self.output {
             Some(o) => {
-                let out_item_path = str_to_type(&o.to_rust_item_path());
+                let out_type_path = str_to_type(&o.to_rust_type_path());
                 match o {
                     // Tuples type used as rust type path must be surrounded
                     // by LT/GT.
-                    AbiType::Tuple(_) => quote!(<#out_item_path>::deserialize(r, 0)),
-                    _ => quote!(#out_item_path::deserialize(&r, 0)),
+                    AbiType::Tuple(_) => quote!(<#out_type_path>::deserialize(r, 0)),
+                    _ => quote!(#out_type_path::deserialize(&r, 0)),
                 }
             }
             None => quote!(),
