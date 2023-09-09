@@ -75,49 +75,41 @@ pub fn abigen(input: TokenStream) -> TokenStream {
 
     tokens.push(quote! {
         #[derive(Debug)]
-        pub struct #contract_name {
+        pub struct #contract_name<'a, P, S>
+        where
+            P: starknet::providers::Provider + Send + Sync + 'static,
+            S: starknet::signers::Signer + Send + Sync + 'static,
+        {
             pub address: starknet::core::types::FieldElement,
-            provider: starknet::providers::AnyProvider,
-            account_address: std::option::Option<starknet::core::types::FieldElement>,
-            signer: std::option::Option<starknet::signers::LocalWallet>,
-            chain_id: starknet::core::types::FieldElement,
+            pub provider: std::sync::Arc<&'a P>,
+            pub account : std::option::Option<starknet::accounts::SingleOwnerAccount<std::sync::Arc<&'a P>, S>>,
         }
 
         // TODO: Perhaps better than anyhow, a custom error?
         // TODO: Make provider reference
-        impl #contract_name {
-            pub async fn new_caller(
+        impl<'a, P, S> #contract_name<'a, P, S>
+        where
+            P: starknet::providers::Provider + Send + Sync,
+            S: starknet::signers::Signer + Send + Sync,
+        {
+            pub fn new(
                 address: starknet::core::types::FieldElement,
-                provider: starknet::providers::AnyProvider,
-            ) -> anyhow::Result<#contract_name> {
-                use starknet::providers::Provider;
-                let chain_id = provider.chain_id().await?;
-
-                Ok(#contract_name {
+                provider: &'a P,
+            ) -> Self {
+                Self {
                     address,
-                    provider,
-                    account_address: None,
-                    signer: None,
-                    chain_id,
-                })
+                    provider: std::sync::Arc::new(provider),
+                    account: None,
+                }
             }
 
-            pub async fn new_invoker(
-                address: starknet::core::types::FieldElement,
-                provider: starknet::providers::AnyProvider,
-                account_address: starknet::core::types::FieldElement,
-                signer: starknet::signers::LocalWallet,
-            ) -> anyhow::Result<#contract_name> {
+            pub async fn with_account(mut self, account_address: starknet::core::types::FieldElement, signer: S,
+            ) -> anyhow::Result<#contract_name<'a, P, S>> {
                 use starknet::providers::Provider;
-                let chain_id = provider.chain_id().await?;
-
-                Ok(#contract_name {
-                    address,
-                    provider,
-                    account_address: Some(account_address),
-                    signer: Some(signer),
-                    chain_id,
-                })
+                let chain_id = self.provider.chain_id().await?;
+                let account = starknet::accounts::SingleOwnerAccount::new(self.provider.clone(), signer, account_address, chain_id);
+                self.account = Some(account);
+                Ok(self)
             }
         }
     });
@@ -196,7 +188,11 @@ pub fn abigen(input: TokenStream) -> TokenStream {
     }
 
     tokens.push(quote! {
-        impl #contract_name {
+        impl<'a, P, S> #contract_name<'a, P, S>
+        where
+            P: starknet::providers::Provider + Send + Sync,
+            S: starknet::signers::Signer + Send + Sync,
+        {
             #(#functions)*
         }
     });

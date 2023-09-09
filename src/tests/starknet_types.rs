@@ -1,6 +1,6 @@
 use abigen_macro::abigen;
+use cairo_types::types::starknet::{ClassHash, ContractAddress, EthAddress};
 use cairo_types::CairoType;
-use cairo_types::types::starknet::{ContractAddress, ClassHash, EthAddress};
 use starknet::core::types::FieldElement;
 
 #[test]
@@ -41,7 +41,9 @@ fn test_starknet_eth_address() {
 
 #[test]
 fn test_starknet_types() {
-    abigen!(ContractA, r#"
+    abigen!(
+        ContractA,
+        r#"
 [
   {
     "type": "struct",
@@ -62,7 +64,8 @@ fn test_starknet_types() {
     ]
   }
 ]
-"#);
+"#
+    );
 
     let snt = SnTypes {
         addr: ContractAddress(FieldElement::ONE),
