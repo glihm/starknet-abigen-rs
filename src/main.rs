@@ -4,7 +4,7 @@ use abigen_macro::abigen;
 use anyhow::Result;
 use cairo_types::ty::CairoType;
 
-use starknet::accounts::Account;
+use starknet::accounts::{Account, SingleOwnerAccount};
 
 use starknet::core::types::*;
 use starknet::providers::{jsonrpc::HttpTransport, AnyProvider, JsonRpcClient, Provider};
@@ -50,23 +50,20 @@ async fn main() -> Result<()> {
     ))
     .unwrap();
 
-    let signer2 = wallet_from_private_key(&Some(
-        "0x0000001800000000300000180000000000030000000000003006001800006600".to_string(),
-    ))
-    .unwrap();
-
     // If you modify the contract, even with a salt, it will be deployed at
     // a different address.
     let contract_address = FieldElement::from_hex_be(
         "0x0546a164c8d10fd38652b6426ef7be159965deb9a0cbf3e8a899f8a42fd86761",
     )
     .unwrap();
+    let chain_id = provider.chain_id().await?;
+    let account = SingleOwnerAccount::new(&provider, signer, account_address, chain_id);
     let contract_a = ContractA::new(contract_address, &provider)
-        .with_account(account_address, signer)
+        .with_account(&account)
         .await?;
 
     let contract_b = ContractB::new(contract_address, &provider)
-        .with_account(account_address, signer2)
+        .with_account(&account)
         .await?;
 
     contract_a
