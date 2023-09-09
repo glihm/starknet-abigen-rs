@@ -4,11 +4,12 @@ use abigen_macro::abigen;
 use anyhow::Result;
 use cairo_types::ty::CairoType;
 
-use starknet::accounts::SingleOwnerAccount;
+use starknet::accounts::{Account, SingleOwnerAccount};
 
 use starknet::core::types::*;
 use starknet::providers::{jsonrpc::HttpTransport, AnyProvider, JsonRpcClient, Provider};
 use starknet::signers::{LocalWallet, SigningKey};
+use starknet::macros::felt;
 
 use url::Url;
 
@@ -39,10 +40,7 @@ async fn main() -> Result<()> {
     let provider =
         AnyProvider::JsonRpcHttp(JsonRpcClient::new(HttpTransport::new(rpc_url.clone())));
 
-    let account_address = FieldElement::from_hex_be(
-        "0x517ececd29116499f4a1b64b094da79ba08dfd54a3edaa316134c41f8160973",
-    )
-    .unwrap();
+    let account_address = felt!("0x517ececd29116499f4a1b64b094da79ba08dfd54a3edaa316134c41f8160973");
 
     // Let user to define their own signer, it will be generic S. LocalWallet etc.
     let signer = wallet_from_private_key(&Some(
@@ -52,25 +50,13 @@ async fn main() -> Result<()> {
 
     // If you modify the contract, even with a salt, it will be deployed at
     // a different address.
-    let contract_address = FieldElement::from_hex_be(
-        "0x0546a164c8d10fd38652b6426ef7be159965deb9a0cbf3e8a899f8a42fd86761",
-    )
-    .unwrap();
+    let contract_address = felt!("0x0546a164c8d10fd38652b6426ef7be159965deb9a0cbf3e8a899f8a42fd86761");
+
     let chain_id = provider.chain_id().await?;
     let account = SingleOwnerAccount::new(&provider, signer, account_address, chain_id);
-    let contract_a = ContractA::new(contract_address, &provider)
-        .with_account(&account)
-        .await?;
 
-    // 1) you can either call using explicit type ( without `with_account` )
-    // TODO: Is there any way that don't need explicit type and still keep A generic even without account?
-    let contract_b: ContractB<&AnyProvider, SingleOwnerAccount<AnyProvider, LocalWallet>> =
-        ContractB::new(contract_address, &provider);
-
-    // 2) Or define with account.
-    // let contract_b = ContractB::new(contract_address, &provider)
-    //     .with_account(&account)
-    //     .await?;
+    let contract_a = ContractA::new(contract_address, &provider).with_account(&account);
+    let contract_b = ContractB::new(contract_address, &provider);
 
     contract_a
         .set_val(FieldElement::TWO)

@@ -75,25 +75,19 @@ pub fn abigen(input: TokenStream) -> TokenStream {
 
     tokens.push(quote! {
         #[derive(Debug)]
-        pub struct #contract_name<P, A>
+        pub struct #contract_name<'a>
         {
             pub address: starknet::core::types::FieldElement,
-            pub provider: P,
-            pub account : std::option::Option<A>,
+            pub provider: &'a starknet::providers::AnyProvider,
+            pub account : std::option::Option<&'a starknet::accounts::SingleOwnerAccount<&'a starknet::providers::AnyProvider, starknet::signers::LocalWallet>>,
         }
 
         // TODO: Perhaps better than anyhow, a custom error?
         // TODO: Make provider reference
-        impl<P, A> #contract_name<P, A>
-        where
-            P: starknet::providers::Provider + Send + Sync,
-            A: starknet::accounts::Account + starknet::accounts::ConnectedAccount + Sync,
-            <<A as starknet::accounts::ConnectedAccount>::Provider as starknet::providers::Provider>::Error: 'static,
-            <A as starknet::accounts::Account>::SignError: 'static
-        {
+        impl<'a> #contract_name<'a> {
             pub fn new(
                 address: starknet::core::types::FieldElement,
-                provider: P,
+                provider: &'a starknet::providers::AnyProvider,
             ) -> Self {
                 Self {
                     address,
@@ -102,10 +96,10 @@ pub fn abigen(input: TokenStream) -> TokenStream {
                 }
             }
 
-            pub async fn with_account(mut self, account: A,
-            ) -> anyhow::Result<#contract_name<P, A>> {
+            pub fn with_account(mut self, account: &'a SingleOwnerAccount<&'a starknet::providers::AnyProvider, starknet::signers::LocalWallet>,
+            ) -> Self {
                 self.account = Some(account);
-                Ok(self)
+                self
             }
         }
     });
@@ -184,13 +178,7 @@ pub fn abigen(input: TokenStream) -> TokenStream {
     }
 
     tokens.push(quote! {
-        impl<P, A> #contract_name<P, A>
-        where
-            P: starknet::providers::Provider + Send + Sync,
-            A: starknet::accounts::Account + starknet::accounts::ConnectedAccount + Sync,
-            <<A as starknet::accounts::ConnectedAccount>::Provider as starknet::providers::Provider>::Error: 'static,
-            <A as starknet::accounts::Account>::SignError: 'static
-
+        impl<'a> #contract_name<'a>
         {
             #(#functions)*
         }
