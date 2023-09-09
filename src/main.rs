@@ -4,7 +4,7 @@ use abigen_macro::abigen;
 use anyhow::Result;
 use cairo_types::ty::CairoType;
 
-use starknet::accounts::{Account, SingleOwnerAccount};
+use starknet::accounts::SingleOwnerAccount;
 
 use starknet::core::types::*;
 use starknet::providers::{jsonrpc::HttpTransport, AnyProvider, JsonRpcClient, Provider};
@@ -62,9 +62,15 @@ async fn main() -> Result<()> {
         .with_account(&account)
         .await?;
 
-    let contract_b = ContractB::new(contract_address, &provider)
-        .with_account(&account)
-        .await?;
+    // 1) you can either call using explicit type ( without `with_account` )
+    // TODO: Is there any way that don't need explicit type and still keep A generic even without account?
+    let contract_b: ContractB<&AnyProvider, SingleOwnerAccount<AnyProvider, LocalWallet>> =
+        ContractB::new(contract_address, &provider);
+
+    // 2) Or define with account.
+    // let contract_b = ContractB::new(contract_address, &provider)
+    //     .with_account(&account)
+    //     .await?;
 
     contract_a
         .set_val(FieldElement::TWO)

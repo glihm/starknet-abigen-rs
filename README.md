@@ -70,12 +70,14 @@ Any type implementing the `CairoType` trait can be used this way.
 ## Generate the binding for your contracts
 
 1. If you have a large ABI, consider adding a file (at the same level of your `Cargo.toml`) with the `JSON` containing the ABI.
-Then you can load the whole file using:
+   Then you can load the whole file using:
+
 ```rust
 abigen!(MyContract, "./mycontract.abi.json")
 ```
 
 2. If you only want to make a quick call without too much setup, you can paste an ABI directly using:
+
 ```rust
 abigen!(MyContract, r#"
 [
@@ -104,7 +106,7 @@ use abigen_macro::abigen;
 use anyhow::Result;
 use cairo_types::ty::CairoType;
 
-use starknet::accounts::Account;
+use starknet::accounts::{Account, SingleOwnerAccount};
 
 use starknet::core::types::*;
 use starknet::providers::{jsonrpc::HttpTransport, AnyProvider, JsonRpcClient, Provider};
@@ -123,26 +125,26 @@ async fn main() -> Result<()> {
         "0x0546a164c8d10fd38652b6426ef7be159965deb9a0cbf3e8a899f8a42fd86761",
     ).unwrap();
 
-    // Call.
-    let contract_caller = MyContract::new_caller(contract_address, provider).await?;
-    let val = contract_caller.get_val().await?;
-
-    // Work in progress to avoid this duplication.
-    let provider2 =
-        AnyProvider::JsonRpcHttp(JsonRpcClient::new(HttpTransport::new(rpc_url.clone())));
+     // Work in progress for implicit type.
+    let my_contract: <&AnyProvider, SingleOwnerAccount<AnyProvider, LocalWallet>> = MyContract::new(contract_address, &provider);
+    let val = my_contract.get_val().await?;
 
     let account_address = FieldElement::from_hex_be(
         "0x517ececd29116499f4a1b64b094da79ba08dfd54a3edaa316134c41f8160973",
     ).unwrap();
 
+    // It's generic. Allow user to prvide own signer and account.
     let signer = wallet_from_private_key(&Some(
         "0x0000001800000000300000180000000000030000000000003006001800006600".to_string(),
     )).unwrap();
+    let account = SingleOwnerAccount::new(&provider, signer, account_address, chain_id);
 
-    // Invoke.
-    let contract_invoker =
-        MyContract::new_invoker(contract_address, provider2, account_address, signer).await?;
-    contract_invoker.set_val(FieldElement::TWO).await?;
+    // Invoke. You can define either this way,
+    let my_contract_invoke = MyContract::new(contract_address, &provider).with_account(&account).await?;
+    // Or this way.
+    //  let my_contract_invoke = my_contract.with_account(&account).await?;
+
+    my_contract_invoke.set_val(FieldElement::TWO).await?;
 }
 
 // Util function to create a LocalWallet.
