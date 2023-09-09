@@ -225,11 +225,23 @@ impl AbiType {
     fn parse_nested(current_type: &str, chars: &mut Peekable<Chars>) -> AbiType {
         let mut inner = None;
 
+        // TODO: Nested types can be multiple. Example for Result<T, E>
+        // in cairo.
+        // However, at least for now, we only care about the nested type
+        // for Span and Array, which is only one type.
+        //
+
         while let Some(c) = chars.peek() {
             match c {
                 '>' => {
                     chars.next();
                     break;
+                }
+                ',' => {
+                    chars.next();
+                    // For now, only the last inner type will be captured.
+                    // TODO: fix this an get back to vec as the original
+                    // version to support multiple inner types.
                 }
                 _ => {
                     inner = Some(Self::parse_type(chars));
