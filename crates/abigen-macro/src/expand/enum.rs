@@ -39,7 +39,7 @@ impl Expandable for CairoEnum {
 
         for (i, val) in self.variants.iter().enumerate() {
             let variant_name = str_to_ident(&val.0);
-            let ty = str_to_type(&val.1.to_rust_item_path());
+            let ty = str_to_type(&val.1.to_rust_type_path());
 
             // Tuples type used as rust type path must be surrounded
             // by LT/GT.

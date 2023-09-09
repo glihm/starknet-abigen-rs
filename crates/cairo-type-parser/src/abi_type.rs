@@ -35,55 +35,17 @@ impl AbiType {
         name.split("::").last().unwrap_or(&name).to_string()
     }
 
-    ///
     pub fn to_rust_type(&self) -> String {
-        let mut rust_type = String::new();
-        let type_str = self.get_type_name_only();
+        self.to_rust_type_punc("<")
+    }
 
-        match self {
-            AbiType::Basic(_) => return AbiType::to_rust_basic_types(&type_str),
-            _ => (),
-        };
-
-        // Only Tuple or Nested from here.
-
-        match type_str.as_str() {
-            "|tuple|" => rust_type.push('('),
-            "Span" => rust_type.push_str("Vec<"),
-            "Array" => rust_type.push_str("Vec<"),
-            _ => {
-                // Structs can be nested, but the type is flatten
-                // for each member. So we can only return the type name.
-                return type_str.to_string();
-            }
-        };
-
-        match self {
-            AbiType::Nested(_, inner) => rust_type.push_str(&inner.to_rust_type()),
-            AbiType::Tuple(inners) => {
-                for (idx, inner) in inners.iter().enumerate() {
-                    rust_type.push_str(&inner.to_rust_type());
-                    if idx < inners.len() - 1 {
-                        rust_type.push_str(", ");
-                    }
-                }
-            }
-            _ => (),
-        };
-
-        match type_str.as_str() {
-            "|tuple|" => rust_type.push(')'),
-            "Span" => rust_type.push('>'),
-            "Array" => rust_type.push('>'),
-            _ => (), // Nothing to do here, we only close nested tuple/array.
-        }
-
-        rust_type.to_string()
+    pub fn to_rust_type_path(&self) -> String {
+        self.to_rust_type_punc("::<")
     }
 
     /// TODO: check if this can be factorize in some way with the function above.
-    /// Like passing if we want the item_path or not, and the is_first.
-    pub fn to_rust_item_path(&self) -> String {
+    /// Like passing if we want the type_path or not, and the is_first.
+    fn to_rust_type_punc(&self, open_punc: &str) -> String {
         let mut rust_type = String::new();
         let type_str = self.get_type_name_only();
 
@@ -96,8 +58,8 @@ impl AbiType {
 
         match type_str.as_str() {
             "|tuple|" => rust_type.push_str("("),
-            "Span" => rust_type.push_str("Vec::<"),
-            "Array" => rust_type.push_str("Vec::<"),
+            "Span" => rust_type.push_str(format!("Vec{open_punc}").as_str()),
+            "Array" => rust_type.push_str(format!("Vec{open_punc}").as_str()),
             _ => {
                 // Structs can be nested, but the type is flatten
                 // for each member. So we can only return the type name.
@@ -106,10 +68,21 @@ impl AbiType {
         };
 
         match self {
-            AbiType::Nested(_, inner) => rust_type.push_str(&inner.to_rust_item_path()),
+            AbiType::Nested(_, inner) => {
+                if open_punc == "::<" {
+                    rust_type.push_str(&inner.to_rust_type_path())
+                } else {
+                    rust_type.push_str(&inner.to_rust_type())
+                }
+            }
             AbiType::Tuple(inners) => {
                 for (idx, inner) in inners.iter().enumerate() {
-                    rust_type.push_str(&inner.to_rust_item_path());
+                    if open_punc == "::<" {
+                        rust_type.push_str(&inner.to_rust_type_path());
+                    } else {
+                        rust_type.push_str(&inner.to_rust_type());
+                    }
+
                     if idx < inners.len() - 1 {
                         rust_type.push_str(", ");
                     }
@@ -394,13 +367,13 @@ mod tests {
     }
 
     #[test]
-    fn test_to_rust_item_path_nested() {
+    fn test_to_rust_type_path_nested() {
         let t = AbiType::Nested(
             "core::array::Array".to_string(),
             Box::new(AbiType::Basic("core::felt252".to_string())),
         );
         assert_eq!(
-            t.to_rust_item_path(),
+            t.to_rust_type_path(),
             "Vec::<starknet::core::types::FieldElement>"
         );
 
@@ -412,19 +385,19 @@ mod tests {
             )),
         );
         assert_eq!(
-            t.to_rust_item_path(),
+            t.to_rust_type_path(),
             "Vec::<Vec::<starknet::core::types::FieldElement>>"
         );
     }
 
     #[test]
-    fn test_to_rust_item_path_tuple() {
+    fn test_to_rust_type_path_tuple() {
         let t = AbiType::Tuple(vec![
             AbiType::Basic("core::felt252".to_string()),
             AbiType::Basic("core::integer::u128".to_string()),
         ]);
         assert_eq!(
-            t.to_rust_item_path(),
+            t.to_rust_type_path(),
             "(starknet::core::types::FieldElement, u128)"
         );
 
@@ -436,7 +409,7 @@ mod tests {
             ])),
         );
         assert_eq!(
-            t.to_rust_item_path(),
+            t.to_rust_type_path(),
             "Vec::<(starknet::core::types::FieldElement, u32)>"
         );
 
@@ -448,7 +421,7 @@ mod tests {
             AbiType::Basic("core::integer::u32".to_string()),
         ]);
         assert_eq!(
-            t.to_rust_item_path(),
+            t.to_rust_type_path(),
             "(Vec::<starknet::core::types::FieldElement>, u32)"
         );
     }
