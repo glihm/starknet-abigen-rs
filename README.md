@@ -65,6 +65,7 @@ let values = Vec::<u32>::deserialize(felts, 0).unwrap;
 ```
 
 Any type implementing the `CairoType` trait can be used this way.
+**For now, the `Result` type is not supported inside a struct or as a return type of a view function.**
 
 ## Generate the binding for your contracts
 
