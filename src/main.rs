@@ -7,9 +7,9 @@ use cairo_types::ty::CairoType;
 use starknet::accounts::{Account, SingleOwnerAccount};
 
 use starknet::core::types::*;
+use starknet::macros::felt;
 use starknet::providers::{jsonrpc::HttpTransport, AnyProvider, JsonRpcClient, Provider};
 use starknet::signers::{LocalWallet, SigningKey};
-use starknet::macros::felt;
 
 use url::Url;
 
@@ -40,9 +40,9 @@ async fn main() -> Result<()> {
     let provider =
         AnyProvider::JsonRpcHttp(JsonRpcClient::new(HttpTransport::new(rpc_url.clone())));
 
-    let account_address = felt!("0x517ececd29116499f4a1b64b094da79ba08dfd54a3edaa316134c41f8160973");
+    let account_address =
+        felt!("0x517ececd29116499f4a1b64b094da79ba08dfd54a3edaa316134c41f8160973");
 
-    // Let user to define their own signer, it will be generic S. LocalWallet etc.
     let signer = wallet_from_private_key(&Some(
         "0x0000001800000000300000180000000000030000000000003006001800006600".to_string(),
     ))
@@ -50,7 +50,8 @@ async fn main() -> Result<()> {
 
     // If you modify the contract, even with a salt, it will be deployed at
     // a different address.
-    let contract_address = felt!("0x0546a164c8d10fd38652b6426ef7be159965deb9a0cbf3e8a899f8a42fd86761");
+    let contract_address =
+        felt!("0x0546a164c8d10fd38652b6426ef7be159965deb9a0cbf3e8a899f8a42fd86761");
 
     let chain_id = provider.chain_id().await?;
     let account = SingleOwnerAccount::new(&provider, signer, account_address, chain_id);

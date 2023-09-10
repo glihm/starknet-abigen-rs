@@ -121,30 +121,23 @@ async fn main() -> Result<()> {
     let provider =
         AnyProvider::JsonRpcHttp(JsonRpcClient::new(HttpTransport::new(rpc_url.clone())));
 
-    let contract_address = FieldElement::from_hex_be(
-        "0x0546a164c8d10fd38652b6426ef7be159965deb9a0cbf3e8a899f8a42fd86761",
-    ).unwrap();
+    let contract_address = felt!("0x0546a164c8d10fd38652b6426ef7be159965deb9a0cbf3e8a899f8a42fd86761");
 
-     // Work in progress for implicit type.
-    let my_contract: <&AnyProvider, SingleOwnerAccount<AnyProvider, LocalWallet>> = MyContract::new(contract_address, &provider);
+     // Call.
+    let my_contract = MyContract::new(contract_address, &provider);
     let val = my_contract.get_val().await?;
 
-    let account_address = FieldElement::from_hex_be(
-        "0x517ececd29116499f4a1b64b094da79ba08dfd54a3edaa316134c41f8160973",
-    ).unwrap();
+     let account_address = felt!("0x517ececd29116499f4a1b64b094da79ba08dfd54a3edaa316134c41f8160973");
 
-    // It's generic. Allow user to prvide own signer and account.
     let signer = wallet_from_private_key(&Some(
         "0x0000001800000000300000180000000000030000000000003006001800006600".to_string(),
     )).unwrap();
     let account = SingleOwnerAccount::new(&provider, signer, account_address, chain_id);
 
-    // Invoke. You can define either this way,
-    let my_contract_invoke = MyContract::new(contract_address, &provider).with_account(&account).await?;
-    // Or this way.
-    //  let my_contract_invoke = my_contract.with_account(&account).await?;
+    // Invoke.
+    let mycontract = MyContract::new(contract_address, &provider).with_account(&account).await?;
 
-    my_contract_invoke.set_val(FieldElement::TWO).await?;
+    mycontract.set_val(FieldElement::TWO).await?;
 }
 
 // Util function to create a LocalWallet.

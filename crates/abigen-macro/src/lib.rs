@@ -72,7 +72,7 @@ pub fn abigen(input: TokenStream) -> TokenStream {
 
     // TODO: fix imports. Do we want to import everything at the top
     // of the contract, and put the contract inside a module?
-
+    // TODO: Make generic. P: Provider, A: Account.
     tokens.push(quote! {
         #[derive(Debug)]
         pub struct #contract_name<'a>
@@ -83,7 +83,6 @@ pub fn abigen(input: TokenStream) -> TokenStream {
         }
 
         // TODO: Perhaps better than anyhow, a custom error?
-        // TODO: Make provider reference
         impl<'a> #contract_name<'a> {
             pub fn new(
                 address: starknet::core::types::FieldElement,
@@ -96,7 +95,7 @@ pub fn abigen(input: TokenStream) -> TokenStream {
                 }
             }
 
-            pub fn with_account(mut self, account: &'a SingleOwnerAccount<&'a starknet::providers::AnyProvider, starknet::signers::LocalWallet>,
+            pub fn with_account(mut self, account: &'a starknet::accounts::SingleOwnerAccount<&'a starknet::providers::AnyProvider, starknet::signers::LocalWallet>,
             ) -> Self {
                 self.account = Some(account);
                 self
