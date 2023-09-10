@@ -72,6 +72,20 @@ mod c1 {
     }
 
     #[external(v0)]
+    fn call_res(ref self: ContractState, a: felt252) -> Result<(), felt252> {
+        if a.is_zero() {
+            Result::Ok(())
+        } else {
+            Result::Err('ABCD')
+        }
+    }
+
+    #[external(v0)]
+    fn call_res2(ref self: ContractState, a: TypesInTypes<u256>) -> Result<Array<felt252>, felt252> {
+        Result::Ok(array![1, 2, 3])
+    }
+
+    #[external(v0)]
     fn call_bou(ref self: ContractState) -> (Span<felt252>, felt252) {
         (array![1,2].span(), 2)
     }

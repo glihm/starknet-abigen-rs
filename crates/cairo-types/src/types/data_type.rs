@@ -2,6 +2,18 @@ use crate::{CairoType, Result};
 use alloc::{vec, vec::Vec};
 use starknet::core::types::FieldElement;
 
+impl CairoType for () {
+    type RustType = Self;
+
+    fn serialize(_rust: &Self::RustType) -> Vec<FieldElement> {
+        vec![]
+    }
+
+    fn deserialize(_felts: &[FieldElement], _offset: usize) -> Result<Self::RustType> {
+        Ok(())
+    }
+}
+
 impl CairoType for FieldElement {
     type RustType = Self;
 

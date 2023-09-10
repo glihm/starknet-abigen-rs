@@ -183,13 +183,16 @@ impl AbiType {
         if nested_types.is_empty() {
             // TODO: check if this one may be handled as Basic("()");
             AbiType::Basic("()".to_string())
-        } else if nested_types.len() == 1 {
+        } else if nested_types.len() >= 1 {
             // Basic or Nested.
+            // TODO: for now, some enums like Result may have two nested types.
+            // We only return the first one for now. That's why we use >= 1.
             nested_types.pop().unwrap()
         } else if chars.nth(0) == Some('(') {
             // Tuple.
             AbiType::Tuple(nested_types)
         } else {
+            println!("UNREACHABLE: {:?}", nested_types);
             unreachable!()
         }
     }

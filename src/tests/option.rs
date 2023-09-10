@@ -59,4 +59,12 @@ fn test_option_should_not_be_recreated() {
 ]
 "#
     );
+
+    let _o = Option::<FieldElement>::Some(FieldElement::ONE);
+    // This will clash if Option is actually implemented:
+    // 61 | |     );
+    //   | |     ^
+    //   | |     |
+    //   | |_____first implementation here
+    //   |       conflicting implementation for `tests::option::test_option_should_not_be_recreated::Option
 }

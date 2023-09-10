@@ -66,7 +66,7 @@ let values = Vec::<u32>::deserialize(felts, 0).unwrap;
 
 Any type implementing the `CairoType` trait can be used this way.
 
-Supported types:
+Supported types as built-in in cairo-types:
 
 * `u8,16,32,64,128`
 * `i8,16,32,64,128`
@@ -76,9 +76,11 @@ Supported types:
 * `ContractAddress`
 * `EthAddress`
 * `Option`
-* Any struct/enum having those fields.
+* `Result`
+* `unit`
 
-**For now, the `Result` type is not supported inside a struct or as a return type of a view function.**
+Any struct/enum in the ABI that use those types or inner struct/enum
+that uses those types will work.
 
 ## Generate the binding for your contracts
 

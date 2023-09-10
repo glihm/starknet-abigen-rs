@@ -11,7 +11,6 @@ pub const CAIRO_BASIC_ENUMS: [&str; 2] = ["Option", "Result"];
 // TODO: add the serialize_to method to only push data
 // to an existing vec:
 // serialize_to(rust: &Self::RustType, out: &mut Vec<FieldElement>).
-
 pub trait CairoType {
     /// The corresponding Rust type.
     type RustType;
