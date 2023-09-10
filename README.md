@@ -76,7 +76,7 @@ Supported types:
 * `ContractAddress`
 * `EthAddress`
 * `Option`
-* Any struct having those fields.
+* Any struct/enum having those fields.
 
 **For now, the `Result` type is not supported inside a struct or as a return type of a view function.**
 
