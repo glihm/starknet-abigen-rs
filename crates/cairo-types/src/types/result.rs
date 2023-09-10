@@ -51,7 +51,6 @@ where
 mod tests {
     use super::*;
     use starknet::core::types::FieldElement;
-    use starknet::macros::felt;
 
     #[test]
     fn result_ok_serialize() {
