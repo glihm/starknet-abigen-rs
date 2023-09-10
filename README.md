@@ -65,6 +65,19 @@ let values = Vec::<u32>::deserialize(felts, 0).unwrap;
 ```
 
 Any type implementing the `CairoType` trait can be used this way.
+
+Supported types:
+
+* `u8,16,32,64,128`
+* `i8,16,32,64,128`
+* `tuple size 2`
+* `Span/Array` -> `Vec`
+* `ClassHash`
+* `ContractAddress`
+* `EthAddress`
+* `Option`
+* Any struct having those fields.
+
 **For now, the `Result` type is not supported inside a struct or as a return type of a view function.**
 
 ## Generate the binding for your contracts
