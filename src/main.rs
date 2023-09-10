@@ -4,9 +4,10 @@ use abigen_macro::abigen;
 use anyhow::Result;
 use cairo_types::ty::CairoType;
 
-use starknet::accounts::Account;
+use starknet::accounts::{Account, SingleOwnerAccount};
 
 use starknet::core::types::*;
+use starknet::macros::felt;
 use starknet::providers::{jsonrpc::HttpTransport, AnyProvider, JsonRpcClient, Provider};
 use starknet::signers::{LocalWallet, SigningKey};
 
@@ -33,23 +34,15 @@ abigen!(
 "#
 );
 
-
 #[tokio::main]
 async fn main() -> Result<()> {
     let rpc_url = Url::parse("http://0.0.0.0:5050")?;
     let provider =
         AnyProvider::JsonRpcHttp(JsonRpcClient::new(HttpTransport::new(rpc_url.clone())));
-    let provider2 =
-        AnyProvider::JsonRpcHttp(JsonRpcClient::new(HttpTransport::new(rpc_url.clone())));
-    let provider3 =
-        AnyProvider::JsonRpcHttp(JsonRpcClient::new(HttpTransport::new(rpc_url.clone())));
 
-    let _chain_id = provider.chain_id().await?;
+    let account_address =
+        felt!("0x517ececd29116499f4a1b64b094da79ba08dfd54a3edaa316134c41f8160973");
 
-    let account_address = FieldElement::from_hex_be(
-        "0x517ececd29116499f4a1b64b094da79ba08dfd54a3edaa316134c41f8160973",
-    )
-    .unwrap();
     let signer = wallet_from_private_key(&Some(
         "0x0000001800000000300000180000000000030000000000003006001800006600".to_string(),
     ))
@@ -57,36 +50,25 @@ async fn main() -> Result<()> {
 
     // If you modify the contract, even with a salt, it will be deployed at
     // a different address.
-    let contract_address = FieldElement::from_hex_be(
-        "0x0546a164c8d10fd38652b6426ef7be159965deb9a0cbf3e8a899f8a42fd86761",
-    )
-    .unwrap();
+    let contract_address =
+        felt!("0x0546a164c8d10fd38652b6426ef7be159965deb9a0cbf3e8a899f8a42fd86761");
 
-    let contract_caller_a = ContractA::new_caller(contract_address, provider).await?;
+    let chain_id = provider.chain_id().await?;
+    let account = SingleOwnerAccount::new(&provider, signer, account_address, chain_id);
 
-    // TODO: if we can handle the SingleOwnerAccount lifetime, it will be easier to
-    // only pass the account. And not account_address + signer.
-    let contract_invoker =
-        ContractA::new_invoker(contract_address, provider2, account_address, signer).await?;
+    let contract_a = ContractA::new(contract_address, &provider).with_account(&account);
+    let contract_b = ContractB::new(contract_address, &provider);
 
-    let contract_caller_b = ContractB::new_caller(contract_address, provider3).await?;
-
-    contract_invoker
+    contract_a
         .set_val(FieldElement::TWO)
         .await
         .expect("Fail call set val");
-    let v_get_a = contract_caller_a
-        .get_val()
-        .await
-        .expect("Fail call get val");
+    let v_get_a = contract_a.get_val().await.expect("Fail call get val");
     assert_eq!(v_get_a, FieldElement::TWO);
-    let v_get_b = contract_caller_b
-        .get_val()
-        .await
-        .expect("Fail call get val");
+    let v_get_b = contract_b.get_val().await.expect("Fail call get val");
     assert_eq!(v_get_b, v_get_a);
 
-    contract_invoker
+    contract_a
         .hello_world(FieldElement::THREE)
         .await
         .expect("Fail call hello world");

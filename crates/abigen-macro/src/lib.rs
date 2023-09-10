@@ -72,52 +72,33 @@ pub fn abigen(input: TokenStream) -> TokenStream {
 
     // TODO: fix imports. Do we want to import everything at the top
     // of the contract, and put the contract inside a module?
-
+    // TODO: Make generic. P: Provider, A: Account.
     tokens.push(quote! {
         #[derive(Debug)]
-        pub struct #contract_name {
+        pub struct #contract_name<'a>
+        {
             pub address: starknet::core::types::FieldElement,
-            provider: starknet::providers::AnyProvider,
-            account_address: std::option::Option<starknet::core::types::FieldElement>,
-            signer: std::option::Option<starknet::signers::LocalWallet>,
-            chain_id: starknet::core::types::FieldElement,
+            pub provider: &'a starknet::providers::AnyProvider,
+            pub account : std::option::Option<&'a starknet::accounts::SingleOwnerAccount<&'a starknet::providers::AnyProvider, starknet::signers::LocalWallet>>,
         }
 
         // TODO: Perhaps better than anyhow, a custom error?
-        // TODO: Make provider reference
-        impl #contract_name {
-            pub async fn new_caller(
+        impl<'a> #contract_name<'a> {
+            pub fn new(
                 address: starknet::core::types::FieldElement,
-                provider: starknet::providers::AnyProvider,
-            ) -> anyhow::Result<#contract_name> {
-                use starknet::providers::Provider;
-                let chain_id = provider.chain_id().await?;
-
-                Ok(#contract_name {
+                provider: &'a starknet::providers::AnyProvider,
+            ) -> Self {
+                Self {
                     address,
                     provider,
-                    account_address: None,
-                    signer: None,
-                    chain_id,
-                })
+                    account: None,
+                }
             }
 
-            pub async fn new_invoker(
-                address: starknet::core::types::FieldElement,
-                provider: starknet::providers::AnyProvider,
-                account_address: starknet::core::types::FieldElement,
-                signer: starknet::signers::LocalWallet,
-            ) -> anyhow::Result<#contract_name> {
-                use starknet::providers::Provider;
-                let chain_id = provider.chain_id().await?;
-
-                Ok(#contract_name {
-                    address,
-                    provider,
-                    account_address: Some(account_address),
-                    signer: Some(signer),
-                    chain_id,
-                })
+            pub fn with_account(mut self, account: &'a starknet::accounts::SingleOwnerAccount<&'a starknet::providers::AnyProvider, starknet::signers::LocalWallet>,
+            ) -> Self {
+                self.account = Some(account);
+                self
             }
         }
     });
@@ -196,7 +177,8 @@ pub fn abigen(input: TokenStream) -> TokenStream {
     }
 
     tokens.push(quote! {
-        impl #contract_name {
+        impl<'a> #contract_name<'a>
+        {
             #(#functions)*
         }
     });

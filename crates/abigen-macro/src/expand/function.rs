@@ -104,18 +104,11 @@ impl Expandable for CairoFunction {
                     // TODO: I don't know how to easily store the SingleOwnerAccount
                     // and it's generic types without complexifiying the whole typing.
                     // So it's constructed at every call. There is surely a better approach.
-                    let (account_address, signer) = match (self.account_address, &self.signer) {
-                        (Some(a), Some(s)) => (a, s),
+                    let account = match &self.account {
+                        Some(a) => a,
                         // TODO: better error handling here.
-                        _ => return Err(anyhow::anyhow!("Account address and signer are required to send invoke transactions"))
+                        _ => return Err(anyhow::anyhow!("Account is required to send invoke transactions"))
                     };
-
-                    let account = starknet::accounts::SingleOwnerAccount::new(
-                        &self.provider,
-                        signer,
-                        account_address,
-                        self.chain_id
-                    );
 
                     let mut calldata = vec![];
                     #(#serializations)*
