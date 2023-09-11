@@ -2,40 +2,55 @@ use crate::{CairoType, Result};
 use alloc::{vec, vec::Vec};
 use starknet::core::types::FieldElement;
 
-// TODO: add a macro to pre-generate the tuples for more lengths?
+macro_rules! impl_tuples {
+    ($num:expr, $( $ty:ident : $rt:ident : $var:ident : $no:tt ),+ $(,)?) => {
+        impl<$( $ty, $rt ),+> CairoType for ($( $ty, )+)
+        where
+            $($ty: CairoType<RustType = $rt>,)+
+        {
+            type RustType = ($( $rt ),*);
 
-impl<T, RT, U, RU> CairoType for (T, U)
-where
-    T: CairoType<RustType = RT>,
-    U: CairoType<RustType = RU>,
-{
-    type RustType = (RT, RU);
+            const SERIALIZED_SIZE: Option<usize> = None;
 
-    const SERIALIZED_SIZE: Option<usize> = None;
+            #[inline]
+            fn serialized_size(rust: &Self::RustType) -> usize {
+                let mut size = 0;
+                $(
+                    size += $ty::serialized_size(& rust.$no);
+                )*
 
-    #[inline]
-    fn serialized_size(rust: &Self::RustType) -> usize {
-        T::serialized_size(&rust.0) + U::serialized_size(&rust.1)
-    }
+                size
+            }
 
-    fn serialize(rust: &Self::RustType) -> Vec<FieldElement> {
-        let mut out: Vec<FieldElement> = vec![];
-        out.extend(T::serialize(&rust.0));
-        out.extend(U::serialize(&rust.1));
-        out
-    }
+            fn serialize(rust: &Self::RustType) -> Vec<FieldElement> {
+                let mut out: Vec<FieldElement> = vec![];
 
-    fn deserialize(felts: &[FieldElement], offset: usize) -> Result<Self::RustType> {
-        let mut offset = offset;
+                $( out.extend($ty::serialize(& rust.$no)); )*
 
-        let rust0: RT = T::deserialize(felts, offset)?;
-        offset += T::serialized_size(&rust0);
+                out
+            }
 
-        let rust1: RU = U::deserialize(felts, offset)?;
+            fn deserialize(felts: &[FieldElement], offset: usize) -> Result<Self::RustType> {
+                let mut offset = offset;
 
-        Ok((rust0, rust1))
+                $(
+                    let $var : $rt = $ty::deserialize(felts, offset)?;
+                    offset += $ty::serialized_size(& $var);
+                )*
+
+                // Remove warning.
+                let _offset = offset;
+
+                Ok(($( $var ),*))
+            }
+        }
     }
 }
+
+impl_tuples!(2, A:RA:r0:0, B:RB:r1:1);
+impl_tuples!(3, A:RA:r0:0, B:RB:r1:1, C:RC:r2:2);
+impl_tuples!(4, A:RA:r0:0, B:RB:r1:1, C:RC:r2:2, D:RD:r3:3);
+impl_tuples!(5, A:RA:r0:0, B:RB:r1:1, C:RC:r2:2, D:RD:r3:3, E:RE:r4:4);
 
 #[cfg(test)]
 mod tests {
