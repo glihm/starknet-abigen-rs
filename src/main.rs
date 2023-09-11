@@ -51,7 +51,7 @@ async fn main() -> Result<()> {
     // If you modify the contract, even with a salt, it will be deployed at
     // a different address.
     let contract_address =
-        felt!("0x0546a164c8d10fd38652b6426ef7be159965deb9a0cbf3e8a899f8a42fd86761");
+        felt!("0x02de662b356d56d25be451106ae2b54db05e476f8bbb9f0519fd8c2a63e575a9");
 
     let chain_id = provider.chain_id().await?;
     let account = SingleOwnerAccount::new(&provider, signer, account_address, chain_id);

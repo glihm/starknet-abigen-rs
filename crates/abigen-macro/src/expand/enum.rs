@@ -29,6 +29,7 @@ impl Expandable for CairoEnum {
             }
         }
     }
+
     fn expand_impl(&self) -> TokenStream2 {
         let name_str = &self.name.get_type_name_only();
         let enum_name = str_to_ident(name_str);

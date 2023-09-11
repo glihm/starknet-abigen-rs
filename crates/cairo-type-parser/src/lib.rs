@@ -6,6 +6,7 @@ use abi_type::AbiType;
 
 #[derive(Debug)]
 pub enum CairoAbiEntry {
+    Array(Vec<AbiType>),
     Struct(CairoStruct),
     Enum(CairoEnum),
     Function(CairoFunction),

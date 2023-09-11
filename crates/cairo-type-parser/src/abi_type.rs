@@ -8,12 +8,13 @@ use std::str::Chars;
 /// Abi types are strings that represent cairo types.
 /// It's important to note that, due to the serialization,
 /// the cairo types are flatten into the ABI json file.
-///
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum AbiType {
     Basic(String),
     // TODO: is there a better way to avoid infinite recursion without box?
-    Nested(String, Box<AbiType>),
+    // Array and span are handled by the same struct.
+    Array(Box<AbiType>),
+    Nested(String, Vec<AbiType>),
     Tuple(Vec<AbiType>),
 }
 
@@ -29,6 +30,7 @@ impl AbiType {
         let name = match self {
             AbiType::Basic(n) => n,
             AbiType::Nested(n, _) => n,
+            AbiType::Array(_) => return "|array|".to_string(),
             AbiType::Tuple(_) => return "|tuple|".to_string(),
         };
 
@@ -54,12 +56,10 @@ impl AbiType {
             _ => (),
         };
 
-        // Only Tuple or Nested from here.
-
+        // Only Tuple, Array or Nested from here.
         match type_str.as_str() {
             "|tuple|" => rust_type.push_str("("),
-            "Span" => rust_type.push_str(format!("Vec{open_punc}").as_str()),
-            "Array" => rust_type.push_str(format!("Vec{open_punc}").as_str()),
+            "|array|" => rust_type.push_str(format!("Vec{open_punc}").as_str()),
             _ => {
                 // Structs can be nested, but the type is flatten
                 // for each member. So we can only return the type name.
@@ -68,7 +68,16 @@ impl AbiType {
         };
 
         match self {
-            AbiType::Nested(_, inner) => {
+            AbiType::Nested(_, inners) => {
+                for inner in inners {
+                    if open_punc == "::<" {
+                        rust_type.push_str(&inner.to_rust_type_path())
+                    } else {
+                        rust_type.push_str(&inner.to_rust_type())
+                    }
+                }
+            }
+            AbiType::Array(inner) => {
                 if open_punc == "::<" {
                     rust_type.push_str(&inner.to_rust_type_path())
                 } else {
@@ -93,8 +102,7 @@ impl AbiType {
 
         match type_str.as_str() {
             "|tuple|" => rust_type.push_str(")"),
-            "Span" => rust_type.push('>'),
-            "Array" => rust_type.push('>'),
+            "|array|" => rust_type.push('>'),
             _ => (), // Nothing to do here, we only close nested tuple/array.
         }
 
@@ -123,7 +131,6 @@ impl AbiType {
         let mut nested_types = Vec::new();
         let mut current_type = String::new();
         let mut in_nested = false;
-        let mut in_tuple = false;
 
         while let Some(c) = chars.peek() {
             match c {
@@ -148,22 +155,12 @@ impl AbiType {
                     chars.next();
                     let tuple_type = Self::parse_tuple(chars);
                     nested_types.push(tuple_type);
-                    in_tuple = true;
                 }
                 ')' => {
-                    if in_tuple {
-                        chars.next();
-                        in_tuple = false;
-                    } else {
-                        break;
-                    }
+                    break;
                 }
                 ',' => {
-                    if in_tuple {
-                        chars.next();
-                    } else {
-                        break;
-                    }
+                    break;
                 }
                 ' ' => {
                     // Ignore white spaces.
@@ -183,29 +180,25 @@ impl AbiType {
         if nested_types.is_empty() {
             // TODO: check if this one may be handled as Basic("()");
             AbiType::Basic("()".to_string())
-        } else if nested_types.len() >= 1 {
-            // Basic or Nested.
-            // TODO: for now, some enums like Result may have two nested types.
-            // We only return the first one for now. That's why we use >= 1.
+        } else if nested_types.len() == 1 {
+            // Basic, Array or Nested with 1 inner type.
             nested_types.pop().unwrap()
         } else if chars.nth(0) == Some('(') {
             // Tuple.
             AbiType::Tuple(nested_types)
         } else {
-            println!("UNREACHABLE: {:?}", nested_types);
-            unreachable!()
+            // Nested types into a nested type.
+            println!("NESTED_TYPES? {:?}", nested_types);
+            unreachable!();
+            //AbiType::Nested(current_type.to_string(), nested_types)
         }
     }
 
     /// Parses a [`AbiType::Nested`] type.
     fn parse_nested(current_type: &str, chars: &mut Peekable<Chars>) -> AbiType {
-        let mut inner = None;
+        let mut inners = vec![];
 
-        // TODO: Nested types can be multiple. Example for Result<T, E>
-        // in cairo.
-        // However, at least for now, we only care about the nested type
-        // for Span and Array, which is only one type.
-        //
+        let is_array = current_type == "core::array::Array" || current_type == "core::array::Span";
 
         while let Some(c) = chars.peek() {
             match c {
@@ -215,19 +208,26 @@ impl AbiType {
                 }
                 ',' => {
                     chars.next();
-                    // For now, only the last inner type will be captured.
-                    // TODO: fix this an get back to vec as the original
-                    // version to support multiple inner types.
+                    inners.push(Self::parse_type(chars))
                 }
                 _ => {
-                    inner = Some(Self::parse_type(chars));
+                    inners.push(Self::parse_type(chars));
                 }
             }
         }
 
-        match inner {
-            Some(i) => AbiType::Nested(current_type.to_string(), Box::new(i)),
-            None => panic!("Nested type expects exactly one inner type"),
+        if inners.len() == 0 {
+            panic!("Array/Nested type expects at least one inner type");
+        }
+
+        if is_array {
+            if inners.len() == 1 {
+                AbiType::Array(Box::new(inners[0].clone()))
+            } else {
+                panic!("Array/Span expect exactly one inner type");
+            }
+        } else {
+            AbiType::Nested(current_type.to_string(), inners)
         }
     }
 
@@ -270,7 +270,7 @@ mod tests {
 
         let t = AbiType::Nested(
             "MyStruct".to_string(),
-            Box::new(AbiType::Basic("u32".to_string())),
+            vec![AbiType::Basic("u32".to_string())],
         );
         assert_eq!(t.get_type_name_only(), "MyStruct");
 
@@ -279,6 +279,9 @@ mod tests {
 
         let t = AbiType::Basic("()".to_string());
         assert_eq!(t.get_type_name_only(), "()");
+
+        let t = AbiType::Array(Box::new(AbiType::Basic("core::felt252".to_string())));
+        assert_eq!(t.get_type_name_only(), "|array|");
     }
 
     #[test]
@@ -286,11 +289,8 @@ mod tests {
         let t = AbiType::Basic("core::felt252".to_string());
         assert_eq!(t.get_type_name_only(), "felt252");
 
-        let t = AbiType::Nested(
-            "core::array::Array".to_string(),
-            Box::new(AbiType::Basic("core::felt252".to_string())),
-        );
-        assert_eq!(t.get_type_name_only(), "Array");
+        let t = AbiType::Array(Box::new(AbiType::Basic("core::felt252".to_string())));
+        assert_eq!(t.get_type_name_only(), "|array|");
     }
 
     #[test]
@@ -329,19 +329,12 @@ mod tests {
 
     #[test]
     fn test_to_rust_type_nested() {
-        let t = AbiType::Nested(
-            "core::array::Array".to_string(),
-            Box::new(AbiType::Basic("core::felt252".to_string())),
-        );
+        let t = AbiType::Array(Box::new(AbiType::Basic("core::felt252".to_string())));
         assert_eq!(t.to_rust_type(), "Vec<starknet::core::types::FieldElement>");
 
-        let t = AbiType::Nested(
-            "core::array::Array".to_string(),
-            Box::new(AbiType::Nested(
-                "core::array::Array".to_string(),
-                Box::new(AbiType::Basic("core::felt252".to_string())),
-            )),
-        );
+        let t = AbiType::Array(Box::new(AbiType::Array(Box::new(AbiType::Basic(
+            "core::felt252".to_string(),
+        )))));
         assert_eq!(
             t.to_rust_type(),
             "Vec<Vec<starknet::core::types::FieldElement>>"
@@ -349,20 +342,17 @@ mod tests {
 
         let t = AbiType::Nested(
             "mod1::mod2::MyStruct".to_string(),
-            Box::new(AbiType::Basic("u32".to_string())),
+            vec![AbiType::Basic("u32".to_string())],
         );
         assert_eq!(t.to_rust_type(), "MyStruct");
     }
 
     #[test]
     fn test_to_rust_type_nested_tuple() {
-        let t = AbiType::Nested(
-            "core::array::Array".to_string(),
-            Box::new(AbiType::Tuple(vec![
-                AbiType::Basic("core::felt252".to_string()),
-                AbiType::Basic("core::integer::u128".to_string()),
-            ])),
-        );
+        let t = AbiType::Array(Box::new(AbiType::Tuple(vec![
+            AbiType::Basic("core::felt252".to_string()),
+            AbiType::Basic("core::integer::u128".to_string()),
+        ])));
         assert_eq!(
             t.to_rust_type(),
             "Vec<(starknet::core::types::FieldElement, u128)>"
@@ -371,22 +361,15 @@ mod tests {
 
     #[test]
     fn test_to_rust_type_path_nested() {
-        let t = AbiType::Nested(
-            "core::array::Array".to_string(),
-            Box::new(AbiType::Basic("core::felt252".to_string())),
-        );
+        let t = AbiType::Array(Box::new(AbiType::Basic("core::felt252".to_string())));
         assert_eq!(
             t.to_rust_type_path(),
             "Vec::<starknet::core::types::FieldElement>"
         );
 
-        let t = AbiType::Nested(
-            "core::array::Array".to_string(),
-            Box::new(AbiType::Nested(
-                "core::array::Array".to_string(),
-                Box::new(AbiType::Basic("core::felt252".to_string())),
-            )),
-        );
+        let t = AbiType::Array(Box::new(AbiType::Array(Box::new(AbiType::Basic(
+            "core::felt252".to_string(),
+        )))));
         assert_eq!(
             t.to_rust_type_path(),
             "Vec::<Vec::<starknet::core::types::FieldElement>>"
@@ -404,23 +387,17 @@ mod tests {
             "(starknet::core::types::FieldElement, u128)"
         );
 
-        let t = AbiType::Nested(
-            "core::array::Array".to_string(),
-            Box::new(AbiType::Tuple(vec![
-                AbiType::Basic("core::felt252".to_string()),
-                AbiType::Basic("core::integer::u32".to_string()),
-            ])),
-        );
+        let t = AbiType::Array(Box::new(AbiType::Tuple(vec![
+            AbiType::Basic("core::felt252".to_string()),
+            AbiType::Basic("core::integer::u32".to_string()),
+        ])));
         assert_eq!(
             t.to_rust_type_path(),
             "Vec::<(starknet::core::types::FieldElement, u32)>"
         );
 
         let t = AbiType::Tuple(vec![
-            AbiType::Nested(
-                "core::array::Span".to_string(),
-                Box::new(AbiType::Basic("core::felt252".to_string())),
-            ),
+            AbiType::Array(Box::new(AbiType::Basic("core::felt252".to_string()))),
             AbiType::Basic("core::integer::u32".to_string()),
         ]);
         assert_eq!(
@@ -452,7 +429,7 @@ mod tests {
         let abi_type = AbiType::from_string("mytype<u32>");
         let expected = AbiType::Nested(
             "mytype".to_string(),
-            Box::new(AbiType::Basic("u32".to_string())),
+            vec![AbiType::Basic("u32".to_string())],
         );
         assert_eq!(abi_type, expected);
     }
@@ -462,10 +439,36 @@ mod tests {
         let abi_type = AbiType::from_string("mytype<yourtype<u32>>");
         let expected = AbiType::Nested(
             "mytype".to_string(),
-            Box::new(AbiType::Nested(
+            vec![AbiType::Nested(
                 "yourtype".to_string(),
-                Box::new(AbiType::Basic("u32".to_string())),
-            )),
+                vec![AbiType::Basic("u32".to_string())],
+            )],
+        );
+        assert_eq!(abi_type, expected);
+    }
+
+    #[test]
+    fn test_nested_various() {
+        let abi_type = AbiType::from_string("mytype<t1, t2>");
+        let expected = AbiType::Nested(
+            "mytype".to_string(),
+            vec![
+                AbiType::Basic("t1".to_string()),
+                AbiType::Basic("t2".to_string()),
+            ],
+        );
+        assert_eq!(abi_type, expected);
+    }
+
+    #[test]
+    fn test_nested_various_module() {
+        let abi_type = AbiType::from_string("core::result::Result<(), core::felt252>");
+        let expected = AbiType::Nested(
+            "core::result::Result".to_string(),
+            vec![
+                AbiType::Basic("()".to_string()),
+                AbiType::Basic("core::felt252".to_string()),
+            ],
         );
         assert_eq!(abi_type, expected);
     }
@@ -485,10 +488,10 @@ mod tests {
         let abi_type = AbiType::from_string("mytuple<(u32, u64)>");
         let expected = AbiType::Nested(
             "mytuple".to_string(),
-            Box::new(AbiType::Tuple(vec![
+            vec![AbiType::Tuple(vec![
                 AbiType::Basic("u32".to_string()),
                 AbiType::Basic("u64".to_string()),
-            ])),
+            ])],
         );
         assert_eq!(abi_type, expected);
     }
@@ -496,19 +499,13 @@ mod tests {
     #[test]
     fn test_nested_tuple_nested_type() {
         let abi_type = AbiType::from_string("core::array::Array::<(core::felt252, core::array::Array::<(core::felt252, core::felt252)>)>");
-        let expected = AbiType::Nested(
-            "core::array::Array".to_string(),
-            Box::new(AbiType::Tuple(vec![
+        let expected = AbiType::Array(Box::new(AbiType::Tuple(vec![
+            AbiType::Basic("core::felt252".to_string()),
+            AbiType::Array(Box::new(AbiType::Tuple(vec![
                 AbiType::Basic("core::felt252".to_string()),
-                AbiType::Nested(
-                    "core::array::Array".to_string(),
-                    Box::new(AbiType::Tuple(vec![
-                        AbiType::Basic("core::felt252".to_string()),
-                        AbiType::Basic("core::felt252".to_string()),
-                    ])),
-                ),
-            ])),
-        );
+                AbiType::Basic("core::felt252".to_string()),
+            ]))),
+        ])));
         assert_eq!(abi_type, expected);
     }
 
@@ -518,13 +515,10 @@ mod tests {
             "(core::array::Span::<(core::felt252, contracts::c1::PG)>, core::felt252)",
         );
         let expected = AbiType::Tuple(vec![
-            AbiType::Nested(
-                "core::array::Span".to_string(),
-                Box::new(AbiType::Tuple(vec![
-                    AbiType::Basic("core::felt252".to_string()),
-                    AbiType::Basic("contracts::c1::PG".to_string()),
-                ])),
-            ),
+            AbiType::Array(Box::new(AbiType::Tuple(vec![
+                AbiType::Basic("core::felt252".to_string()),
+                AbiType::Basic("contracts::c1::PG".to_string()),
+            ]))),
             AbiType::Basic("core::felt252".to_string()),
         ]);
         assert_eq!(abi_type, expected);
