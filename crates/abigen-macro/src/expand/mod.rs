@@ -3,6 +3,7 @@
 // on the quote!, but we should care about trailing commas for instance.
 
 mod r#enum;
+mod r#event;
 mod r#function;
 mod r#struct;
 mod utils;

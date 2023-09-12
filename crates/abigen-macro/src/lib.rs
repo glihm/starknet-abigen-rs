@@ -8,8 +8,10 @@ use syn::{
     parse_macro_input, Ident, LitStr, Token,
 };
 
-use cairo_type_parser::{abi_type::AbiType, CairoEnum};
-use cairo_type_parser::{CairoFunction, CairoStruct};
+use cairo_type_parser::{
+    abi_type::AbiType, CairoAbiEventEnum, CairoAbiEventStruct, CairoEnum, CairoEvent,
+    CairoFunction, CairoStruct, CairoTypedAbiEvent, CairoUntypedAbiEvent,
+};
 use cairo_types::ty::{CAIRO_BASIC_ENUMS, CAIRO_BASIC_STRUCTS};
 
 mod expand;
@@ -150,9 +152,6 @@ pub fn abigen(input: TokenStream) -> TokenStream {
                 functions.push(cairo_entry.expand_impl());
             }
             AbiEntry::Enum(e) => {
-                // TODO: also skip Option, Result and other
-                // very basic enums of Cairo that must be implemented
-                // directly in CairoType.
                 let cairo_entry = CairoEnum {
                     name: AbiType::from_string(&e.name),
                     variants: e
@@ -169,7 +168,54 @@ pub fn abigen(input: TokenStream) -> TokenStream {
                 tokens.push(cairo_entry.expand_decl());
                 tokens.push(cairo_entry.expand_impl());
             }
-            AbiEntry::Event(_) => {}
+            AbiEntry::Event(e) => {
+                let cairo_entry: CairoEvent = match e {
+                    AbiEvent::Typed(typed_e) => match typed_e {
+                        TypedAbiEvent::Struct(event_struct) => {
+                            CairoEvent::Typed(CairoTypedAbiEvent::Struct(CairoAbiEventStruct {
+                                name: AbiType::from_string(&event_struct.name),
+                                members: event_struct
+                                    .members
+                                    .iter()
+                                    .map(|m| {
+                                        (
+                                            m.name.clone(),
+                                            AbiType::from_string(&m.r#type),
+                                            m.kind.clone(),
+                                        )
+                                    })
+                                    .collect(),
+                            }))
+                        }
+                        TypedAbiEvent::Enum(event_enum) => {
+                            CairoEvent::Typed(CairoTypedAbiEvent::Enum(CairoAbiEventEnum {
+                                name: AbiType::from_string(&event_enum.name),
+                                variants: event_enum
+                                    .variants
+                                    .iter()
+                                    .map(|m| {
+                                        (
+                                            m.name.clone(),
+                                            AbiType::from_string(&m.r#type),
+                                            m.kind.clone(),
+                                        )
+                                    })
+                                    .collect(),
+                            }))
+                        }
+                    },
+                    AbiEvent::Untyped(untyped_e) => CairoEvent::Untyped(CairoUntypedAbiEvent {
+                        name: AbiType::from_string(&untyped_e.name),
+                        inputs: untyped_e
+                            .inputs
+                            .iter()
+                            .map(|m| (m.name.clone(), AbiType::from_string(&m.r#type)))
+                            .collect(),
+                    }),
+                };
+                tokens.push(cairo_entry.expand_decl());
+                tokens.push(cairo_entry.expand_impl());
+            }
             _ => (),
         }
     }
