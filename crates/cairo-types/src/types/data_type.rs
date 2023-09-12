@@ -66,4 +66,29 @@ mod tests {
         assert_eq!(bool::deserialize(&felts, 1).unwrap(), true);
         assert_eq!(bool::deserialize(&felts, 2).unwrap(), false);
     }
+
+    #[test]
+    fn test_serialize_field_element() {
+        let f = FieldElement::ZERO;
+        let felts = FieldElement::serialize(&f);
+        assert_eq!(felts.len(), 1);
+        assert_eq!(felts[0], FieldElement::ZERO);
+    }
+
+    #[test]
+    fn test_deserialize_field_element() {
+        let felts = vec![FieldElement::ZERO, FieldElement::ONE, FieldElement::TWO]; // allocating in the heap.
+        assert_eq!(
+            FieldElement::deserialize(&felts, 0).unwrap(),
+            FieldElement::ZERO
+        );
+        assert_eq!(
+            FieldElement::deserialize(&felts, 1).unwrap(),
+            FieldElement::ONE
+        );
+        assert_eq!(
+            FieldElement::deserialize(&felts, 2).unwrap(),
+            FieldElement::TWO
+        );
+    }
 }

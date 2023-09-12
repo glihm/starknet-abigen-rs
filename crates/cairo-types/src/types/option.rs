@@ -49,10 +49,11 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use alloc::vec::Vec;
     use starknet::core::types::FieldElement;
 
     #[test]
-    fn option_some_serialize() {
+    fn test_option_some_serialize() {
         let o = Some(u32::MAX);
         let felts = Option::<u32>::serialize(&o);
         assert_eq!(felts.len(), 2);
@@ -61,7 +62,7 @@ mod tests {
     }
 
     #[test]
-    fn option_some_deserialize() {
+    fn test_option_some_deserialize() {
         let felts = vec![FieldElement::ZERO, FieldElement::from(u32::MAX)];
         let o = Option::<u32>::deserialize(&felts, 0).unwrap();
         assert_eq!(o, Some(u32::MAX));
@@ -76,7 +77,40 @@ mod tests {
     }
 
     #[test]
-    fn option_none_serialize() {
+    fn test_option_some_array_serialize() {
+        let o = Some(vec![u32::MAX, u32::MAX]);
+        let felts = Option::<Vec<u32>>::serialize(&o);
+        assert_eq!(felts.len(), 4);
+        assert_eq!(felts[0], FieldElement::ZERO);
+        assert_eq!(felts[1], FieldElement::from(2_u32));
+        assert_eq!(felts[2], FieldElement::from(u32::MAX));
+        assert_eq!(felts[3], FieldElement::from(u32::MAX));
+    }
+
+    #[test]
+    fn test_option_some_array_deserialize() {
+        let felts = vec![
+            FieldElement::ZERO,
+            FieldElement::from(2_u32),
+            FieldElement::from(u32::MAX),
+            FieldElement::from(u32::MAX),
+        ];
+        let o = Option::<Vec<u32>>::deserialize(&felts, 0).unwrap();
+        assert_eq!(o, Some(vec![u32::MAX, u32::MAX]));
+
+        let felts = vec![
+            FieldElement::THREE,
+            FieldElement::ZERO,
+            FieldElement::from(2_u32),
+            FieldElement::from(u32::MAX),
+            FieldElement::from(u32::MAX),
+        ];
+        let o = Option::<Vec<u32>>::deserialize(&felts, 1).unwrap();
+        assert_eq!(o, Some(vec![u32::MAX, u32::MAX]));
+    }
+
+    #[test]
+    fn test_option_none_serialize() {
         let o: Option<u32> = None;
         let felts = Option::<u32>::serialize(&o);
         assert_eq!(felts.len(), 1);
@@ -84,7 +118,7 @@ mod tests {
     }
 
     #[test]
-    fn option_none_deserialize() {
+    fn test_option_none_deserialize() {
         let felts = vec![FieldElement::ONE];
         let o = Option::<u32>::deserialize(&felts, 0).unwrap();
         assert_eq!(o, None);

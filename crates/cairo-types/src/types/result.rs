@@ -53,7 +53,7 @@ mod tests {
     use starknet::core::types::FieldElement;
 
     #[test]
-    fn result_ok_serialize() {
+    fn test_result_ok_serialize() {
         let r = Ok(u32::MAX);
         let felts = Result::<u32, FieldElement>::serialize(&r);
         assert_eq!(felts.len(), 2);
@@ -62,14 +62,14 @@ mod tests {
     }
 
     #[test]
-    fn result_ok_deserialize() {
+    fn test_result_ok_deserialize() {
         let felts = vec![FieldElement::ZERO, FieldElement::from(u32::MAX)];
         let r = Result::<u32, FieldElement>::deserialize(&felts, 0).unwrap();
         assert_eq!(r, Ok(u32::MAX));
     }
 
     #[test]
-    fn result_ok_unit_serialize() {
+    fn test_result_ok_unit_serialize() {
         let r = Ok(());
         let felts = Result::<(), FieldElement>::serialize(&r);
         assert_eq!(felts.len(), 1);
@@ -77,14 +77,14 @@ mod tests {
     }
 
     #[test]
-    fn result_ok_unit_deserialize() {
+    fn test_result_ok_unit_deserialize() {
         let felts = vec![FieldElement::ZERO];
         let r = Result::<(), FieldElement>::deserialize(&felts, 0).unwrap();
         assert_eq!(r, Ok(()));
     }
 
     #[test]
-    fn result_err_serialize() {
+    fn test_result_err_serialize() {
         let r = Err(FieldElement::ONE);
         let felts = Result::<FieldElement, FieldElement>::serialize(&r);
         assert_eq!(felts.len(), 2);
@@ -93,7 +93,7 @@ mod tests {
     }
 
     #[test]
-    fn result_err_deserialize() {
+    fn test_result_err_deserialize() {
         let felts = vec![FieldElement::ONE, FieldElement::ONE];
         let r = Result::<FieldElement, FieldElement>::deserialize(&felts, 0).unwrap();
         assert_eq!(r, Err(FieldElement::ONE));

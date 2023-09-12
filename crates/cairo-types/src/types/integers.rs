@@ -70,14 +70,6 @@ mod tests {
     }
 
     #[test]
-    fn test_serialize_u32() {
-        let v = 123_u32;
-        let felts = u32::serialize(&v);
-        assert_eq!(felts.len(), 1);
-        assert_eq!(felts[0], FieldElement::from(123 as u32));
-    }
-
-    #[test]
     fn test_serialize_u16() {
         let v = 12_u16;
         let felts = u16::serialize(&v);
@@ -90,6 +82,14 @@ mod tests {
         let felts = vec![FieldElement::from(12_u16), FieldElement::from(10_u8)];
         assert_eq!(u16::deserialize(&felts, 0).unwrap(), 12);
         assert_eq!(u16::deserialize(&felts, 1).unwrap(), 10);
+    }
+
+    #[test]
+    fn test_serialize_u32() {
+        let v = 123_u32;
+        let felts = u32::serialize(&v);
+        assert_eq!(felts.len(), 1);
+        assert_eq!(felts[0], FieldElement::from(123 as u32));
     }
 
     #[test]
@@ -127,6 +127,21 @@ mod tests {
         let felts = vec![FieldElement::from(123_u128), FieldElement::from(99_u128)];
         assert_eq!(u128::deserialize(&felts, 0).unwrap(), 123);
         assert_eq!(u128::deserialize(&felts, 1).unwrap(), 99);
+    }
+
+    #[test]
+    fn test_serialize_usize() {
+        let v = 123;
+        let felts = usize::serialize(&v);
+        assert_eq!(felts.len(), 1);
+        assert_eq!(felts[0], FieldElement::from(123 as u128));
+    }
+
+    #[test]
+    fn test_deserialize_usize() {
+        let felts = vec![FieldElement::from(123_u128), FieldElement::from(99_u64)];
+        assert_eq!(usize::deserialize(&felts, 0).unwrap(), 123);
+        assert_eq!(usize::deserialize(&felts, 1).unwrap(), 99);
     }
 
     #[test]

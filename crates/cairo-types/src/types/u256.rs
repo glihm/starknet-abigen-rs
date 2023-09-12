@@ -3,12 +3,12 @@ use alloc::{vec, vec::Vec};
 use starknet::core::types::FieldElement;
 
 #[derive(PartialEq, Debug)]
-pub struct CairoU256 {
+pub struct U256 {
     low: u128,
     high: u128,
 }
 
-impl CairoType for CairoU256 {
+impl CairoType for U256 {
     type RustType = Self;
 
     const SERIALIZED_SIZE: Option<usize> = Some(2);
@@ -22,7 +22,7 @@ impl CairoType for CairoU256 {
 
         let high: &[u8; 16] = &felts[offset + 1].to_bytes_be()[16..].try_into().unwrap();
 
-        Ok(U256 {
+        Ok(Self {
             low: u128::from_be_bytes(*low),
             high: u128::from_be_bytes(*high),
         })
