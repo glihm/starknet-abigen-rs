@@ -24,6 +24,19 @@ cd crates/contracts && scarb build && make setup
 cargo run
 ```
 
+## Overview
+
+This repository contains the following crates:
+
+- [`abigen-macro`] - The [`abigen!`] procedural macro
+- [`cairo-types`] - Cairo types binded with Rust types
+- [`cairo-type-parser`] - A simple parser for Cairo type strings
+
+[`abigen-macro`]: ./crates/abigen-macro
+[`cairo-types`]: ./crates/cairo-types
+[`cairo-type-parser`]: ./crates/cairo-type-parser
+[`abigen!`]: ./crates/abigen-macro
+
 ## Cairo - Rust similarity
 
 We've tried to leverage the similarity between Rust and Cairo.
@@ -68,16 +81,16 @@ Any type implementing the `CairoType` trait can be used this way.
 
 Supported types as built-in in cairo-types:
 
-* `u8,16,32,64,128`
-* `i8,16,32,64,128`
-* `tuple size 2`
-* `Span/Array` -> `Vec`
-* `ClassHash`
-* `ContractAddress`
-* `EthAddress`
-* `Option`
-* `Result`
-* `unit`
+- `u8,16,32,64,128`
+- `i8,16,32,64,128`
+- `tuple size 2`
+- `Span/Array` -> `Vec`
+- `ClassHash`
+- `ContractAddress`
+- `EthAddress`
+- `Option`
+- `Result`
+- `unit`
 
 Any struct/enum in the ABI that use those types or inner struct/enum
 that uses those types will work.
@@ -307,3 +320,11 @@ But for now, the approach is inspired from `alloy`, but simpler and more hand ma
 This is a very early stage of the project. The idea is to have a first version that can be revised by the community and then enhanced.
 
 Hopefully one day we can have a great lib that can be integrated to `starknet-rs` or remain a stand alone crate which can be combined with `starknet-rs`.
+
+## Credits
+
+None of these crates would have been possible without the great work done in:
+
+- [`ethers-rs`](https://github.com/gakonst/ethers-rs/)
+- [`alloy-rs`](https://github.com/alloy-rs/core/)
+- [`starknet-rs`](https://github.com/xJonathanLEI/starknet-rs/)
