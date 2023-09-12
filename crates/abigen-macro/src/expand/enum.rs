@@ -13,7 +13,7 @@ impl Expandable for CairoEnum {
         let mut variants: Vec<TokenStream2> = vec![];
 
         for (name, abi_type) in &self.variants {
-            let name = str_to_ident(&name);
+            let name = str_to_ident(name);
             let ty = str_to_type(&abi_type.to_rust_type());
             if abi_type == &AbiType::Basic("()".to_string()) {
                 variants.push(quote!(#name));

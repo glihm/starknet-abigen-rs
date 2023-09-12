@@ -12,7 +12,7 @@ impl Expandable for CairoFunction {
 
         let mut inputs: Vec<TokenStream2> = vec![];
         for (name, abi_type) in &self.inputs {
-            let name = str_to_ident(&name);
+            let name = str_to_ident(name);
             let ty = str_to_type(&abi_type.to_rust_type());
             inputs.push(quote!(#name:#ty));
         }
@@ -48,7 +48,7 @@ impl Expandable for CairoFunction {
 
         let mut serializations: Vec<TokenStream2> = vec![];
         for (name, abi_type) in &self.inputs {
-            let name = str_to_ident(&name);
+            let name = str_to_ident(name);
             let ty = str_to_type(&abi_type.to_rust_type_path());
             serializations.push(quote! {
                 calldata.extend(#ty::serialize(&#name));

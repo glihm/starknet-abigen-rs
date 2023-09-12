@@ -13,7 +13,7 @@ impl Expandable for CairoStruct {
 
         let mut members: Vec<TokenStream2> = vec![];
         for (name, member) in &self.members {
-            let name = str_to_ident(&name);
+            let name = str_to_ident(name);
             let ty = str_to_type(&member.to_rust_type());
 
             members.push(quote!(#name: #ty));
@@ -37,7 +37,7 @@ impl Expandable for CairoStruct {
 
         let mut is_first = true;
         for (name, member) in &self.members {
-            let name = str_to_ident(&name);
+            let name = str_to_ident(name);
             names.push(quote!(#name));
 
             let ty = str_to_type(&member.to_rust_type_path());

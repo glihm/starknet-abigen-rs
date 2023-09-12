@@ -34,7 +34,7 @@ impl AbiType {
             AbiType::Tuple(_) => return "|tuple|".to_string(),
         };
 
-        name.split("::").last().unwrap_or(&name).to_string()
+        name.split("::").last().unwrap_or(name).to_string()
     }
 
     pub fn to_rust_type(&self) -> String {
@@ -51,14 +51,13 @@ impl AbiType {
         let mut rust_type = String::new();
         let type_str = self.get_type_name_only();
 
-        match self {
-            AbiType::Basic(_) => return AbiType::to_rust_basic_types(&type_str),
-            _ => (),
+        if let AbiType::Basic(_) = self {
+            return AbiType::to_rust_basic_types(&type_str);
         };
 
         // Only Tuple, Array or Nested from here.
         match type_str.as_str() {
-            "|tuple|" => rust_type.push_str("("),
+            "|tuple|" => rust_type.push('('),
             "|array|" => rust_type.push_str(format!("Vec{open_punc}").as_str()),
             _ => {
                 // Structs can be nested, but the type is flatten
@@ -101,7 +100,7 @@ impl AbiType {
         };
 
         match type_str.as_str() {
-            "|tuple|" => rust_type.push_str(")"),
+            "|tuple|" => rust_type.push(')'),
             "|array|" => rust_type.push('>'),
             _ => (), // Nothing to do here, we only close nested tuple/array.
         }
@@ -138,7 +137,7 @@ impl AbiType {
                     chars.next();
                     // In cairo, a nested type is always preceded by a separator "::".
                     let nested_type =
-                        Self::parse_nested(&current_type.trim_end_matches("::"), chars);
+                        Self::parse_nested(current_type.trim_end_matches("::"), chars);
                     nested_types.push(nested_type);
                     in_nested = true;
                     current_type.clear();
@@ -183,7 +182,7 @@ impl AbiType {
         } else if nested_types.len() == 1 {
             // Basic, Array or Nested with 1 inner type.
             nested_types.pop().unwrap()
-        } else if chars.nth(0) == Some('(') {
+        } else if chars.next() == Some('(') {
             // Tuple.
             AbiType::Tuple(nested_types)
         } else {
@@ -216,7 +215,7 @@ impl AbiType {
             }
         }
 
-        if inners.len() == 0 {
+        if inners.is_empty() {
             panic!("Array/Nested type expects at least one inner type");
         }
 
@@ -235,7 +234,7 @@ impl AbiType {
     fn parse_tuple(chars: &mut Peekable<Chars>) -> AbiType {
         let mut tuple_values = Vec::new();
 
-        if let Some(_) = chars.next_if(|&x| x == ')') {
+        if chars.next_if(|&x| x == ')').is_some() {
             // TODO: check if this one may be changed to `Basic("()")`.
             return AbiType::Basic("()".to_string());
         }

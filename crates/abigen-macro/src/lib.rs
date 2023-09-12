@@ -1,7 +1,6 @@
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
-use serde_json;
 use starknet::core::types::contract::*;
 use std::fs;
 use syn::{
@@ -131,12 +130,11 @@ pub fn abigen(input: TokenStream) -> TokenStream {
                 // TODO: ask to Starkware if there is a case where several outputs
                 // are returned. As the functions only have one output type (which can be
                 // nested, of course).
-                let output;
-                if f.outputs.len() > 0 {
-                    output = Some(AbiType::from_string(&f.outputs[0].r#type));
+                let output = if !f.outputs.is_empty() {
+                    Some(AbiType::from_string(&f.outputs[0].r#type))
                 } else {
-                    output = None;
-                }
+                    None
+                };
 
                 let cairo_entry = CairoFunction {
                     name: AbiType::from_string(&f.name),
