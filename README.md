@@ -2,6 +2,17 @@
 
 This exploratory work aims at generating rust bindings from a contract ABI.
 
+Before the first release, we are terminating the following:
+1. Handling the events correctly as struct and enums.
+
+2. Support generic types, which are often used in cairo.
+The generic types are the one that may cause a structure / enum being present 2+ times in the ABI.
+We then must detect that it's a generic struct/enum, and generate only one struct/enum with the genericity
+included.
+This has also an impact on the functions, as any function that take an argument that is generic must also
+take them in account.
+
+
 ## Quick start
 
 1. Terminal 1: Run Katana
