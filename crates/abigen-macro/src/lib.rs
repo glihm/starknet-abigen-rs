@@ -169,7 +169,69 @@ pub fn abigen(input: TokenStream) -> TokenStream {
                 tokens.push(cairo_entry.expand_decl());
                 tokens.push(cairo_entry.expand_impl());
             }
-            AbiEntry::Event(_) => {}
+            AbiEntry::Event(e) => {
+                match e {
+                    AbiEvent::Typed(typed_e) => match typed_e {
+                        TypedAbiEvent::Struct(event_struct) => {
+                            let cairo_entry = CairoStruct {
+                                name: AbiType::from_string(&event_struct.name),
+                                members: event_struct
+                                    .members
+                                    .iter()
+                                    .map(|m| (m.name.clone(), AbiType::from_string(&m.r#type)))
+                                    .collect(),
+                            };
+
+                            if CAIRO_BASIC_STRUCTS
+                                .contains(&cairo_entry.name.get_type_name_only().as_str())
+                            {
+                                continue;
+                            }
+
+                            tokens.push(cairo_entry.expand_decl());
+                            tokens.push(cairo_entry.expand_impl());
+                        }
+                        TypedAbiEvent::Enum(event_enum) => {
+                            let cairo_entry = CairoEnum {
+                                name: AbiType::from_string(&event_enum.name),
+                                variants: event_enum
+                                    .variants
+                                    .iter()
+                                    .map(|v| (v.name.clone(), AbiType::from_string(&v.r#type)))
+                                    .collect(),
+                            };
+
+                            if CAIRO_BASIC_ENUMS
+                                .contains(&cairo_entry.name.get_type_name_only().as_str())
+                            {
+                                continue;
+                            }
+
+                            tokens.push(cairo_entry.expand_decl());
+                            tokens.push(cairo_entry.expand_impl());
+                        }
+                    },
+                    AbiEvent::Untyped(untyped_e) => {
+                        let cairo_entry = CairoStruct {
+                            name: AbiType::from_string(&untyped_e.name),
+                            members: untyped_e
+                                .inputs
+                                .iter()
+                                .map(|m| (m.name.clone(), AbiType::from_string(&m.r#type)))
+                                .collect(),
+                        };
+
+                        if CAIRO_BASIC_STRUCTS
+                            .contains(&cairo_entry.name.get_type_name_only().as_str())
+                        {
+                            continue;
+                        }
+
+                        tokens.push(cairo_entry.expand_decl());
+                        tokens.push(cairo_entry.expand_impl());
+                    }
+                };
+            }
             _ => (),
         }
     }
