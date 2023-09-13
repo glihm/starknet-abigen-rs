@@ -8,6 +8,7 @@ members = [
     "crates/cairo-types",
     "crates/cairo-type-parser",
     "crates/abigen-macro",
+    "expanded-examples/",
 ]
 
 [workspace.dependencies]
