@@ -13,9 +13,9 @@ members = [
 
 [workspace.dependencies]
 # workspace crates
-cairo-types = { path = "crates/cairo-types", default-features = false  }
-cairo-type-parser = { path = "crates/cairo-type-parser", default-features = false  }
-abigen-macro = { path = "crates/abigen-macro", default-features = false  }
+cairo-types = { path = "crates/cairo-types", default-features = false }
+cairo-type-parser = { path = "crates/cairo-type-parser", default-features = false }
+abigen-macro = { path = "crates/abigen-macro", default-features = false }
 
 # serde
 serde = { version = "1.0", default-features = false, features = ["alloc"] }
@@ -29,12 +29,14 @@ syn = "2.0"
 # starknet
 starknet = "0.5.0"
 
-# Dependencies for the testing app in src.
-[dependencies]
 anyhow = "1.0"
 tokio = { version = "1.15.0", features = ["full"] }
-url = "2.2.2"
 
+# Dependencies for the testing app in src.
+[dependencies]
+url = "2.2.2"
+anyhow.workspace = true
+tokio.workspace = true
 cairo-types.workspace = true
 cairo-type-parser.workspace = true
 abigen-macro.workspace = true

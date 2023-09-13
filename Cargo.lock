@@ -516,6 +516,7 @@ dependencies = [
  "anyhow",
  "cairo-types",
  "starknet",
+ "tokio",
 ]
 
 [[package]]

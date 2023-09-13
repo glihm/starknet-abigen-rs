@@ -1,8 +1,9 @@
 use cairo_types::*;
-use starknet::macros::felt;
 use starknet::core::types::*;
+use starknet::macros::felt;
 
-// Write structs / enums.
+// Write enums.
+#[derive(Debug, PartialEq)]
 pub enum MyEnum<A> {
     Var1(A),
     Var2(FieldElement),
@@ -53,58 +54,63 @@ where
     }
 }
 
-pub struct ContractEnumGeneric {
-
-}
+pub struct ContractEnumGeneric {}
 
 impl ContractEnumGeneric {
-
     //
     pub async fn call_example<T1: CairoType<RustType = T1>>(
         &self,
-        a: MyEnum<T1>
+        a: MyEnum<T1>,
     ) -> cairo_types::Result<FieldElement> {
-
         // Serialization of the data.
         let mut calldata = Vec::new();
         calldata.extend(MyEnum::<T1>::serialize(&a));
 
-        // Make the call, which always return an array of felts.
-        let result = vec![felt!("0")];
-
         // Deserialization of the data.
-        FieldElement::deserialize(&result, 0)
+        FieldElement::deserialize(&calldata, 0)
     }
 
     //
     pub async fn call_example2<T1: CairoType<RustType = T1>, O1: CairoType<RustType = O1>>(
         &self,
-        a: MyEnum<T1>
+        a: MyEnum<T1>,
+        b: MyEnum<O1>,
     ) -> cairo_types::Result<MyEnum<O1>> {
-
         // Serialization of the data.
         let mut calldata = Vec::new();
         calldata.extend(MyEnum::<T1>::serialize(&a));
-
-        // Make the call, which always return an array of felts.
-        let result = vec![felt!("0")];
+        calldata.extend(MyEnum::<O1>::serialize(&b));
 
         // Deserialization of the data.
-        MyEnum::<O1>::deserialize(&result, 0)
+        MyEnum::<O1>::deserialize(&calldata, 0)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_call_example() {
+        let contract = ContractEnumGeneric {};
+        let my_enum = MyEnum::Var1(FieldElement::ONE);
+        let my_enum2 = MyEnum::<FieldElement>::Var2(FieldElement::TWO);
+        let my_enum3 = MyEnum::Var3(vec![1_u32, 2_32]);
+        let result1 = contract.call_example(my_enum).await.unwrap();
+        let result2 = contract.call_example(my_enum2).await.unwrap();
+        let result3 = contract.call_example(my_enum3).await.unwrap();
+        // Because serialize offset is 0, call_example returns index of Enum
+        assert_eq!(result1, FieldElement::ZERO);
+        assert_eq!(result2, FieldElement::ONE);
+        assert_eq!(result3, FieldElement::TWO);
     }
 
-    //
-    pub async fn invoke_example(
-        &self,
-        v: FieldElement,
-    ) -> anyhow::Result<FieldElement> {
-        // Serialization of inputs.
-        let mut calldata = Vec::new();
-        calldata.extend(FieldElement::serialize(&v));
-
-        // ...
-
-        // The return type is always a single felt (the transaction hash).
-        Ok(FieldElement::ONE)
+    #[tokio::test]
+    async fn test_call_example2() {
+        let contract = ContractEnumGeneric {};
+        let my_enum = MyEnum::Var1(FieldElement::ONE);
+        let my_enum3 = MyEnum::Var3(vec![1_u32, 2_32]);
+        let result1 = contract.call_example2(my_enum, my_enum3).await.unwrap();
+        assert_eq!(result1, MyEnum::Var1(1_u32));
     }
 }

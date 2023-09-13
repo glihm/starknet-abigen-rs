@@ -8,4 +8,5 @@ edition = "2021"
 [dependencies]
 cairo-types.workspace = true
 starknet.workspace = true
-anyhow = "1.0"
+tokio.workspace = true
+anyhow.workspace = true

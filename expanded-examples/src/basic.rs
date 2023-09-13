@@ -1,44 +1,29 @@
 use cairo_types::*;
-use starknet::macros::felt;
 use starknet::core::types::*;
 
-// Write structs / enums.
-
-pub struct ContractA {
-
-}
+pub struct ContractA {}
 
 impl ContractA {
-
     //
-    pub async fn call_example(
-        &self,
-        a: FieldElement
-    ) -> cairo_types::Result<FieldElement> {
-
+    pub fn call_example(&self, a: FieldElement) -> cairo_types::Result<FieldElement> {
         // Serialization of the data.
         let mut calldata = Vec::new();
         calldata.extend(FieldElement::serialize(&a));
 
-        // Make the call, which always return an array of felts.
-        let result = vec![felt!("0")];
-
         // Deserialization of the data.
-        FieldElement::deserialize(&result, 0)
+        FieldElement::deserialize(&calldata, 0)
     }
+}
 
-    //
-    pub async fn invoke_example(
-        &self,
-        v: FieldElement,
-    ) -> anyhow::Result<FieldElement> {
-        // Serialization of inputs.
-        let mut calldata = Vec::new();
-        calldata.extend(FieldElement::serialize(&v));
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-        // ...
-
-        // The return type is always a single felt (the transaction hash).
-        Ok(FieldElement::ONE)
+    #[tokio::test]
+    async fn test_call_example() {
+        let contract = ContractA {};
+        let input = FieldElement::ONE;
+        let result = contract.call_example(input).unwrap();
+        assert_eq!(result, FieldElement::ONE);
     }
 }
