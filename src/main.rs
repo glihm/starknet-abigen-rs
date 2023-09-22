@@ -112,6 +112,32 @@ abigen!(
         "type": "()"
       }
     ]
+  },
+  {
+    "type": "struct",
+    "name": "contracts::c1::TestTupleGen::<(core::felt252, core::felt252)>",
+    "members": [
+      {
+        "name": "a",
+        "type": "(core::felt252, core::felt252)"
+      },
+      {
+        "name": "b",
+        "type": "core::felt252"
+      }
+    ]
+  },
+
+  {
+    "type": "function",
+    "name": "get_val",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "core::felt252"
+      }
+    ],
+    "state_mutability": "view"
   }
 ]
 "#

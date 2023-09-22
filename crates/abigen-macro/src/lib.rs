@@ -73,7 +73,9 @@ pub fn abigen(input: TokenStream) -> TokenStream {
     // in a second loop when all structs/enums are parsed.
     for entry in &abi {
         match entry {
-            // Functions only.
+            AbiEntry::Function(f) => {
+                println!("FFF {:?}", f);
+            }
             _ => continue
         }
     }

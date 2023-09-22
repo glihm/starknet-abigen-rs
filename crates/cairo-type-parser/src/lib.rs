@@ -3,35 +3,25 @@ pub mod cairo_struct;
 pub use cairo_struct::CairoStruct;
 pub mod cairo_enum;
 pub use cairo_enum::CairoEnum;
+pub mod cairo_function;
+pub use cairo_function::CairoFunction;
 
-//use starknet::core::types::contract::StateMutability;
+#[derive(Debug, Clone)]
+pub enum CairoAny {
+    Struct(CairoStruct),
+    Enum(CairoEnum),
+    Function(Box<CairoFunction>),
+    Basic,
+}
 
-// #[derive(Debug)]
-// pub enum CairoAbiEntry {
-//     Array(Vec<AbiType>),
-//     Struct(CairoStruct),
-//     Enum(CairoEnum),
-//     Function(CairoFunction),
-// }
+impl CairoAny {
+    pub fn is_generic(&self) -> bool {
+        match self {
+            CairoAny::Struct(s) => s.is_generic(),
+            CairoAny::Enum(e) => e.is_generic(),
+            CairoAny::Function(f) => f.is_generic(),
+            CairoAny::Basic => false,
+        }
+    }
 
-// #[derive(Debug)]
-// pub struct CairoStruct {
-//     pub name: AbiType,
-//     pub members: Vec<(String, AbiType)>,
-// }
-
-// #[derive(Debug)]
-// pub struct CairoEnum {
-//     pub name: AbiType,
-//     pub variants: Vec<(String, AbiType)>,
-// }
-
-// #[derive(Debug)]
-// pub struct CairoFunction {
-//     // TODO: perhaps the name can be a regular string.
-//     pub name: AbiType,
-//     pub state_mutability: StateMutability,
-//     pub inputs: Vec<(String, AbiType)>,
-//     // For now, only one output type is supported (or none).
-//     pub output: Option<AbiType>,
-// }
+}

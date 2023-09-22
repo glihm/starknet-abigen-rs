@@ -1,6 +1,6 @@
 use crate::expand::utils::{str_to_ident, str_to_type};
 use crate::Expandable;
-use cairo_type_parser::abi_type::AbiType;
+use cairo_type_parser::abi_types::AbiType;
 use cairo_type_parser::CairoFunction;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
