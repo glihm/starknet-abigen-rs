@@ -16,8 +16,21 @@ impl AbiGeneric {
         }
     }
 
+    pub fn get_gentys_only(&self) -> Vec<String> {
+        // Starts to 'A'.
+        let ascii: u8 = 65;
+
+        let mut gentys = vec![];
+        for (i, _) in self.inners.iter().enumerate() {
+            gentys.push(((ascii + i as u8) as char).to_string());
+        }
+
+        gentys
+    }
+
     pub fn get_cairo_types_gentys(&self) -> Vec<(String, String)> {
-        let mut ascii: u8 = 65;
+        // Starts to 'A'.
+        let ascii: u8 = 65;
 
         let mut cairo_types_gentys = vec![];
         for (i, inner) in self.inners.iter().enumerate() {

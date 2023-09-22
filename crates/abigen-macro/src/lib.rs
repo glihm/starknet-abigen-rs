@@ -43,15 +43,21 @@ pub fn abigen(input: TokenStream) -> TokenStream {
                 let cs = CairoStruct::new(&s.name, &s.members);
 
                 if let Some(ref mut existing_cs) = structs.get_mut(&cs.get_name()) {
+                    println!("EXISTING {:?}", cs.get_name());
                     cs.compare_generic_types(existing_cs);
                 } else {
+                    println!("NEW {:?}", cs.get_name());
                     structs.insert(cs.get_name(), cs.clone());
                 }
-
-                println!("{}", cs.expand_decl());
             }
             _ => continue
         }
+    }
+
+    // Only expand unique structs.
+    for (_, cs) in structs {
+        tokens.push(cs.expand_decl());
+        tokens.push(cs.expand_impl());
     }
 
     let expanded = quote! {

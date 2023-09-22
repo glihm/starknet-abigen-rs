@@ -30,6 +30,48 @@ abigen!(
         "type": "core::integer::u128"
       }
     ]
+  },
+  {
+    "type": "struct",
+    "name": "contracts::c1::OneGen::<core::felt252>",
+    "members": [
+      {
+        "name": "a",
+        "type": "core::felt252"
+      },
+      {
+        "name": "b",
+        "type": "core::felt252"
+      }
+    ]
+  },
+  {
+    "type": "struct",
+    "name": "contracts::c1::OneGen::<core::integer::u256>",
+    "members": [
+      {
+        "name": "a",
+        "type": "core::integer::u256"
+      },
+      {
+        "name": "b",
+        "type": "core::felt252"
+      }
+    ]
+  },
+  {
+    "type": "struct",
+    "name": "contracts::c1::TwoGen::<core::felt252, core::integer::u256>",
+    "members": [
+      {
+        "name": "a",
+        "type": "core::felt252"
+      },
+      {
+        "name": "b",
+        "type": "core::integer::u256"
+      }
+    ]
   }
 ]
 "#
@@ -37,6 +79,50 @@ abigen!(
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    let og = OneGen {
+        a: 1_u8,
+        b: FieldElement::TWO,
+    };
+
+    let felts = OneGen::<u8>::serialize(&og);
+    println!("{:?}", felts);
+
+    let og = OneGen {
+        a: u256 {
+            low: 2,
+            high: 0,
+        },
+        b: FieldElement::THREE,
+    };
+
+    let felts = OneGen::<u256>::serialize(&og);
+    println!("{:?}", felts);
+
+    let tg = TwoGen {
+        a: 1_u8,
+        b: u256 {
+            low: 255,
+            high: 0,
+        }
+    };
+
+    let felts = TwoGen::<u8, u256>::serialize(&tg);
+    println!("{:?}", felts);
+
+    let tg = TwoGen {
+        a: u256 {
+            low: 1,
+            high: 0,
+        },
+        b: FieldElement::MAX
+    };
+
+    let felts = TwoGen::<u256, FieldElement>::serialize(&tg);
+    let tg2 = TwoGen::<u256, FieldElement>::deserialize(&felts, 0).unwrap();
+    assert_eq!(tg, tg2);
+    println!("{:?}", felts);
+
+
     // let rpc_url = Url::parse("http://0.0.0.0:5050")?;
     // let provider =
     //     AnyProvider::JsonRpcHttp(JsonRpcClient::new(HttpTransport::new(rpc_url.clone())));

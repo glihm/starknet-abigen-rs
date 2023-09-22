@@ -1,11 +1,12 @@
 use crate::expand::utils::{str_to_ident, str_to_type};
 use crate::Expandable;
 
-use cairo_type_parser::abi_types::AbiType;
+use cairo_type_parser::abi_types::{AbiType, AbiTypeAny};
 use cairo_type_parser::CairoStruct;
 
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
+use syn::Ident;
 
 impl Expandable for CairoStruct {
     fn expand_decl(&self) -> TokenStream2 {
@@ -19,78 +20,123 @@ impl Expandable for CairoStruct {
             members.push(quote!(#name: #ty));
         }
 
-        quote! {
-            #[derive(Debug, PartialEq)]
-            pub struct #struct_name {
-                #(#members),*
+        if self.is_generic() {
+            let gentys: Vec<Ident> = self.get_gentys()
+                .iter()
+                .map(|g| str_to_ident(g)).collect();
+
+            quote! {
+                #[derive(Debug, PartialEq)]
+                pub struct #struct_name<#(#gentys),*> {
+                    #(#members),*
+                }
+            }
+        } else {
+            quote! {
+                #[derive(Debug, PartialEq)]
+                pub struct #struct_name {
+                    #(#members),*
+                }
             }
         }
     }
 
     fn expand_impl(&self) -> TokenStream2 {
-        // let struct_name = str_to_ident(&self.get_name());
+        let struct_name = str_to_ident(&self.get_name());
 
-        // let mut sizes: Vec<TokenStream2> = vec![];
-        // let mut sers: Vec<TokenStream2> = vec![];
-        // let mut desers: Vec<TokenStream2> = vec![];
-        // let mut names: Vec<TokenStream2> = vec![];
+        let mut sizes: Vec<TokenStream2> = vec![];
+        let mut sers: Vec<TokenStream2> = vec![];
+        let mut desers: Vec<TokenStream2> = vec![];
+        let mut names: Vec<TokenStream2> = vec![];
 
-        // let mut is_first = true;
-        // for (name, abitype) in &self.members {
-        //     let name = str_to_ident(name);
-        //     names.push(quote!(#name));
+        let gentys: Vec<Ident> = self.get_gentys()
+            .iter()
+            .map(|g| str_to_ident(g)).collect();
 
-        //     let ty = str_to_type(&member.to_rust_type_path());
+        let gentys_rust: Vec<Ident> = self.get_gentys()
+            .iter()
+            .map(|g| str_to_ident(format!("R{}", g).as_str())).collect();
 
-        //     // Tuples type used as rust type path must be surrounded
-        //     // by LT/GT.
-        //     let ty_punctuated = match member {
-        //         AbiType::Tuple(_) => quote!(<#ty>),
-        //         _ => quote!(#ty),
-        //     };
+        let mut is_first = true;
+        for (name, abitype) in &self.members {
+            let name = str_to_ident(name);
+            names.push(quote!(#name));
 
-        //     if is_first {
-        //         sizes.push(quote!(#ty_punctuated::serialized_size(&rust.#name)));
-        //         is_first = false;
-        //     } else {
-        //         sizes.push(quote!(+ #ty_punctuated::serialized_size(&rust.#name)));
-        //     }
+            let ty = str_to_type(&abitype.to_rust_type_path());
 
-        //     sers.push(quote!(out.extend(#ty_punctuated::serialize(&rust.#name));));
+            // Tuples type used as rust type path must be surrounded
+            // by LT/GT symbols.
+            let ty_punctuated = match abitype {
+                AbiTypeAny::Tuple(_) => quote!(<#ty>),
+                _ => quote!(#ty),
+            };
 
-        //     desers.push(quote! {
-        //         let #name = #ty_punctuated::deserialize(felts, offset)?;
-        //         offset += #ty_punctuated::serialized_size(&#name);
-        //     });
-        // }
+            if is_first {
+                sizes.push(quote!(#ty_punctuated::serialized_size(&rust.#name)));
+                is_first = false;
+            } else {
+                sizes.push(quote!(+ #ty_punctuated::serialized_size(&rust.#name)));
+            }
 
-        // quote! {
-        //     impl cairo_types::CairoType for #struct_name {
-        //         type RustType = Self;
+            sers.push(quote!(out.extend(#ty_punctuated::serialize(&rust.#name));));
 
-        //         const SERIALIZED_SIZE: std::option::Option<usize> = None;
+            desers.push(quote! {
+                let #name = #ty_punctuated::deserialize(felts, offset)?;
+                offset += #ty_punctuated::serialized_size(&#name);
+            });
+        }
 
-        //         #[inline]
-        //         fn serialized_size(rust: &Self::RustType) -> usize {
-        //             #(#sizes) *
-        //         }
+        let impl_line = if self.is_generic() {
+            let mut tokens = vec![];
+            tokens.push(quote! {
+                impl<#(#gentys),* , #(#gentys_rust),*> cairo_types::CairoType for #struct_name<#(#gentys),*>
+                    where
+            });
 
-        //         fn serialize(rust: &Self::RustType) -> Vec<starknet::core::types::FieldElement> {
-        //             let mut out: Vec<starknet::core::types::FieldElement> = vec![];
-        //             #(#sers)*
-        //             out
-        //         }
+            for (i, g) in gentys.iter().enumerate() {
+                let gr = &gentys_rust[i];
+                tokens.push(quote!(#g: CairoType<RustType = #gr>,));
+            }
 
-        //         fn deserialize(felts: &[starknet::core::types::FieldElement], offset: usize) -> cairo_types::Result<Self::RustType> {
-        //             let mut offset = offset;
-        //             #(#desers)*
-        //             Ok(#struct_name {
-        //                 #(#names),*
-        //             })
-        //         }
-        //     }
-        // }
+            println!("{}", quote!(#(#tokens)*));
 
-        quote!()
+            quote!(#(#tokens)*)
+        } else {
+            quote!(impl cairo_types::CairoType for #struct_name)
+        };
+
+        let rust_type = if self.is_generic() {
+            quote!(type RustType = #struct_name<#(#gentys_rust),*>;)
+        } else {
+            quote!(type RustType = Self;)
+        };
+
+        quote! {
+            #impl_line {
+
+                #rust_type
+            
+                const SERIALIZED_SIZE: std::option::Option<usize> = None;
+
+                #[inline]
+                fn serialized_size(rust: &Self::RustType) -> usize {
+                    #(#sizes) *
+                }
+
+                fn serialize(rust: &Self::RustType) -> Vec<starknet::core::types::FieldElement> {
+                    let mut out: Vec<starknet::core::types::FieldElement> = vec![];
+                    #(#sers)*
+                    out
+                }
+
+                fn deserialize(felts: &[starknet::core::types::FieldElement], offset: usize) -> cairo_types::Result<Self::RustType> {
+                    let mut offset = offset;
+                    #(#desers)*
+                    Ok(#struct_name {
+                        #(#names),*
+                    })
+                }
+            }
+        }
     }
 }

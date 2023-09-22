@@ -13,6 +13,26 @@ pub struct CairoStruct {
 }
 
 impl CairoStruct {
+    pub fn get_name(&self) -> String {
+        return self.abi.get_cairo_type_name_only()
+    }
+
+    pub fn is_generic(&self) -> bool {
+        if let AbiTypeAny::Generic(_) = self.abi {
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn get_gentys(&self) -> Vec<String> {
+        if let AbiTypeAny::Generic(g) = &self.abi {
+            g.get_gentys_only()
+        } else {
+            vec![]
+        }
+    }
+
     /// Initializes a new instance from the abi name and it's members.
     pub fn new(
         abi_name: &str,
@@ -51,10 +71,6 @@ impl CairoStruct {
             members,
             generic_members,
         }
-    }
-
-    pub fn get_name(&self) -> String {
-        return self.abi.get_cairo_type_name_only()
     }
 
     pub fn compare_generic_types(&self, existing_cs: &mut CairoStruct) {
