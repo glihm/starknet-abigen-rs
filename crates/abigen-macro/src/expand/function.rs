@@ -65,7 +65,7 @@ impl Expandable for CairoFunction {
                 match o {
                     // Tuples type used as rust type path must be surrounded
                     // by LT/GT.
-                    AbiTypeAny::Tuple(_) => quote!(<#out_type_path>::deserialize(r, 0)),
+                    AbiTypeAny::Tuple(_) => quote!(<#out_type_path>::deserialize(&r, 0)),
                     _ => quote!(#out_type_path::deserialize(&r, 0)),
                 }
             }
