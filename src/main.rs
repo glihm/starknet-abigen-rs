@@ -15,7 +15,7 @@ use starknet::signers::{LocalWallet, SigningKey};
 abigen!(
     ContractA,
     r#"
-[{"type":"enum","name":"core::result::Result::<core::felt252, core::felt252>","variants":[{"name":"Ok","type":"core::felt252"},{"name":"Err","type":"core::felt252"}]},{"type":"function","name":"func1","inputs":[{"name":"a","type":"core::result::Result::<core::felt252, core::felt252>"}],"outputs":[],"state_mutability":"external"},{"type":"function","name":"func2","inputs":[],"outputs":[{"type":"(core::felt252, core::felt252)"}],"state_mutability":"view"},{"type":"struct","name":"ahah::c1::MyStruct::<core::felt252>","members":[{"name":"val","type":"core::felt252"},{"name":"val2","type":"core::felt252"}]},{"type":"function","name":"func3","inputs":[],"outputs":[{"type":"ahah::c1::MyStruct::<core::felt252>"}],"state_mutability":"view"},{"type":"event","name":"ahah::c1::Event","kind":"enum","variants":[]}]
+[{"type":"function","name":"func1","inputs":[{"name":"a","type":"core::array::Array::<core::felt252>"}],"outputs":[],"state_mutability":"external"},{"type":"function","name":"func2","inputs":[],"outputs":[{"type":"(core::felt252, core::felt252)"}],"state_mutability":"view"},{"type":"function","name":"func3","inputs":[],"outputs":[{"type":"core::array::Array::<core::felt252>"}],"state_mutability":"view"},{"type":"event","name":"ahah::c1::Event","kind":"enum","variants":[]}]
 "#);
 
 abigen!(
@@ -243,20 +243,20 @@ async fn main() -> Result<()> {
     // If you modify the contract, even with a salt, it will be deployed at
     // a different address.
     let contract_address =
-        felt!("0x05900978a37ab79a07df47b950bb77b1703ef2cfa3f04f91fcb713a19464e0af");
+        felt!("0x0149e2d6fe0fdccd80ead9e3a309d7899fcc146209e38b5f895e301d8362f6f1");
 
     let chain_id = provider.chain_id().await?;
     let account = SingleOwnerAccount::new(&provider, signer, account_address, chain_id);
 
     let contract_a = ContractA::new(contract_address, &provider).with_account(&account);
 
-    let m1 = MyStruct {
-        val: FieldElement::ONE,
-        val2: felt!("0xffff"),
-    };
+    // let m1 = MyStruct {
+    //     val: FieldElement::ONE,
+    //     val2: felt!("0xffff"),
+    // };
 
     contract_a
-        .func1(&Err(felt!("0x8888")))
+        .func1(&vec![felt!("0x1111"), felt!("0x22222")])
         .await
         .expect("Fail invoke func1");
 
