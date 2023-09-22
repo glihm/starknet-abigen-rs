@@ -16,7 +16,7 @@ use std::collections::HashMap;
 
 use cairo_type_parser::{CairoStruct, CairoEnum, CairoFunction};
 use cairo_type_parser::abi_types::{AbiType, AbiTypeAny};
-// use cairo_types::ty::{CAIRO_BASIC_ENUMS, CAIRO_BASIC_STRUCTS};
+use cairo_types::ty::{CAIRO_BASIC_ENUMS, CAIRO_BASIC_STRUCTS};
 
 trait Expandable {
     fn expand_decl(&self) -> TokenStream2;
@@ -39,7 +39,6 @@ pub fn abigen(input: TokenStream) -> TokenStream {
     for entry in &abi {
         match entry {
             AbiEntry::Struct(s) => {
-                let _abi_type = AbiTypeAny::from_string(&s.name);
                 let cs = CairoStruct::new(&s.name, &s.members);
 
                 if let Some(ref mut existing_cs) = structs.get_mut(&cs.get_name()) {
@@ -49,8 +48,11 @@ pub fn abigen(input: TokenStream) -> TokenStream {
                 }
             }
             AbiEntry::Enum(e) => {
-                let _abi_type = AbiTypeAny::from_string(&e.name);
                 let ce = CairoEnum::new(&e.name, &e.variants);
+
+                if CAIRO_BASIC_ENUMS.contains(&ce.get_name().as_str()) {
+                    continue;
+                }
 
                 if let Some(ref mut existing_ce) = enums.get_mut(&ce.get_name()) {
                     ce.compare_generic_types(existing_ce);
