@@ -16,6 +16,11 @@ impl AbiGeneric {
         }
     }
 
+    pub fn get_rust_generic_def(&self, suffix: &str) -> String {
+        let gentys = self.get_gentys_only();
+        format!("{}<{}{}>", self.get_cairo_type_name_only(), gentys.join(", "), suffix)
+    }
+
     pub fn get_gentys_only(&self) -> Vec<String> {
         // Starts to 'A'.
         let ascii: u8 = 65;

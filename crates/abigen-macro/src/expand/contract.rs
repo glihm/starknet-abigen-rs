@@ -1,9 +1,8 @@
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
-use std::collections::HashMap;
+
 use syn::{
-    parse::{Parse, ParseStream, Result},
-    parse_macro_input, Ident, LitStr, Token,
+    Ident,
 };
 
 pub struct CairoContract;

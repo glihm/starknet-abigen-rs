@@ -4,14 +4,53 @@ use abigen_macro::abigen;
 use anyhow::Result;
 use cairo_types::ty::CairoType;
 
-use starknet::accounts::{Account, SingleOwnerAccount};
+use starknet::accounts::{Account};
 
 use starknet::core::types::*;
-use starknet::macros::felt;
-use starknet::providers::{jsonrpc::HttpTransport, AnyProvider, JsonRpcClient, Provider};
+
+
 use starknet::signers::{LocalWallet, SigningKey};
 
-use url::Url;
+use starknet::providers::Provider;
+
+abigen!(
+    ContractA,
+    r#"
+[
+  {
+    "type": "struct",
+    "name": "ahah::c1::MyStruct::<core::felt252>",
+    "members": [
+      {
+        "name": "val",
+        "type": "core::felt252"
+      },
+      {
+        "name": "val2",
+        "type": "core::felt252"
+      }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "func1",
+    "inputs": [
+      {
+        "name": "a",
+        "type": "(core::felt252, ahah::c1::MyStruct::<core::felt252>)"
+      }
+    ],
+    "outputs": [],
+    "state_mutability": "external"
+  },
+  {
+    "type": "event",
+    "name": "ahah::c1::Event",
+    "kind": "enum",
+    "variants": []
+  }
+]
+"#);
 
 abigen!(
     ContractB,
@@ -31,6 +70,7 @@ abigen!(
       }
     ]
   },
+
   {
     "type": "struct",
     "name": "contracts::c1::OneGen::<core::felt252>",
@@ -45,6 +85,7 @@ abigen!(
       }
     ]
   },
+
   {
     "type": "struct",
     "name": "contracts::c1::OneGen::<core::integer::u256>",
@@ -59,6 +100,7 @@ abigen!(
       }
     ]
   },
+
   {
     "type": "struct",
     "name": "contracts::c1::TwoGen::<core::felt252, core::integer::u256>",
@@ -73,6 +115,22 @@ abigen!(
       }
     ]
   },
+
+  {
+    "type": "struct",
+    "name": "contracts::c1::EmbeddedGen::<core::felt252>",
+    "members": [
+      {
+        "name": "a",
+        "type": "core::felt252"
+      },
+      {
+        "name": "b",
+        "type": "contracts::c1::OneGen::<core::felt252>"
+      }
+    ]
+  },
+
   {
     "type": "enum",
     "name": "contracts::c1::MyEnum",
@@ -91,6 +149,7 @@ abigen!(
       }
     ]
   },
+
   {
     "type": "enum",
     "name": "contracts::c1::EnumGen::<core::felt252>",
@@ -113,6 +172,7 @@ abigen!(
       }
     ]
   },
+
   {
     "type": "struct",
     "name": "contracts::c1::TestTupleGen::<(core::felt252, core::felt252)>",
@@ -134,7 +194,7 @@ abigen!(
     "inputs": [],
     "outputs": [
       {
-        "type": "core::felt252"
+        "type": "contracts::c1::EnumGen::<core::felt252>"
       }
     ],
     "state_mutability": "view"

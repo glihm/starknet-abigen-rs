@@ -1,6 +1,6 @@
 use crate::expand::utils::{str_to_ident, str_to_type};
 use crate::Expandable;
-use cairo_type_parser::abi_types::AbiType;
+use cairo_type_parser::abi_types::{AbiType, AbiTypeAny};
 use cairo_type_parser::CairoFunction;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
@@ -8,7 +8,7 @@ use starknet::core::types::contract::StateMutability;
 
 impl Expandable for CairoFunction {
     fn expand_decl(&self) -> TokenStream2 {
-        let func_name = str_to_ident(&self.name.get_type_name_only());
+        let func_name = str_to_ident(&self.name);
 
         let mut inputs: Vec<TokenStream2> = vec![];
         for (name, abi_type) in &self.inputs {
@@ -19,7 +19,6 @@ impl Expandable for CairoFunction {
 
         let output = match self.state_mutability {
             StateMutability::View => match &self.output {
-                // TODO: perhaps anyhow is not the best here, custom error may be better?
                 Some(o) => {
                     let oty = str_to_type(&o.to_rust_type());
                     quote!(-> cairo_types::Result<#oty>)
@@ -44,15 +43,20 @@ impl Expandable for CairoFunction {
 
     fn expand_impl(&self) -> TokenStream2 {
         let decl = self.expand_decl();
-        let func_name = &self.name.get_type_name_only();
+        let func_name = &self.name;
 
         let mut serializations: Vec<TokenStream2> = vec![];
         for (name, abi_type) in &self.inputs {
             let name = str_to_ident(name);
             let ty = str_to_type(&abi_type.to_rust_type_path());
-            serializations.push(quote! {
-                calldata.extend(#ty::serialize(&#name));
-            });
+
+            let ser = match abi_type {
+                AbiTypeAny::Tuple(_) => quote! {
+                    calldata.extend(<#ty>::serialize(&#name));
+                },
+                _ => quote!(calldata.extend(#ty::serialize(&#name));)
+            };
+            serializations.push(ser);
         }
 
         let out_res = match &self.output {
@@ -61,7 +65,7 @@ impl Expandable for CairoFunction {
                 match o {
                     // Tuples type used as rust type path must be surrounded
                     // by LT/GT.
-                    AbiType::Tuple(_) => quote!(<#out_type_path>::deserialize(r, 0)),
+                    AbiTypeAny::Tuple(_) => quote!(<#out_type_path>::deserialize(r, 0)),
                     _ => quote!(#out_type_path::deserialize(&r, 0)),
                 }
             }

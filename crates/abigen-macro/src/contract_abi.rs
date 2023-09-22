@@ -1,8 +1,7 @@
 use starknet::core::types::contract::*;
 use std::fs;
 use syn::{
-    parse::{Parse, ParseStream, Result},
-    parse_macro_input, Ident, LitStr, Token,
+    parse::{Parse, ParseStream, Result}, Ident, LitStr, Token,
 };
 
 #[derive(Clone, Debug)]

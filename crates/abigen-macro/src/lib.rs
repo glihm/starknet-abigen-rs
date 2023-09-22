@@ -8,14 +8,13 @@ use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 use starknet::core::types::contract::*;
-use std::fs;
+
 use syn::{
-    parse::{Parse, ParseStream, Result},
-    parse_macro_input, Ident, LitStr, Token,
+    parse_macro_input,
 };
 use std::collections::HashMap;
 
-use cairo_type_parser::{CairoStruct, CairoEnum};
+use cairo_type_parser::{CairoStruct, CairoEnum, CairoFunction};
 use cairo_type_parser::abi_types::{AbiType, AbiTypeAny};
 // use cairo_types::ty::{CAIRO_BASIC_ENUMS, CAIRO_BASIC_STRUCTS};
 
@@ -32,7 +31,7 @@ pub fn abigen(input: TokenStream) -> TokenStream {
 
     let mut tokens: Vec<TokenStream2> = vec![];
 
-    tokens.push(CairoContract::expand(contract_name));
+    tokens.push(CairoContract::expand(contract_name.clone()));
 
     let mut structs: HashMap<String, CairoStruct> = HashMap::new();
     let mut enums: HashMap<String, CairoEnum> = HashMap::new();
@@ -40,7 +39,7 @@ pub fn abigen(input: TokenStream) -> TokenStream {
     for entry in &abi {
         match entry {
             AbiEntry::Struct(s) => {
-                let abi_type = AbiTypeAny::from_string(&s.name);
+                let _abi_type = AbiTypeAny::from_string(&s.name);
                 let cs = CairoStruct::new(&s.name, &s.members);
 
                 if let Some(ref mut existing_cs) = structs.get_mut(&cs.get_name()) {
@@ -50,7 +49,7 @@ pub fn abigen(input: TokenStream) -> TokenStream {
                 }
             }
             AbiEntry::Enum(e) => {
-                let abi_type = AbiTypeAny::from_string(&e.name);
+                let _abi_type = AbiTypeAny::from_string(&e.name);
                 let ce = CairoEnum::new(&e.name, &e.variants);
 
                 if let Some(ref mut existing_ce) = enums.get_mut(&ce.get_name()) {
@@ -59,7 +58,7 @@ pub fn abigen(input: TokenStream) -> TokenStream {
                     enums.insert(ce.get_name(), ce.clone());
                 }
             }
-            AbiEntry::Event(ev) => {
+            AbiEntry::Event(_ev) => {
                 // TODO events.
             }
             // Events
@@ -71,10 +70,25 @@ pub fn abigen(input: TokenStream) -> TokenStream {
     // as we will have the correct rust type for generics.
     // But as we need filtered structs and enum, this must be done
     // in a second loop when all structs/enums are parsed.
+    let mut functions = vec![];
+
     for entry in &abi {
         match entry {
             AbiEntry::Function(f) => {
-                println!("FFF {:?}", f);
+
+                // Functions cannot be generic when they are entry point.
+                // From this statement, we can safely assume that any function name is unique,
+                // and we only have to care about arguments that may contain generic.
+                let cf = CairoFunction::new(
+                    &f.name,
+                    f.state_mutability.clone(),
+                    &f.inputs,
+                    &f.outputs,
+                    &structs,
+                    &enums,
+                );
+
+                functions.push(cf.expand_impl());
             }
             _ => continue
         }
@@ -91,7 +105,12 @@ pub fn abigen(input: TokenStream) -> TokenStream {
         tokens.push(ce.expand_impl());
     }
 
-    // Functions.
+    tokens.push(quote! {
+        impl<'a> #contract_name<'a>
+        {
+            #(#functions)*
+        }
+    });
 
     let expanded = quote! {
         #(#tokens)*
