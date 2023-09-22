@@ -59,7 +59,9 @@ pub fn abigen(input: TokenStream) -> TokenStream {
                     enums.insert(ce.get_name(), ce.clone());
                 }
             }
-            // Enum
+            AbiEntry::Event(ev) => {
+                // TODO events.
+            }
             // Events
             _ => continue
         }
