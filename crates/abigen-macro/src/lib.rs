@@ -41,6 +41,10 @@ pub fn abigen(input: TokenStream) -> TokenStream {
             AbiEntry::Struct(s) => {
                 let cs = CairoStruct::new(&s.name, &s.members);
 
+                if CAIRO_BASIC_STRUCTS.contains(&cs.get_name().as_str()) {
+                    continue;
+                }
+
                 if let Some(ref mut existing_cs) = structs.get_mut(&cs.get_name()) {
                     cs.compare_generic_types(existing_cs);
                 } else {
