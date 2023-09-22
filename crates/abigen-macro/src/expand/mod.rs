@@ -2,7 +2,9 @@
 // For now, we use #[rustfmt::skip] to avoid the auto-format from cargo-fmt
 // on the quote!, but we should care about trailing commas for instance.
 
-mod r#enum;
-mod r#function;
-mod r#struct;
-mod utils;
+pub mod contract;
+// mod r#enum;
+// mod r#function;
+pub mod r#struct;
+pub mod utils;
+
