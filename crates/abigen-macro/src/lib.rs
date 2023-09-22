@@ -43,13 +43,24 @@ pub fn abigen(input: TokenStream) -> TokenStream {
                 let cs = CairoStruct::new(&s.name, &s.members);
 
                 if let Some(ref mut existing_cs) = structs.get_mut(&cs.get_name()) {
-                    println!("EXISTING {:?}", cs.get_name());
                     cs.compare_generic_types(existing_cs);
                 } else {
-                    println!("NEW {:?}", cs.get_name());
                     structs.insert(cs.get_name(), cs.clone());
                 }
             }
+            // Enum
+            // Events
+            _ => continue
+        }
+    }
+
+    // For the functions, we must take any existing enum or struct.
+    // as we will have the correct rust type for generics.
+    // But as we need filtered structs and enum, this must be done
+    // in a second loop when all structs/enums are parsed.
+    for entry in abi {
+        match entry {
+            // Functions only.
             _ => continue
         }
     }
@@ -59,6 +70,10 @@ pub fn abigen(input: TokenStream) -> TokenStream {
         tokens.push(cs.expand_decl());
         tokens.push(cs.expand_impl());
     }
+
+    // Enums.
+
+    // Functions.
 
     let expanded = quote! {
         #(#tokens)*
