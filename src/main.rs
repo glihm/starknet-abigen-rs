@@ -311,7 +311,7 @@ async fn main() -> Result<()> {
     };
 
     contract_a
-        .func1((FieldElement::THREE, m1))
+        .func1(&(FieldElement::THREE, m1))
         .await
         .expect("Fail invoke func1");
 

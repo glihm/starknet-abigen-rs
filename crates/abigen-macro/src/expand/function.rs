@@ -14,7 +14,8 @@ impl Expandable for CairoFunction {
         for (name, abi_type) in &self.inputs {
             let name = str_to_ident(name);
             let ty = str_to_type(&abi_type.to_rust_type());
-            inputs.push(quote!(#name:#ty));
+            // We can pass a reference here as serialize always takes a reference.
+            inputs.push(quote!(#name:&#ty));
         }
 
         let output = match self.state_mutability {
