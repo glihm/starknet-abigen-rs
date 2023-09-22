@@ -29,7 +29,10 @@ impl Parse for ContractAbi {
                 name,
                 abi: abi_json,
             }),
-            Err(_) => {
+            Err(e) => {
+                println!("Error loading the input as ABI: {:?}\nTry to load a JSON file",
+                         e);
+
                 let path = contents;
                 match fs::read_to_string(path.value()) {
                     Ok(abi_str) => {

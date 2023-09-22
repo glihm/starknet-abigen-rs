@@ -72,6 +72,46 @@ abigen!(
         "type": "core::integer::u256"
       }
     ]
+  },
+  {
+    "type": "enum",
+    "name": "contracts::c1::MyEnum",
+    "variants": [
+      {
+        "name": "V1",
+        "type": "core::felt252"
+      },
+      {
+        "name": "V2",
+        "type": "core::integer::u128"
+      },
+      {
+        "name": "V3",
+        "type": "()"
+      }
+    ]
+  },
+  {
+    "type": "enum",
+    "name": "contracts::c1::EnumGen::<core::felt252>",
+    "variants": [
+      {
+        "name": "V1",
+        "type": "core::felt252"
+      },
+      {
+        "name": "V2",
+        "type": "core::integer::u128"
+      },
+      {
+        "name": "V3",
+        "type": "core::array::Array::<core::felt252>"
+      },
+      {
+        "name": "V4",
+        "type": "()"
+      }
+    ]
   }
 ]
 "#
@@ -79,6 +119,19 @@ abigen!(
 
 #[tokio::main]
 async fn main() -> Result<()> {
+
+    let me = MyEnum::V2(123_u128);
+    let felts = MyEnum::serialize(&me);
+    let me2 = MyEnum::deserialize(&felts, 0).unwrap();
+    assert_eq!(me, me2);
+    println!("{:?}", felts);
+
+    let meg = EnumGen::V3(vec![FieldElement::ZERO, FieldElement::ONE]);
+    let felts = EnumGen::<FieldElement>::serialize(&meg);    
+    let meg2 = EnumGen::<FieldElement>::deserialize(&felts, 0).unwrap();
+    assert_eq!(meg, meg2);
+    println!("{:?}", felts);
+
     let og = OneGen {
         a: 1_u8,
         b: FieldElement::TWO,

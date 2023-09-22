@@ -4,15 +4,15 @@ use super::abi_types::{AbiType, AbiTypeAny};
 use starknet::core::types::contract::AbiNamedMember;
 
 #[derive(Debug, Clone)]
-pub struct CairoStruct {
+pub struct CairoEnum {
     pub abi: AbiTypeAny,
-    /// Parsed types for each member.
-    pub members: Vec<(String, AbiTypeAny)>,
-    /// Members name => (generic representation, is_generic).
-    pub generic_members: HashMap<String, (String, bool)>,
+    /// Parsed types for each variants.
+    pub variants: Vec<(String, AbiTypeAny)>,
+    /// Variant name => (generic representation, is_generic).
+    pub generic_variants: HashMap<String, (String, bool)>,
 }
 
-impl CairoStruct {
+impl CairoEnum {
     pub fn get_name(&self) -> String {
         return self.abi.get_cairo_type_name_only()
     }
@@ -33,18 +33,18 @@ impl CairoStruct {
         }
     }
 
-    /// Initializes a new instance from the abi name and it's members.
+    /// Initializes a new instance from the abi name and it's variants.
     pub fn new(
         abi_name: &str,
-        abi_members: &Vec<AbiNamedMember>,
-    ) -> CairoStruct {
+        abi_variants: &Vec<AbiNamedMember>,
+    ) -> CairoEnum {
         let abi = AbiTypeAny::from_string(abi_name);
-        let mut members: Vec<(String, AbiTypeAny)> = vec![];
-        let mut generic_members: HashMap<String, (String, bool)> = HashMap::new();
+        let mut variants: Vec<(String, AbiTypeAny)> = vec![];
+        let mut generic_variants: HashMap<String, (String, bool)> = HashMap::new();
 
-        for m in abi_members {
-            let name = m.name.clone();
-            let mut m_abi = AbiTypeAny::from_string(&m.r#type.clone());
+        for v in abi_variants {
+            let name = v.name.clone();
+            let mut v_abi = AbiTypeAny::from_string(&v.r#type.clone());
 
             match abi {
                 AbiTypeAny::Generic(ref g) => {
@@ -54,35 +54,35 @@ impl CairoStruct {
                         .map(|(v1, v2)| (&v1[..], &v2[..])).collect();
 
                     let (type_str, is_generic)
-                        = m_abi.get_generic_for(cairo_gentys);
+                        = v_abi.get_generic_for(cairo_gentys);
 
-                    generic_members.insert(name.clone(),
-                                           (type_str.clone(), is_generic));
+                    generic_variants.insert(name.clone(),
+                                            (type_str.clone(), is_generic));
                 }
                 _ => ()
             }
 
-            members.push((name.clone(), m_abi.clone()));
+            variants.push((name.clone(), v_abi.clone()));
 
         }
 
-        CairoStruct {
+        CairoEnum {
             abi,
-            members,
-            generic_members,
+            variants,
+            generic_variants,
         }
     }
 
-    pub fn compare_generic_types(&self, existing_cs: &mut CairoStruct) {
+    pub fn compare_generic_types(&self, existing_ce: &mut CairoEnum) {
         match &self.abi {
             AbiTypeAny::Generic(_) => {
-                for (em_name, em_abi) in &mut existing_cs.members
+                for (ev_name, ev_abi) in &mut existing_ce.variants
                 {
-                    for (m_name, m_abi) in &self.members {
-                        if m_name != em_name {
+                    for (v_name, v_abi) in &self.variants {
+                        if v_name != ev_name {
                             continue;
                         }
-                        em_abi.compare_generic(m_abi);
+                        ev_abi.compare_generic(v_abi);
                     }
                 }
             }

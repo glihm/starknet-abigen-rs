@@ -129,6 +129,19 @@ impl AbiTypeAny {
         }
     }
 
+    pub fn is_unit(&self) -> bool {
+        match self {
+            AbiTypeAny::Basic(b) => {
+                if b.get_cairo_type_full() == "()" {
+                    true
+                } else {
+                    false
+                }
+            },
+            _ => false
+        }
+    }
+
     pub fn from_string(type_string: &str) -> AbiTypeAny {
         let mut chars = type_string.chars().peekable();
         Self::parse_type(&mut chars)

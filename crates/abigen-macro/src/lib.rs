@@ -15,7 +15,7 @@ use syn::{
 };
 use std::collections::HashMap;
 
-use cairo_type_parser::CairoStruct;
+use cairo_type_parser::{CairoStruct, CairoEnum};
 use cairo_type_parser::abi_types::{AbiType, AbiTypeAny};
 // use cairo_types::ty::{CAIRO_BASIC_ENUMS, CAIRO_BASIC_STRUCTS};
 
@@ -35,8 +35,9 @@ pub fn abigen(input: TokenStream) -> TokenStream {
     tokens.push(CairoContract::expand(contract_name));
 
     let mut structs: HashMap<String, CairoStruct> = HashMap::new();
+    let mut enums: HashMap<String, CairoEnum> = HashMap::new();
 
-    for entry in abi {
+    for entry in &abi {
         match entry {
             AbiEntry::Struct(s) => {
                 let abi_type = AbiTypeAny::from_string(&s.name);
@@ -46,6 +47,16 @@ pub fn abigen(input: TokenStream) -> TokenStream {
                     cs.compare_generic_types(existing_cs);
                 } else {
                     structs.insert(cs.get_name(), cs.clone());
+                }
+            }
+            AbiEntry::Enum(e) => {
+                let abi_type = AbiTypeAny::from_string(&e.name);
+                let ce = CairoEnum::new(&e.name, &e.variants);
+
+                if let Some(ref mut existing_ce) = enums.get_mut(&ce.get_name()) {
+                    ce.compare_generic_types(existing_ce);
+                } else {
+                    enums.insert(ce.get_name(), ce.clone());
                 }
             }
             // Enum
@@ -58,20 +69,23 @@ pub fn abigen(input: TokenStream) -> TokenStream {
     // as we will have the correct rust type for generics.
     // But as we need filtered structs and enum, this must be done
     // in a second loop when all structs/enums are parsed.
-    for entry in abi {
+    for entry in &abi {
         match entry {
             // Functions only.
             _ => continue
         }
     }
 
-    // Only expand unique structs.
+    // Expand only once structs and enums taking generics in account.
     for (_, cs) in structs {
         tokens.push(cs.expand_decl());
         tokens.push(cs.expand_impl());
     }
 
-    // Enums.
+    for (_, ce) in enums {
+        tokens.push(ce.expand_decl());
+        tokens.push(ce.expand_impl());
+    }
 
     // Functions.
 

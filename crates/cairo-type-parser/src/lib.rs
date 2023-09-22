@@ -1,6 +1,8 @@
 pub mod abi_types;
 pub mod cairo_struct;
 pub use cairo_struct::CairoStruct;
+pub mod cairo_enum;
+pub use cairo_enum::CairoEnum;
 
 //use starknet::core::types::contract::StateMutability;
 

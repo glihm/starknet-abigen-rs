@@ -13,9 +13,9 @@ impl Expandable for CairoStruct {
         let struct_name = str_to_ident(&self.get_name());
 
         let mut members: Vec<TokenStream2> = vec![];
-        for (name, abitype) in &self.members {
+        for (name, abi_type) in &self.members {
             let name = str_to_ident(name);
-            let ty = str_to_type(&abitype.to_rust_type());
+            let ty = str_to_type(&abi_type.to_rust_type());
 
             members.push(quote!(#name: #ty));
         }
@@ -58,15 +58,15 @@ impl Expandable for CairoStruct {
             .map(|g| str_to_ident(format!("R{}", g).as_str())).collect();
 
         let mut is_first = true;
-        for (name, abitype) in &self.members {
+        for (name, abi_type) in &self.members {
             let name = str_to_ident(name);
             names.push(quote!(#name));
 
-            let ty = str_to_type(&abitype.to_rust_type_path());
+            let ty = str_to_type(&abi_type.to_rust_type_path());
 
             // Tuples type used as rust type path must be surrounded
             // by LT/GT symbols.
-            let ty_punctuated = match abitype {
+            let ty_punctuated = match abi_type {
                 AbiTypeAny::Tuple(_) => quote!(<#ty>),
                 _ => quote!(#ty),
             };
