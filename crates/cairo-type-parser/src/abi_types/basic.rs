@@ -48,11 +48,11 @@ impl From<&String> for AbiBasic {
 
 impl AbiType for AbiBasic {
     fn get_genty(&self) -> String {
-        return self.genty.clone();
+        self.genty.clone()
     }
 
     fn compare_generic(&mut self, other: &AbiTypeAny) {
-        if &self.genty != GENTY_FROZEN {
+        if self.genty != GENTY_FROZEN {
             self.genty = other.get_genty();
         }
     }
@@ -84,7 +84,7 @@ impl AbiType for AbiBasic {
     }
 
     fn to_rust_type(&self) -> String {
-        if !self.genty.is_empty() && &self.genty != GENTY_FROZEN {
+        if !self.genty.is_empty() && self.genty != GENTY_FROZEN {
             self.genty.clone()
         } else {
             self.to_rust_or_cairo_builtin_type()

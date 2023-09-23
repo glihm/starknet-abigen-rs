@@ -13,7 +13,7 @@ impl AbiGeneric {
         AbiGeneric {
             cairo_type: cairo_type.to_string(),
             genty: String::new(),
-            inners: inners,
+            inners,
         }
     }
 
@@ -59,19 +59,19 @@ impl AbiGeneric {
 
 impl AbiType for AbiGeneric {
     fn get_genty(&self) -> String {
-        return self.genty.clone();
+        self.genty.clone()
     }
 
     fn compare_generic(&mut self, other: &AbiTypeAny) {
         match other {
             AbiTypeAny::Generic(_) => {
-                if &self.genty != GENTY_FROZEN {
+                if self.genty != GENTY_FROZEN {
                     self.genty = other.get_genty();
                 }
             }
             _ => {
                 for inner in &mut self.inners {
-                    inner.compare_generic(&other);
+                    inner.compare_generic(other);
                 }
             }
         };
@@ -126,7 +126,7 @@ impl AbiType for AbiGeneric {
         // TODO: need to opti that with regex?
         let f = self
             .cairo_type
-            .split("<")
+            .split('<')
             .nth(0)
             .unwrap_or(&self.cairo_type)
             .to_string();
@@ -134,7 +134,7 @@ impl AbiType for AbiGeneric {
     }
 
     fn to_rust_type(&self) -> String {
-        if !self.genty.is_empty() && &self.genty != GENTY_FROZEN {
+        if !self.genty.is_empty() && self.genty != GENTY_FROZEN {
             self.genty.clone()
         } else {
             let joined_inners = self
@@ -149,7 +149,7 @@ impl AbiType for AbiGeneric {
     }
 
     fn to_rust_type_path(&self) -> String {
-        if !self.genty.is_empty() && &self.genty != GENTY_FROZEN {
+        if !self.genty.is_empty() && self.genty != GENTY_FROZEN {
             self.genty.clone()
         } else {
             let joined_inners = self

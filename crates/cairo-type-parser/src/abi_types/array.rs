@@ -19,18 +19,18 @@ impl AbiArray {
 
 impl AbiType for AbiArray {
     fn get_genty(&self) -> String {
-        return self.genty.clone();
+        self.genty.clone()
     }
 
     fn compare_generic(&mut self, other: &AbiTypeAny) {
         match other {
             AbiTypeAny::Array(_) => {
-                if &self.genty != GENTY_FROZEN {
+                if self.genty != GENTY_FROZEN {
                     self.genty = other.get_genty();
                 }
             }
             _ => {
-                self.inner.compare_generic(&other);
+                self.inner.compare_generic(other);
             }
         };
     }
@@ -68,7 +68,7 @@ impl AbiType for AbiArray {
     }
 
     fn to_rust_type(&self) -> String {
-        if !self.genty.is_empty() && &self.genty != GENTY_FROZEN {
+        if !self.genty.is_empty() && self.genty != GENTY_FROZEN {
             self.genty.clone()
         } else {
             format!("Vec<{}>", &self.inner.to_rust_type())
@@ -76,7 +76,7 @@ impl AbiType for AbiArray {
     }
 
     fn to_rust_type_path(&self) -> String {
-        if !self.genty.is_empty() && &self.genty != GENTY_FROZEN {
+        if !self.genty.is_empty() && self.genty != GENTY_FROZEN {
             self.genty.clone()
         } else {
             format!("Vec::<{}>", &self.inner.to_rust_type())

@@ -9,7 +9,7 @@ pub struct AbiTuple {
 impl AbiTuple {
     pub fn new(inners: Vec<AbiTypeAny>) -> Self {
         AbiTuple {
-            inners: inners,
+            inners,
             genty: String::new(),
         }
     }
@@ -23,19 +23,19 @@ impl From<Vec<AbiTypeAny>> for AbiTuple {
 
 impl AbiType for AbiTuple {
     fn get_genty(&self) -> String {
-        return self.genty.clone();
+        self.genty.clone()
     }
 
     fn compare_generic(&mut self, other: &AbiTypeAny) {
         match other {
             AbiTypeAny::Tuple(_) => {
-                if &self.genty != GENTY_FROZEN {
+                if self.genty != GENTY_FROZEN {
                     self.genty = other.get_genty();
                 }
             }
             _ => {
                 for inner in &mut self.inners {
-                    inner.compare_generic(&other);
+                    inner.compare_generic(other);
                 }
             }
         };
@@ -90,7 +90,7 @@ impl AbiType for AbiTuple {
     }
 
     fn to_rust_type(&self) -> String {
-        if !self.genty.is_empty() && &self.genty != GENTY_FROZEN {
+        if !self.genty.is_empty() && self.genty != GENTY_FROZEN {
             self.genty.clone()
         } else {
             let mut s = "(".to_string();
@@ -107,7 +107,7 @@ impl AbiType for AbiTuple {
     }
 
     fn to_rust_type_path(&self) -> String {
-        if !self.genty.is_empty() && &self.genty != GENTY_FROZEN {
+        if !self.genty.is_empty() && self.genty != GENTY_FROZEN {
             self.genty.clone()
         } else {
             let mut s = "(".to_string();
