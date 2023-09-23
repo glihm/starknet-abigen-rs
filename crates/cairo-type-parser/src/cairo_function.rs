@@ -17,7 +17,7 @@ impl CairoFunction {
     pub fn new(
         abi_name: &str,
         state_mutability: StateMutability,
-        inputs: &Vec<AbiNamedMember>,
+        inputs: &[AbiNamedMember],
         outputs: &Vec<AbiOutput>,
     ) -> CairoFunction {
         let name = abi_name.to_string();

@@ -15,16 +15,12 @@ pub struct CairoStruct {
 impl CairoStruct {
     /// Gets the name of the struct type.
     pub fn get_name(&self) -> String {
-        return self.abi.get_cairo_type_name();
+        self.abi.get_cairo_type_name()
     }
 
     /// Returns true if the struct is generic, false otherwise.
     pub fn is_generic(&self) -> bool {
-        if let AbiTypeAny::Generic(_) = self.abi {
-            true
-        } else {
-            false
-        }
+        matches!(self.abi, AbiTypeAny::Generic(_))
     }
 
     /// Returns the list of generic types, if any.
@@ -46,20 +42,18 @@ impl CairoStruct {
             let name = m.name.clone();
             let mut m_abi = AbiTypeAny::from_string(&m.r#type.clone());
 
-            match abi {
-                AbiTypeAny::Generic(ref g) => {
-                    let cairo_gentys = g.get_cairo_types_gentys();
-                    let cairo_gentys = cairo_gentys
-                        .iter()
-                        .map(|(v1, v2)| (&v1[..], &v2[..]))
-                        .collect();
+            if let AbiTypeAny::Generic(ref g) = abi {
+                let cairo_gentys = g.get_cairo_types_gentys();
+                let cairo_gentys = cairo_gentys
+                    .iter()
+                    .map(|(v1, v2)| (&v1[..], &v2[..]))
+                    .collect();
 
-                    let (type_str, is_generic) = m_abi.apply_generic(cairo_gentys);
+                let (type_str, is_generic) = m_abi.apply_generic(cairo_gentys);
 
-                    generic_members.insert(name.clone(), (type_str.clone(), is_generic));
-                }
-                _ => (),
+                generic_members.insert(name.clone(), (type_str.clone(), is_generic));
             }
+
 
             members.push((name.clone(), m_abi.clone()));
         }
@@ -73,18 +67,15 @@ impl CairoStruct {
 
     /// Compares the generic types for each members with an other `CairoStruct`.
     pub fn compare_generic_types(&self, existing_cs: &mut CairoStruct) {
-        match &self.abi {
-            AbiTypeAny::Generic(_) => {
-                for (em_name, em_abi) in &mut existing_cs.members {
-                    for (m_name, m_abi) in &self.members {
-                        if m_name != em_name {
-                            continue;
-                        }
-                        em_abi.compare_generic(m_abi);
+        if let AbiTypeAny::Generic(_) = &self.abi {
+            for (em_name, em_abi) in &mut existing_cs.members {
+                for (m_name, m_abi) in &self.members {
+                    if m_name != em_name {
+                        continue;
                     }
+                    em_abi.compare_generic(m_abi);
                 }
             }
-            _ => (),
         }
     }
 }

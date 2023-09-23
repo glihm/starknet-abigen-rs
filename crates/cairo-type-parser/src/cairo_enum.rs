@@ -15,16 +15,12 @@ pub struct CairoEnum {
 impl CairoEnum {
     /// Gets the name of the enum type.
     pub fn get_name(&self) -> String {
-        return self.abi.get_cairo_type_name();
+        self.abi.get_cairo_type_name()
     }
 
     /// Returns true if the enum is generic, false otherwise.
     pub fn is_generic(&self) -> bool {
-        if let AbiTypeAny::Generic(_) = self.abi {
-            true
-        } else {
-            false
-        }
+        matches!(self.abi, AbiTypeAny::Generic(_))
     }
 
     /// Returns the list of generic types, if any.
@@ -46,19 +42,16 @@ impl CairoEnum {
             let name = v.name.clone();
             let mut v_abi = AbiTypeAny::from_string(&v.r#type.clone());
 
-            match abi {
-                AbiTypeAny::Generic(ref g) => {
-                    let cairo_gentys = g.get_cairo_types_gentys();
-                    let cairo_gentys = cairo_gentys
-                        .iter()
-                        .map(|(v1, v2)| (&v1[..], &v2[..]))
-                        .collect();
+            if let AbiTypeAny::Generic(ref g) = abi {
+                let cairo_gentys = g.get_cairo_types_gentys();
+                let cairo_gentys = cairo_gentys
+                    .iter()
+                    .map(|(v1, v2)| (&v1[..], &v2[..]))
+                    .collect();
 
-                    let (type_str, is_generic) = v_abi.apply_generic(cairo_gentys);
+                let (type_str, is_generic) = v_abi.apply_generic(cairo_gentys);
 
-                    generic_variants.insert(name.clone(), (type_str.clone(), is_generic));
-                }
-                _ => (),
+                generic_variants.insert(name.clone(), (type_str.clone(), is_generic));
             }
 
             variants.push((name.clone(), v_abi.clone()));
@@ -73,18 +66,16 @@ impl CairoEnum {
 
     /// Compares the generic types for each variants with an other `CairoEnum`.
     pub fn compare_generic_types(&self, existing_ce: &mut CairoEnum) {
-        match &self.abi {
-            AbiTypeAny::Generic(_) => {
-                for (ev_name, ev_abi) in &mut existing_ce.variants {
-                    for (v_name, v_abi) in &self.variants {
-                        if v_name != ev_name {
-                            continue;
-                        }
-                        ev_abi.compare_generic(v_abi);
+        if let AbiTypeAny::Generic(_) = &self.abi {
+            for (ev_name, ev_abi) in &mut existing_ce.variants {
+                for (v_name, v_abi) in &self.variants {
+                    if v_name != ev_name {
+                        continue;
                     }
+                    ev_abi.compare_generic(v_abi);
                 }
             }
-            _ => (),
         }
+
     }
 }

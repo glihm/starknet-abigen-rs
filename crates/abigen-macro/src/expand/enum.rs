@@ -54,7 +54,7 @@ impl Expandable for CairoEnum {
         let mut deserializations: Vec<TokenStream2> = vec![];
 
         for (i, (name, abi_type)) in self.variants.iter().enumerate() {
-            let variant_name = str_to_ident(&name);
+            let variant_name = str_to_ident(name);
             let ty = str_to_type(&abi_type.to_rust_type_path());
 
             // Tuples type used as rust type item path must be surrounded

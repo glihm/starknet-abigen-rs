@@ -151,10 +151,7 @@ impl AbiTypeAny {
     /// Returns true if the type is a generic,
     /// false otherwise.
     pub fn is_generic(&self) -> bool {
-        match self {
-            Self::Generic(_) => true,
-            _ => false,
-        }
+        matches!(self, Self::Generic(_))
     }
 
     /// Returns true if the type is the unit type,
@@ -162,11 +159,7 @@ impl AbiTypeAny {
     pub fn is_unit(&self) -> bool {
         match self {
             Self::Basic(b) => {
-                if b.get_cairo_type_full() == "()" {
-                    true
-                } else {
-                    false
-                }
+                b.get_cairo_type_full() == "()"
             }
             _ => false,
         }
@@ -191,7 +184,7 @@ impl AbiTypeAny {
                     chars.next();
                     // In cairo, a generic type is always preceded by a separator "::".
                     let generic_type =
-                        Self::parse_generic(&current_type.trim_end_matches("::"), chars);
+                        Self::parse_generic(current_type.trim_end_matches("::"), chars);
                     generic_types.push(generic_type);
                     in_generic = true;
                     current_type.clear();
@@ -264,7 +257,7 @@ impl AbiTypeAny {
             }
         }
 
-        if inners.len() == 0 {
+        if inners.is_empty() {
             panic!("Array/Span/Generic type expects at least one inner type");
         }
 
@@ -287,7 +280,7 @@ impl AbiTypeAny {
     fn parse_tuple(chars: &mut Peekable<Chars>) -> Self {
         let mut tuple_values = Vec::new();
 
-        if let Some(_) = chars.next_if(|&x| x == ')') {
+        if chars.next_if(|&x| x == ')').is_some() {
             return Self::Basic("()".into());
         }
 
