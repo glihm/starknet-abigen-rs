@@ -28,14 +28,14 @@ impl Expandable for CairoStruct {
             quote! {
                 #[derive(Debug, PartialEq)]
                 pub struct #struct_name<#(#gentys),*> {
-                    #(#members),*
+                    #(pub #members),*
                 }
             }
         } else {
             quote! {
                 #[derive(Debug, PartialEq)]
                 pub struct #struct_name {
-                    #(#members),*
+                    #(pub #members),*
                 }
             }
         }

@@ -106,7 +106,7 @@ pub fn abigen(input: TokenStream) -> TokenStream {
     }
 
     tokens.push(quote! {
-        impl<'a> #contract_name<'a>
+        impl #contract_name
         {
             #(#functions)*
         }
