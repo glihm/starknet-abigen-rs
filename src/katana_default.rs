@@ -1,5 +1,5 @@
 use anyhow::Result;
-use starknet::accounts::SingleOwnerAccount;
+use starknet::accounts::{SingleOwnerAccount, ExecutionEncoding};
 use starknet::core::types::*;
 use starknet::macros::felt;
 use starknet::providers::{jsonrpc::HttpTransport, AnyProvider, JsonRpcClient, Provider};
@@ -31,6 +31,8 @@ pub async fn get_provider_and_account() -> Result<(
         signer,
         account_address,
         chain_id,
+        // Still in legacy for account deployed on katana.
+        ExecutionEncoding::Legacy,
     ));
 
     Ok((provider, account))
