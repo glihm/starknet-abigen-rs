@@ -9,7 +9,7 @@ use starknet::{
     providers::{jsonrpc::HttpTransport, AnyProvider, JsonRpcClient, Provider},
 };
 
-use crate::args::OutputArgs;
+use crate::output_args::OutputArgs;
 
 #[derive(Debug, Parser)]
 pub struct Fetch {

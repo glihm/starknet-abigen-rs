@@ -2,7 +2,7 @@ use anyhow::Result;
 use clap::{CommandFactory, Parser, Subcommand};
 use colored::Colorize;
 
-mod args;
+mod output_args;
 
 mod subcommands;
 use crate::subcommands::*;

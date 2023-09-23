@@ -3,7 +3,7 @@ use clap::Parser;
 use starknet::core::types::contract::SierraClass;
 use std::path::PathBuf;
 
-use crate::args::OutputArgs;
+use crate::output_args::OutputArgs;
 use std::fs::File;
 
 #[derive(Debug, Parser)]
