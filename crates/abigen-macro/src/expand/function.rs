@@ -55,7 +55,7 @@ impl Expandable for CairoFunction {
                 AbiTypeAny::Tuple(_) => quote! {
                     calldata.extend(<#ty>::serialize(&#name));
                 },
-                _ => quote!(calldata.extend(#ty::serialize(&#name));)
+                _ => quote!(calldata.extend(#ty::serialize(&#name));),
             };
             serializations.push(ser);
         }

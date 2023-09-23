@@ -15,7 +15,7 @@ pub struct CairoStruct {
 impl CairoStruct {
     /// Gets the name of the struct type.
     pub fn get_name(&self) -> String {
-        return self.abi.get_cairo_type_name()
+        return self.abi.get_cairo_type_name();
     }
 
     /// Returns true if the struct is generic, false otherwise.
@@ -37,10 +37,7 @@ impl CairoStruct {
     }
 
     /// Initializes a new instance from the abi name and it's members.
-    pub fn new(
-        abi_name: &str,
-        abi_members: &Vec<AbiNamedMember>,
-    ) -> CairoStruct {
+    pub fn new(abi_name: &str, abi_members: &Vec<AbiNamedMember>) -> CairoStruct {
         let abi = AbiTypeAny::from_string(abi_name);
         let mut members: Vec<(String, AbiTypeAny)> = vec![];
         let mut generic_members: HashMap<String, (String, bool)> = HashMap::new();
@@ -54,19 +51,17 @@ impl CairoStruct {
                     let cairo_gentys = g.get_cairo_types_gentys();
                     let cairo_gentys = cairo_gentys
                         .iter()
-                        .map(|(v1, v2)| (&v1[..], &v2[..])).collect();
+                        .map(|(v1, v2)| (&v1[..], &v2[..]))
+                        .collect();
 
-                    let (type_str, is_generic)
-                        = m_abi.apply_generic(cairo_gentys);
+                    let (type_str, is_generic) = m_abi.apply_generic(cairo_gentys);
 
-                    generic_members.insert(name.clone(),
-                                           (type_str.clone(), is_generic));
+                    generic_members.insert(name.clone(), (type_str.clone(), is_generic));
                 }
-                _ => ()
+                _ => (),
             }
 
             members.push((name.clone(), m_abi.clone()));
-
         }
 
         CairoStruct {
@@ -80,8 +75,7 @@ impl CairoStruct {
     pub fn compare_generic_types(&self, existing_cs: &mut CairoStruct) {
         match &self.abi {
             AbiTypeAny::Generic(_) => {
-                for (em_name, em_abi) in &mut existing_cs.members
-                {
+                for (em_name, em_abi) in &mut existing_cs.members {
                     for (m_name, m_abi) in &self.members {
                         if m_name != em_name {
                             continue;

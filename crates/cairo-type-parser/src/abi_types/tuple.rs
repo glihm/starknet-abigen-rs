@@ -122,7 +122,6 @@ impl AbiType for AbiTuple {
             s
         }
     }
-
 }
 
 #[cfg(test)]
@@ -201,57 +200,63 @@ mod tests {
     #[test]
     fn generic_tuple() {
         let mut t = AbiTypeAny::from_string("(core::felt252, core::integer::u32)");
-        assert_eq!(t.apply_generic(
-            vec![("(core::felt252, core::integer::u32)", "A")]),
-                   ("A".to_string(), true));
+        assert_eq!(
+            t.apply_generic(vec![("(core::felt252, core::integer::u32)", "A")]),
+            ("A".to_string(), true)
+        );
     }
 
     #[test]
     fn generic_inner() {
         let mut t = AbiTypeAny::from_string("(core::felt252, core::integer::u32)");
-        assert_eq!(t.apply_generic(
-            vec![("core::felt252", "A")]),
-                   ("(A, core::integer::u32)".to_string(), true));
+        assert_eq!(
+            t.apply_generic(vec![("core::felt252", "A")]),
+            ("(A, core::integer::u32)".to_string(), true)
+        );
     }
 
     #[test]
     fn generic_inner_2() {
         let mut t = AbiTypeAny::from_string("(core::felt252, core::integer::u32)");
-        assert_eq!(t.apply_generic(
-            vec![("core::integer::u32", "A")]),
-                   ("(core::felt252, A)".to_string(), true));
+        assert_eq!(
+            t.apply_generic(vec![("core::integer::u32", "A")]),
+            ("(core::felt252, A)".to_string(), true)
+        );
     }
 
     #[test]
     fn generic_tuple_not() {
         let mut t = AbiTypeAny::from_string("(core::felt252, core::integer::u32)");
-        assert_eq!(t.apply_generic(
-            vec![("(core::u32, core::u256)", "A")]),
-                   ("(core::felt252, core::integer::u32)".to_string(), false));
+        assert_eq!(
+            t.apply_generic(vec![("(core::u32, core::u256)", "A")]),
+            ("(core::felt252, core::integer::u32)".to_string(), false)
+        );
     }
 
     #[test]
     fn generic_inner_not() {
         let mut t = AbiTypeAny::from_string("(core::felt252, core::integer::u32)");
-        assert_eq!(t.apply_generic(
-            vec![("core::u256", "A")]),
-                   ("(core::felt252, core::integer::u32)".to_string(), false));
+        assert_eq!(
+            t.apply_generic(vec![("core::u256", "A")]),
+            ("(core::felt252, core::integer::u32)".to_string(), false)
+        );
     }
 
     #[test]
     fn generic_inner_multiple() {
         let mut t = AbiTypeAny::from_string("(core::felt252, core::integer::u32)");
-        assert_eq!(t.apply_generic(
-            vec![("core::felt252", "A"), ("core::integer::u32", "B")]),
-                   ("(A, B)".to_string(), true));
+        assert_eq!(
+            t.apply_generic(vec![("core::felt252", "A"), ("core::integer::u32", "B")]),
+            ("(A, B)".to_string(), true)
+        );
     }
 
     #[test]
     fn generic_inner_multiple_2() {
         let mut t = AbiTypeAny::from_string("(core::felt252, core::integer::u32)");
-        assert_eq!(t.apply_generic(
-            vec![("core::array", "A"), ("core::integer::u32", "B")]),
-                   ("(core::felt252, B)".to_string(), true));
+        assert_eq!(
+            t.apply_generic(vec![("core::array", "A"), ("core::integer::u32", "B")]),
+            ("(core::felt252, B)".to_string(), true)
+        );
     }
 }
-

@@ -1,6 +1,6 @@
 mod array;
-mod felt;
 mod boolean;
+mod felt;
 mod integers;
 mod option;
 mod result;

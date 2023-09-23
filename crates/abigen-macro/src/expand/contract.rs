@@ -3,9 +3,7 @@
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 
-use syn::{
-    Ident,
-};
+use syn::Ident;
 
 pub struct CairoContract;
 

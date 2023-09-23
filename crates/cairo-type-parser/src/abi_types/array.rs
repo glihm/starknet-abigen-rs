@@ -30,7 +30,7 @@ impl AbiType for AbiArray {
                 }
             }
             _ => {
-                self.inner.compare_generic(&other);                
+                self.inner.compare_generic(&other);
             }
         };
     }
@@ -46,10 +46,8 @@ impl AbiType for AbiArray {
 
         let (gen_str, is_generic) = self.inner.apply_generic(cairo_types_gentys);
         (
-            format!(
-                "{}::<{}>",
-                self.cairo_type.clone(), &gen_str),
-            is_generic
+            format!("{}::<{}>", self.cairo_type.clone(), &gen_str),
+            is_generic,
         )
     }
 
@@ -156,30 +154,36 @@ mod tests {
     #[test]
     fn generic_array() {
         let mut t = AbiTypeAny::from_string("core::array::Array::<core::felt252>");
-        assert_eq!(t.apply_generic(vec![("core::array::Array::<core::felt252>", "A")]),
-                   ("A".to_string(), true));
+        assert_eq!(
+            t.apply_generic(vec![("core::array::Array::<core::felt252>", "A")]),
+            ("A".to_string(), true)
+        );
     }
 
     #[test]
     fn generic_inner() {
         let mut t = AbiTypeAny::from_string("core::array::Array::<core::felt252>");
-        assert_eq!(t.apply_generic(vec![("core::felt252", "A")]),
-                   ("core::array::Array::<A>".to_string(), true));
+        assert_eq!(
+            t.apply_generic(vec![("core::felt252", "A")]),
+            ("core::array::Array::<A>".to_string(), true)
+        );
     }
 
     #[test]
     fn generic_not() {
         let mut t = AbiTypeAny::from_string("core::array::Array::<core::u32>");
-        assert_eq!(t.apply_generic(
-            vec![("core::array::Array<core::felt252>", "A")]),
-                   ("core::array::Array::<core::u32>".to_string(), false));
+        assert_eq!(
+            t.apply_generic(vec![("core::array::Array<core::felt252>", "A")]),
+            ("core::array::Array::<core::u32>".to_string(), false)
+        );
     }
 
     #[test]
     fn generic_not_inner() {
         let mut t = AbiTypeAny::from_string("core::array::Array::<core::u32>");
-        assert_eq!(t.apply_generic(vec![("core::felt252", "A")]),
-                   ("core::array::Array::<core::u32>".to_string(), false));
+        assert_eq!(
+            t.apply_generic(vec![("core::felt252", "A")]),
+            ("core::array::Array::<core::u32>".to_string(), false)
+        );
     }
-
 }

@@ -19,8 +19,7 @@ use starknet::core::types::FieldElement;
 
 /// Basic cairo structs that are already implemented inside
 /// this crate and hence skipped during ABI generation.
-pub const CAIRO_BASIC_STRUCTS: [&str; 4] =
-    ["Span", "ClassHash", "ContractAddress", "EthAddress"];
+pub const CAIRO_BASIC_STRUCTS: [&str; 4] = ["Span", "ClassHash", "ContractAddress", "EthAddress"];
 
 /// Same as `CAIRO_BASIC_STRUCTS`, but for enums.
 pub const CAIRO_BASIC_ENUMS: [&str; 2] = ["Option", "Result"];

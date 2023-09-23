@@ -148,13 +148,12 @@ impl AbiType for AbiTypeAny {
 /// Utils functions for `AbiTypeAny` to be called
 /// without testing the enum variant.
 impl AbiTypeAny {
-
     /// Returns true if the type is a generic,
     /// false otherwise.
     pub fn is_generic(&self) -> bool {
         match self {
             Self::Generic(_) => true,
-            _ => false
+            _ => false,
         }
     }
 
@@ -168,8 +167,8 @@ impl AbiTypeAny {
                 } else {
                     false
                 }
-            },
-            _ => false
+            }
+            _ => false,
         }
     }
 

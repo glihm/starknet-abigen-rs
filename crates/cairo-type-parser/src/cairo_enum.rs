@@ -15,7 +15,7 @@ pub struct CairoEnum {
 impl CairoEnum {
     /// Gets the name of the enum type.
     pub fn get_name(&self) -> String {
-        return self.abi.get_cairo_type_name()
+        return self.abi.get_cairo_type_name();
     }
 
     /// Returns true if the enum is generic, false otherwise.
@@ -37,10 +37,7 @@ impl CairoEnum {
     }
 
     /// Initializes a new instance from the abi name and it's variants.
-    pub fn new(
-        abi_name: &str,
-        abi_variants: &Vec<AbiNamedMember>,
-    ) -> CairoEnum {
+    pub fn new(abi_name: &str, abi_variants: &Vec<AbiNamedMember>) -> CairoEnum {
         let abi = AbiTypeAny::from_string(abi_name);
         let mut variants: Vec<(String, AbiTypeAny)> = vec![];
         let mut generic_variants: HashMap<String, (String, bool)> = HashMap::new();
@@ -54,19 +51,17 @@ impl CairoEnum {
                     let cairo_gentys = g.get_cairo_types_gentys();
                     let cairo_gentys = cairo_gentys
                         .iter()
-                        .map(|(v1, v2)| (&v1[..], &v2[..])).collect();
+                        .map(|(v1, v2)| (&v1[..], &v2[..]))
+                        .collect();
 
-                    let (type_str, is_generic)
-                        = v_abi.apply_generic(cairo_gentys);
+                    let (type_str, is_generic) = v_abi.apply_generic(cairo_gentys);
 
-                    generic_variants.insert(name.clone(),
-                                            (type_str.clone(), is_generic));
+                    generic_variants.insert(name.clone(), (type_str.clone(), is_generic));
                 }
-                _ => ()
+                _ => (),
             }
 
             variants.push((name.clone(), v_abi.clone()));
-
         }
 
         CairoEnum {
@@ -80,8 +75,7 @@ impl CairoEnum {
     pub fn compare_generic_types(&self, existing_ce: &mut CairoEnum) {
         match &self.abi {
             AbiTypeAny::Generic(_) => {
-                for (ev_name, ev_abi) in &mut existing_ce.variants
-                {
+                for (ev_name, ev_abi) in &mut existing_ce.variants {
                     for (v_name, v_abi) in &self.variants {
                         if v_name != ev_name {
                             continue;

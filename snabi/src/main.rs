@@ -44,7 +44,6 @@ async fn run_command(cli: Cli) -> Result<()> {
         (false, Some(command)) => match command {
             Subcommands::Fetch(cmd) => cmd.run().await,
             Subcommands::FromSierra(cmd) => cmd.run().await,
-
         },
     }
 }

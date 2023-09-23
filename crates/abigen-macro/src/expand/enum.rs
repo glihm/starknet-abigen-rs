@@ -1,6 +1,6 @@
 //! Enums expansion, taking in account generic types if any.
-use crate::expand::utils::{str_to_ident, str_to_type};
 use crate::expand::generic;
+use crate::expand::utils::{str_to_ident, str_to_type};
 use crate::Expandable;
 
 use cairo_type_parser::abi_types::{AbiType, AbiTypeAny};
@@ -27,9 +27,7 @@ impl Expandable for CairoEnum {
         }
 
         if self.is_generic() {
-            let gentys: Vec<Ident> = self.get_gentys()
-                .iter()
-                .map(|g| str_to_ident(g)).collect();
+            let gentys: Vec<Ident> = self.get_gentys().iter().map(|g| str_to_ident(g)).collect();
 
             quote! {
                 #[derive(Debug, PartialEq)]
@@ -99,9 +97,7 @@ impl Expandable for CairoEnum {
             _ => panic!("Index not handle for enum {}", #name_str)
         });
 
-        let gentys: Vec<Ident> = self.get_gentys()
-            .iter()
-            .map(|g| str_to_ident(g)).collect();
+        let gentys: Vec<Ident> = self.get_gentys().iter().map(|g| str_to_ident(g)).collect();
 
         let impl_line = if self.is_generic() {
             generic::impl_with_gentys_tokens(&enum_name, &gentys)
@@ -112,7 +108,9 @@ impl Expandable for CairoEnum {
         let rust_type = if self.is_generic() {
             generic::rust_associated_type_gentys_tokens(&enum_name, &gentys)
         } else {
-            quote!(type RustType = Self;)
+            quote!(
+                type RustType = Self;
+            )
         };
 
         quote! {

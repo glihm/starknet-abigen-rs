@@ -1,22 +1,28 @@
 use anyhow::{anyhow, Result};
 use clap::Parser;
-use std::path::PathBuf;
 use serde::Serialize;
 use std::fs::File;
 use std::io::Write;
+use std::path::PathBuf;
 
 #[derive(Debug, Clone, Parser)]
 pub struct OutputArgs {
     #[clap(long = "json", help = "JSON file where to write the ABI")]
     json: Option<PathBuf>,
-    #[clap(long = "expandable", help = "Rust file where to write the ABI and the abigen macro")]
+    #[clap(
+        long = "expandable",
+        help = "Rust file where to write the ABI and the abigen macro"
+    )]
     expandable: Option<PathBuf>,
-    #[clap(long = "name", help = "Name of the contract (required if expandable is used)")]
+    #[clap(
+        long = "name",
+        help = "Name of the contract (required if expandable is used)"
+    )]
     contract_name: Option<String>,
 }
 
 impl OutputArgs {
-    pub fn write<T>(&self, value: &T) -> Result<()> 
+    pub fn write<T>(&self, value: &T) -> Result<()>
     where
         T: ?Sized + Serialize,
     {
@@ -30,7 +36,9 @@ impl OutputArgs {
             let contract_name = if let Some(n) = &self.contract_name {
                 n
             } else {
-                return Err(anyhow!("When --expandable is used, you must also provide --name"));
+                return Err(anyhow!(
+                    "When --expandable is used, you must also provide --name"
+                ));
             };
 
             let mut file = File::create(&expandable_path)?;

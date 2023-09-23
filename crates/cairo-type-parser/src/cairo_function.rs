@@ -1,7 +1,5 @@
-
-use crate::abi_types::{AbiTypeAny};
+use crate::abi_types::AbiTypeAny;
 use starknet::core::types::contract::{AbiNamedMember, AbiOutput, StateMutability};
-
 
 #[derive(Debug, Clone)]
 pub struct CairoFunction {
@@ -44,5 +42,4 @@ impl CairoFunction {
             output,
         }
     }
-
 }

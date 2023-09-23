@@ -1,11 +1,10 @@
 use anyhow::Result;
 use clap::Parser;
+use starknet::core::types::contract::SierraClass;
 use std::path::PathBuf;
-use starknet::core::types::contract::{SierraClass};
 
-
-use std::fs::File;
 use crate::args::OutputArgs;
+use std::fs::File;
 
 #[derive(Debug, Parser)]
 pub struct FromSierra {
@@ -17,7 +16,8 @@ pub struct FromSierra {
 
 impl FromSierra {
     pub async fn run(self) -> Result<()> {
-        let sierra_class = serde_json::from_reader::<_, SierraClass>(File::open(&self.sierra_path)?)?;
+        let sierra_class =
+            serde_json::from_reader::<_, SierraClass>(File::open(&self.sierra_path)?)?;
         let abi = sierra_class.abi;
         self.output.write(&abi)
     }

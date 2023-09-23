@@ -44,7 +44,6 @@ impl From<&String> for AbiBasic {
     fn from(s: &String) -> Self {
         Self::new(s)
     }
-
 }
 
 impl AbiType for AbiBasic {
@@ -140,12 +139,18 @@ mod tests {
     #[test]
     fn from_string_generic() {
         let mut t = AbiTypeAny::from_string("core::felt252");
-        assert_eq!(t.apply_generic(vec![("core::felt252", "A")]), ("A".to_string(), true));
+        assert_eq!(
+            t.apply_generic(vec![("core::felt252", "A")]),
+            ("A".to_string(), true)
+        );
     }
 
     #[test]
     fn from_string_not_generic() {
         let mut t = AbiTypeAny::from_string("core::u32");
-        assert_eq!(t.apply_generic(vec![("core::felt252", "A")]), ("core::u32".to_string(), false));
+        assert_eq!(
+            t.apply_generic(vec![("core::felt252", "A")]),
+            ("core::u32".to_string(), false)
+        );
     }
 }

@@ -20,7 +20,8 @@
 use starknet::core::types::contract::*;
 use std::fs;
 use syn::{
-    parse::{Parse, ParseStream, Result}, Ident, LitStr, Token,
+    parse::{Parse, ParseStream, Result},
+    Ident, LitStr, Token,
 };
 
 #[derive(Clone, Debug)]
@@ -50,8 +51,10 @@ impl Parse for ContractAbi {
             Err(e) => {
                 // TODO: check how we can notify better the user in case of error.
                 // Or do we want 2 macros to easy debugging / better UX on error?
-                println!("Error loading the input as ABI: {:?}\nTry to load a JSON file",
-                         e);
+                println!(
+                    "Error loading the input as ABI: {:?}\nTry to load a JSON file",
+                    e
+                );
 
                 let path = content;
                 match fs::read_to_string(path.value()) {

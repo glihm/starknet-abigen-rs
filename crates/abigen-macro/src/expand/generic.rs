@@ -1,5 +1,5 @@
 //! Utils functions for generic expansion.
-use crate::expand::utils::{str_to_ident};
+use crate::expand::utils::str_to_ident;
 
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
@@ -9,7 +9,8 @@ use syn::Ident;
 pub fn impl_with_gentys_tokens(entity_name: &Ident, gentys: &Vec<Ident>) -> TokenStream2 {
     let gentys_rust: Vec<Ident> = gentys
         .iter()
-        .map(|g| str_to_ident(format!("R{}", g.to_string()).as_str())).collect();
+        .map(|g| str_to_ident(format!("R{}", g.to_string()).as_str()))
+        .collect();
 
     let mut tokens = vec![];
 
@@ -27,10 +28,14 @@ pub fn impl_with_gentys_tokens(entity_name: &Ident, gentys: &Vec<Ident>) -> Toke
 }
 
 /// Expands the associated types lines for generic types.
-pub fn rust_associated_type_gentys_tokens(entity_name: &Ident, gentys: &Vec<Ident>) -> TokenStream2 {
+pub fn rust_associated_type_gentys_tokens(
+    entity_name: &Ident,
+    gentys: &Vec<Ident>,
+) -> TokenStream2 {
     let gentys_rust: Vec<Ident> = gentys
         .iter()
-        .map(|g| str_to_ident(format!("R{}", g.to_string()).as_str())).collect();
+        .map(|g| str_to_ident(format!("R{}", g.to_string()).as_str()))
+        .collect();
 
     quote!(type RustType = #entity_name<#(#gentys_rust),*>;)
 }

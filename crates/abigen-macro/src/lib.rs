@@ -20,12 +20,10 @@ use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 use starknet::core::types::contract::*;
 
-use syn::{
-    parse_macro_input,
-};
 use std::collections::HashMap;
+use syn::parse_macro_input;
 
-use cairo_type_parser::{CairoStruct, CairoEnum, CairoFunction};
+use cairo_type_parser::{CairoEnum, CairoFunction, CairoStruct};
 use cairo_types::{CAIRO_BASIC_ENUMS, CAIRO_BASIC_STRUCTS};
 
 trait Expandable {
@@ -80,12 +78,8 @@ pub fn abigen(input: TokenStream) -> TokenStream {
                 // From this statement, we can safely assume that any function name is
                 // unique, and the arguments can be flatten as is due to the fact
                 // that structs and enum are being parsed for genericity.
-                let cf = CairoFunction::new(
-                    &f.name,
-                    f.state_mutability.clone(),
-                    &f.inputs,
-                    &f.outputs,
-                );
+                let cf =
+                    CairoFunction::new(&f.name, f.state_mutability.clone(), &f.inputs, &f.outputs);
 
                 functions.push(cf.expand_impl());
             }
@@ -97,7 +91,7 @@ pub fn abigen(input: TokenStream) -> TokenStream {
                 // the auto-parsing of `EmittedEvent` struct to detect keys/data
                 // automatically.
             }
-            _ => continue
+            _ => continue,
         }
     }
 

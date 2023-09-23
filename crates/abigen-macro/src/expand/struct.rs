@@ -1,6 +1,6 @@
 //! Struct expansion, taking in account generic types if any.
-use crate::expand::utils::{str_to_ident, str_to_type};
 use crate::expand::generic;
+use crate::expand::utils::{str_to_ident, str_to_type};
 use crate::Expandable;
 
 use cairo_type_parser::abi_types::{AbiType, AbiTypeAny};
@@ -23,9 +23,7 @@ impl Expandable for CairoStruct {
         }
 
         if self.is_generic() {
-            let gentys: Vec<Ident> = self.get_gentys()
-                .iter()
-                .map(|g| str_to_ident(g)).collect();
+            let gentys: Vec<Ident> = self.get_gentys().iter().map(|g| str_to_ident(g)).collect();
 
             quote! {
                 #[derive(Debug, PartialEq)]
@@ -80,9 +78,7 @@ impl Expandable for CairoStruct {
             });
         }
 
-        let gentys: Vec<Ident> = self.get_gentys()
-            .iter()
-            .map(|g| str_to_ident(g)).collect();
+        let gentys: Vec<Ident> = self.get_gentys().iter().map(|g| str_to_ident(g)).collect();
 
         let impl_line = if self.is_generic() {
             generic::impl_with_gentys_tokens(&struct_name, &gentys)
@@ -93,14 +89,16 @@ impl Expandable for CairoStruct {
         let rust_type = if self.is_generic() {
             generic::rust_associated_type_gentys_tokens(&struct_name, &gentys)
         } else {
-            quote!(type RustType = Self;)
+            quote!(
+                type RustType = Self;
+            )
         };
 
         quote! {
             #impl_line {
 
                 #rust_type
-            
+
                 const SERIALIZED_SIZE: std::option::Option<usize> = None;
 
                 #[inline]

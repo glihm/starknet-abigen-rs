@@ -20,7 +20,12 @@ impl AbiGeneric {
     /// Gets the definition of the type with it's generic types.
     pub fn get_rust_generic_def(&self, suffix: &str) -> String {
         let gentys = self.get_gentys_only();
-        format!("{}<{}{}>", self.get_cairo_type_name(), gentys.join(", "), suffix)
+        format!(
+            "{}<{}{}>",
+            self.get_cairo_type_name(),
+            gentys.join(", "),
+            suffix
+        )
     }
 
     /// Returns only the generic types list.
@@ -45,10 +50,7 @@ impl AbiGeneric {
         let mut cairo_types_gentys = vec![];
         for (i, inner) in self.inners.iter().enumerate() {
             let genty = ((ascii + i as u8) as char).to_string();
-            cairo_types_gentys.push((
-                inner.get_cairo_type_full(),
-                genty
-            ));
+            cairo_types_gentys.push((inner.get_cairo_type_full(), genty));
         }
 
         cairo_types_gentys
@@ -135,7 +137,12 @@ impl AbiType for AbiGeneric {
         if !self.genty.is_empty() && &self.genty != GENTY_FROZEN {
             self.genty.clone()
         } else {
-            let joined_inners = self.inners.iter().map(|i| i.to_rust_type()).collect::<Vec<_>>().join(", ");
+            let joined_inners = self
+                .inners
+                .iter()
+                .map(|i| i.to_rust_type())
+                .collect::<Vec<_>>()
+                .join(", ");
 
             format!("{}<{}>", self.get_cairo_type_name(), joined_inners)
         }
@@ -145,8 +152,13 @@ impl AbiType for AbiGeneric {
         if !self.genty.is_empty() && &self.genty != GENTY_FROZEN {
             self.genty.clone()
         } else {
-            let joined_inners = self.inners.iter().map(|i| i.to_rust_type()).collect::<Vec<_>>().join(", ");
-            
+            let joined_inners = self
+                .inners
+                .iter()
+                .map(|i| i.to_rust_type())
+                .collect::<Vec<_>>()
+                .join(", ");
+
             format!("{}::<{}>", self.get_cairo_type_name(), joined_inners)
         }
     }
@@ -198,13 +210,19 @@ mod tests {
     #[test]
     fn to_rust_type() {
         let t = get_default();
-        assert_eq!(t.to_rust_type(), "MyStruct<starknet::core::types::FieldElement>");
+        assert_eq!(
+            t.to_rust_type(),
+            "MyStruct<starknet::core::types::FieldElement>"
+        );
     }
 
     #[test]
     fn to_rust_type_path() {
         let t = get_default();
-        assert_eq!(t.to_rust_type_path(), "MyStruct::<starknet::core::types::FieldElement>");
+        assert_eq!(
+            t.to_rust_type_path(),
+            "MyStruct::<starknet::core::types::FieldElement>"
+        );
     }
 
     #[test]
@@ -249,13 +267,19 @@ mod tests {
     #[test]
     fn to_rust_type_multiple() {
         let t = get_default_multiple();
-        assert_eq!(t.to_rust_type(), "MyStruct<starknet::core::types::FieldElement, u32>");
+        assert_eq!(
+            t.to_rust_type(),
+            "MyStruct<starknet::core::types::FieldElement, u32>"
+        );
     }
 
     #[test]
     fn to_rust_type_path_multiple() {
         let t = get_default_multiple();
-        assert_eq!(t.to_rust_type_path(), "MyStruct::<starknet::core::types::FieldElement, u32>");
+        assert_eq!(
+            t.to_rust_type_path(),
+            "MyStruct::<starknet::core::types::FieldElement, u32>"
+        );
     }
 
     #[test]
@@ -267,55 +291,65 @@ mod tests {
     #[test]
     fn generic_generic() {
         let mut t = AbiTypeAny::from_string("contract1::MyStruct::<core::felt252>");
-        assert_eq!(t.apply_generic(
-            vec![("contract1::MyStruct::<core::felt252>", "A")]),
-                   ("A".to_string(), true)
+        assert_eq!(
+            t.apply_generic(vec![("contract1::MyStruct::<core::felt252>", "A")]),
+            ("A".to_string(), true)
         );
     }
 
     #[test]
     fn generic_inner() {
         let mut t = AbiTypeAny::from_string("contract1::MyStruct::<core::felt252>");
-        assert_eq!(t.apply_generic(
-            vec![("core::felt252", "A")]),
-                   ("contract1::MyStruct::<A>".to_string(), true)
+        assert_eq!(
+            t.apply_generic(vec![("core::felt252", "A")]),
+            ("contract1::MyStruct::<A>".to_string(), true)
         );
     }
 
     #[test]
     fn generic_generic_multiple() {
-        let mut t = AbiTypeAny::from_string("contract1::MyStruct::<core::felt252, core::integer::u32>");
-        assert_eq!(t.apply_generic(
-            vec![("contract1::MyStruct::<core::felt252, core::integer::u32>", "A")]),
-                   ("A".to_string(), true)
+        let mut t =
+            AbiTypeAny::from_string("contract1::MyStruct::<core::felt252, core::integer::u32>");
+        assert_eq!(
+            t.apply_generic(vec![(
+                "contract1::MyStruct::<core::felt252, core::integer::u32>",
+                "A"
+            )]),
+            ("A".to_string(), true)
         );
     }
 
     #[test]
     fn generic_inner_multiple() {
-        let mut t = AbiTypeAny::from_string("contract1::MyStruct::<core::felt252, core::integer::u32>");
-        assert_eq!(t.apply_generic(
-            vec![("core::integer::u32", "A")]),
-                   ("contract1::MyStruct::<core::felt252, A>".to_string(), true)
+        let mut t =
+            AbiTypeAny::from_string("contract1::MyStruct::<core::felt252, core::integer::u32>");
+        assert_eq!(
+            t.apply_generic(vec![("core::integer::u32", "A")]),
+            ("contract1::MyStruct::<core::felt252, A>".to_string(), true)
         );
     }
 
     #[test]
     fn generic_inner_multiple_array() {
-        let mut t = AbiTypeAny::from_string("contract1::MyStruct::<core::array::Array<core::felt252>, core::integer::u32>");
-        assert_eq!(t.apply_generic(
-            vec![("core::felt252", "A")]),
-                   ("contract1::MyStruct::<core::array::Array::<A>, core::integer::u32>".to_string(), true)
+        let mut t = AbiTypeAny::from_string(
+            "contract1::MyStruct::<core::array::Array<core::felt252>, core::integer::u32>",
+        );
+        assert_eq!(
+            t.apply_generic(vec![("core::felt252", "A")]),
+            (
+                "contract1::MyStruct::<core::array::Array::<A>, core::integer::u32>".to_string(),
+                true
+            )
         );
     }
 
     #[test]
     fn generic_inner_multiple_ab() {
-        let mut t = AbiTypeAny::from_string("contract1::MyStruct::<core::felt252, core::integer::u32>");
-        assert_eq!(t.apply_generic(
-            vec![("core::felt252", "A"), ("core::integer::u32", "B")]),
-                   ("contract1::MyStruct::<A, B>".to_string(), true)
+        let mut t =
+            AbiTypeAny::from_string("contract1::MyStruct::<core::felt252, core::integer::u32>");
+        assert_eq!(
+            t.apply_generic(vec![("core::felt252", "A"), ("core::integer::u32", "B")]),
+            ("contract1::MyStruct::<A, B>".to_string(), true)
         );
     }
-
 }

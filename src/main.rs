@@ -2,22 +2,21 @@ mod tests;
 
 use abigen_macro::abigen;
 use anyhow::Result;
-use cairo_types::CairoType;
 use cairo_types::types::starknet::*;
+use cairo_types::CairoType;
 
 mod a;
 use a::ContractA;
 
-use url::Url;
 use starknet::accounts::{Account, SingleOwnerAccount};
 use starknet::core::types::*;
 use starknet::macros::felt;
 use starknet::providers::{jsonrpc::HttpTransport, AnyProvider, JsonRpcClient, Provider};
 use starknet::signers::{LocalWallet, SigningKey};
+use url::Url;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-
     let rpc_url = Url::parse("http://0.0.0.0:5050")?;
     let provider =
         AnyProvider::JsonRpcHttp(JsonRpcClient::new(HttpTransport::new(rpc_url.clone())));
@@ -46,28 +45,25 @@ async fn main() -> Result<()> {
     // };
 
     contract_a
-        .func1(&ContractAddress(felt!("0x1234")), &EthAddress(felt!("0x222")), &ClassHash(felt!("0x444")))
+        .func1(
+            &ContractAddress(felt!("0x1234")),
+            &EthAddress(felt!("0x222")),
+            &ClassHash(felt!("0x444")),
+        )
         .await
         .expect("Fail invoke func1");
 
-    let r = contract_a
-        .func2()
-        .await
-        .expect("Fail call func2");
+    let r = contract_a.func2().await.expect("Fail call func2");
 
     println!("\n\n**\n\n{:?}", r);
 
-    let r2 = contract_a
-        .func3()
-        .await
-        .expect("Fail call func3");
+    let r2 = contract_a.func3().await.expect("Fail call func3");
 
     println!("\n\n**\n\n{:?}", r2);
     // let v_get_a = contract_a.get_val().await.expect("Fail call get val");
     // assert_eq!(v_get_a, FieldElement::TWO);
     // let v_get_b = contract_b.get_val().await.expect("Fail call get val");
     // assert_eq!(v_get_b, v_get_a);
-
 
     // let contract_b = ContractB::new(contract_address, &provider);
 

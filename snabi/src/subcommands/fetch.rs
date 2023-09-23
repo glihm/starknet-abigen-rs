@@ -5,10 +5,8 @@ use url::Url;
 use starknet::core::types::contract::*;
 
 use starknet::{
-    core::{types::*},
-    providers::{
-        jsonrpc::HttpTransport, AnyProvider, JsonRpcClient, Provider,
-    },
+    core::types::*,
+    providers::{jsonrpc::HttpTransport, AnyProvider, JsonRpcClient, Provider},
 };
 
 use crate::args::OutputArgs;
@@ -25,7 +23,8 @@ pub struct Fetch {
 
 impl Fetch {
     pub async fn run(self) -> Result<()> {
-        let provider = AnyProvider::JsonRpcHttp(JsonRpcClient::new(HttpTransport::new(self.rpc_url)));
+        let provider =
+            AnyProvider::JsonRpcHttp(JsonRpcClient::new(HttpTransport::new(self.rpc_url)));
         let address = FieldElement::from_hex_be(&self.contract_address)?;
 
         let class = provider
@@ -36,8 +35,8 @@ impl Fetch {
             ContractClass::Sierra(sierra) => {
                 let abi: Vec<AbiEntry> = serde_json::from_str(&sierra.abi)?;
                 self.output.write(&abi)
-            },
-            ContractClass::Legacy(_) => Err(anyhow!("Legacy class is not supported"))
+            }
+            ContractClass::Legacy(_) => Err(anyhow!("Legacy class is not supported")),
         }
     }
 }
