@@ -12,9 +12,10 @@ pub(crate) struct ContractAbi {
 
 impl Parse for ContractAbi {
     fn parse(input: ParseStream) -> Result<Self> {
-        // name
         let name = input.parse::<Ident>()?;
         input.parse::<Token![,]>()?;
+
+        let content = input.parse::<LitStr>()?;
 
         // abi (from ether-rs crate).
         // Due to limitation with the proc-macro Span API, we
@@ -22,8 +23,7 @@ impl Parse for ContractAbi {
         // therefore, the path will always be rooted on the cargo manifest
         // directory. Eventually we can use the `Span::source_file` API to
         // have a better experience.
-        let contents = input.parse::<LitStr>()?;
-        match serde_json::from_str(&contents.value()) {
+        match serde_json::from_str(&content.value()) {
             Ok(abi_json) => Ok(ContractAbi {
                 name,
                 abi: abi_json,
@@ -32,7 +32,7 @@ impl Parse for ContractAbi {
                 println!("Error loading the input as ABI: {:?}\nTry to load a JSON file",
                          e);
 
-                let path = contents;
+                let path = content;
                 match fs::read_to_string(path.value()) {
                     Ok(abi_str) => {
                         let abi_json = serde_json::from_str(&abi_str).map_err(|e| {

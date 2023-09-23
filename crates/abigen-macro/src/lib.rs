@@ -4,6 +4,9 @@ use expand::contract::CairoContract;
 mod contract_abi;
 use contract_abi::ContractAbi;
 
+mod contract_fetch;
+use contract_fetch::ContractFetch;
+
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;

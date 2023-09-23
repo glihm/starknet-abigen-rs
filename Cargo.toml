@@ -8,6 +8,7 @@ members = [
     "crates/cairo-types",
     "crates/cairo-type-parser",
     "crates/abigen-macro",
+    "snabi",
     "expanded-examples/",
 ]
 
@@ -31,10 +32,11 @@ starknet = "0.5.0"
 
 anyhow = "1.0"
 tokio = { version = "1.15.0", features = ["full"] }
+url = "2.2.2"
 
 # Dependencies for the testing app in src.
 [dependencies]
-url = "2.2.2"
+url.workspace = true
 anyhow.workspace = true
 tokio.workspace = true
 cairo-types.workspace = true
