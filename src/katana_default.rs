@@ -1,6 +1,5 @@
-use abigen_macro::abigen;
 use anyhow::Result;
-use starknet::accounts::{Account, SingleOwnerAccount};
+use starknet::accounts::SingleOwnerAccount;
 use starknet::core::types::*;
 use starknet::macros::felt;
 use starknet::providers::{jsonrpc::HttpTransport, AnyProvider, JsonRpcClient, Provider};
@@ -9,10 +8,14 @@ use std::sync::Arc;
 use url::Url;
 
 /// Returns a default provider and account for testing purposes on Katana.
-pub async fn get_provider_and_account() -> Result<(Arc<AnyProvider>, Arc<SingleOwnerAccount<Arc<AnyProvider>, LocalWallet>>)> {
+pub async fn get_provider_and_account() -> Result<(
+    Arc<AnyProvider>,
+    Arc<SingleOwnerAccount<Arc<AnyProvider>, LocalWallet>>,
+)> {
     let rpc_url = Url::parse("http://0.0.0.0:5050")?;
-    let provider =
-        Arc::new(AnyProvider::JsonRpcHttp(JsonRpcClient::new(HttpTransport::new(rpc_url.clone()))));
+    let provider = Arc::new(AnyProvider::JsonRpcHttp(JsonRpcClient::new(
+        HttpTransport::new(rpc_url.clone()),
+    )));
 
     let account_address =
         felt!("0x517ececd29116499f4a1b64b094da79ba08dfd54a3edaa316134c41f8160973");
@@ -22,9 +25,13 @@ pub async fn get_provider_and_account() -> Result<(Arc<AnyProvider>, Arc<SingleO
     ))
     .unwrap();
 
-
     let chain_id = provider.chain_id().await?;
-    let account = Arc::new(SingleOwnerAccount::new(Arc::clone(&provider), signer, account_address, chain_id));
+    let account = Arc::new(SingleOwnerAccount::new(
+        Arc::clone(&provider),
+        signer,
+        account_address,
+        chain_id,
+    ));
 
     Ok((provider, account))
 }

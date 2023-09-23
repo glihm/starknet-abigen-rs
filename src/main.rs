@@ -14,23 +14,17 @@
 //! 4. Then you can run the main with `cargo run`.
 mod tests;
 
-use abigen_macro::abigen;
 use anyhow::Result;
-use cairo_types::types::starknet::*;
-use cairo_types::CairoType;
 
 mod katana_default;
 
 mod autogen_abis;
-use autogen_abis::basic_abi::{BasicContract, u256};
+use autogen_abis::basic_abi::{u256, BasicContract};
 
-use starknet::accounts::{Account, SingleOwnerAccount};
 use starknet::core::types::*;
 use starknet::macros::felt;
-use starknet::providers::{jsonrpc::HttpTransport, AnyProvider, JsonRpcClient, Provider};
-use starknet::signers::{LocalWallet, SigningKey};
+
 use std::sync::Arc;
-use url::Url;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -38,9 +32,9 @@ async fn main() -> Result<()> {
 
     let basic = BasicContract::new(
         felt!("0x04383de1eb63b223170e1de699ff5074fbc1f6096e14604615b65d3d1cc28c7d"),
-        Arc::clone(&provider)
+        Arc::clone(&provider),
     )
-        .with_account(Arc::clone(&account));
+    .with_account(Arc::clone(&account));
 
     let v1 = FieldElement::ONE;
     let v2 = u256 {
@@ -53,7 +47,6 @@ async fn main() -> Result<()> {
     let (v1_r, v2_r) = basic.read_storage_tuple().await.unwrap();
     assert_eq!(v1_r, v1);
     assert_eq!(v2_r, v2);
-    
 
     Ok(())
 }

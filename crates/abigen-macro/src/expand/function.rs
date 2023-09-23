@@ -143,7 +143,10 @@ impl Expandable for CairoFunction {
 #[cfg(test)]
 mod tests {
     use crate::Expandable;
-    use cairo_type_parser::{abi_types::{AbiType, AbiTypeAny}, CairoFunction};
+    use cairo_type_parser::{
+        abi_types::{AbiType, AbiTypeAny},
+        CairoFunction,
+    };
     use proc_macro2::TokenStream;
     use quote::quote;
     use starknet::core::types::contract::StateMutability;
@@ -154,14 +157,8 @@ mod tests {
             name: "my_func".to_string(),
             state_mutability: StateMutability::View,
             inputs: vec![
-                (
-                    "v1".to_string(),
-                    AbiTypeAny::Basic("core::felt252".into()),
-                ),
-                (
-                    "v2".to_string(),
-                    AbiTypeAny::Basic("core::felt252".into()),
-                ),
+                ("v1".to_string(), AbiTypeAny::Basic("core::felt252".into())),
+                ("v2".to_string(), AbiTypeAny::Basic("core::felt252".into())),
             ],
             output: Some(AbiTypeAny::Basic("core::felt252".into())),
         };
@@ -179,14 +176,8 @@ mod tests {
             name: "my_func".to_string(),
             state_mutability: StateMutability::View,
             inputs: vec![
-                (
-                    "v1".to_string(),
-                    AbiTypeAny::Basic("core::felt252".into()),
-                ),
-                (
-                    "v2".to_string(),
-                    AbiTypeAny::Basic("core::felt252".into()),
-                ),
+                ("v1".to_string(), AbiTypeAny::Basic("core::felt252".into())),
+                ("v2".to_string(), AbiTypeAny::Basic("core::felt252".into())),
             ],
             output: Some(AbiTypeAny::Basic("core::felt252".into())),
         };
