@@ -2,7 +2,7 @@
 //!
 //! https://github.com/starkware-libs/cairo/blob/main/corelib/src/result.cairo#L6
 use crate::error::{Error as CairoError, Result as CairoResult};
-use crate::ty::CairoType;
+use crate::CairoType;
 use alloc::string::ToString;
 use alloc::{vec, vec::Vec};
 use starknet::core::types::FieldElement;

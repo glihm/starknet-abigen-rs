@@ -1,3 +1,4 @@
+//! CairoType implementation for tuples.
 use crate::{CairoType, Result};
 use alloc::{vec, vec::Vec};
 use starknet::core::types::FieldElement;

@@ -1,3 +1,6 @@
+//! CairoType implementation for starknet types.
+//!
+//! They are alf `FieldElement` under the hood.
 use crate::{CairoType, Result};
 use alloc::vec::Vec;
 use starknet::core::types::FieldElement;

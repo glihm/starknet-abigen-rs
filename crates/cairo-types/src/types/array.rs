@@ -1,3 +1,5 @@
+//! CairoType implementation for `Vec`.
+//! They are used for Array and Span cairo types.
 use crate::{CairoType, Error, Result};
 use alloc::string::ToString;
 use alloc::{format, vec, vec::Vec};
