@@ -1,8 +1,7 @@
-use std::collections::HashMap;
-
+//! Event parsing.
 use super::abi_types::{AbiType, AbiTypeAny};
-use super::{CairoStruct, CairoEnum};
-use starknet::core::types::contract::{AbiEvent, EventFieldKind, EventField, AbiNamedMember, TypedAbiEvent};
+use super::{CairoEnum, CairoStruct};
+use starknet::core::types::contract::{AbiEvent, AbiNamedMember, EventFieldKind, TypedAbiEvent};
 
 #[derive(Debug, Clone)]
 pub enum CairoEventInner {
@@ -55,14 +54,17 @@ impl CairoEvent {
                         .iter()
                         .map(|m| {
                             kinds.push(m.kind.clone());
-                            AbiNamedMember { name: m.name.clone(), r#type: m.r#type.clone() }
+                            AbiNamedMember {
+                                name: m.name.clone(),
+                                r#type: m.r#type.clone(),
+                            }
                         })
                         .collect();
 
-                    let cs = CairoStruct::new(&name, &members);
+                    let cs = CairoStruct::new(name, &members);
 
                     Some(CairoEvent {
-                        abi: AbiTypeAny::from_string(&name),
+                        abi: AbiTypeAny::from_string(name),
                         inner: CairoEventInner::Struct(cs),
                         fields_kinds: kinds,
                     })
@@ -79,19 +81,22 @@ impl CairoEvent {
                         .iter()
                         .map(|v| {
                             kinds.push(v.kind.clone());
-                            AbiNamedMember { name: v.name.clone(), r#type: v.r#type.clone() }
+                            AbiNamedMember {
+                                name: v.name.clone(),
+                                r#type: v.r#type.clone(),
+                            }
                         })
                         .collect();
 
-                    let ce = CairoEnum::new(&name, &variants);
+                    let ce = CairoEnum::new(name, &variants);
 
                     Some(CairoEvent {
-                        abi: AbiTypeAny::from_string(&name),
+                        abi: AbiTypeAny::from_string(name),
                         inner: CairoEventInner::Enum(ce),
                         fields_kinds: kinds,
                     })
                 }
-            }
+            },
             AbiEvent::Untyped(_) => {
                 // Can we support this..?
                 //panic!("Untyped events are not supported");
@@ -100,4 +105,3 @@ impl CairoEvent {
         }
     }
 }
-

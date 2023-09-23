@@ -37,6 +37,11 @@ mod event {
     }
 
     #[external(v0)]
+    fn read(ref self: ContractState) -> felt252 {
+        2
+    }
+
+    #[external(v0)]
     fn emit_a(ref self: ContractState, header: felt252, value: Span<felt252>) {
         self.emit(MyEventA {
             header,

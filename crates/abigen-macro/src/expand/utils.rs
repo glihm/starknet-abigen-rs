@@ -1,5 +1,5 @@
 //! Utils function for expansion.
-use syn::{Ident, Type, LitStr};
+use syn::{Ident, LitStr, Type};
 
 ///
 pub fn str_to_ident(str_in: &str) -> Ident {

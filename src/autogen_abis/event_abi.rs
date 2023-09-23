@@ -2,12 +2,21 @@
 
 use abigen_macro::abigen;
 use cairo_types::CairoType;
-use starknet::core::types::{BlockId, BlockTag};
-use starknet::providers::Provider;
 use starknet::accounts::Account;
 abigen!(EventContract,
 r#"
 [
+  {
+    "type": "function",
+    "name": "read",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "core::felt252"
+      }
+    ],
+    "state_mutability": "external"
+  },
   {
     "type": "struct",
     "name": "core::array::Span::<core::felt252>",

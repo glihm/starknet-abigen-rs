@@ -1,6 +1,6 @@
 //! Events expansion.
-use crate::expand::{ExpandableEvent, Expandable};
-use crate::expand::utils::{str_to_ident, str_to_type, str_to_litstr};
+use crate::expand::utils::{str_to_ident, str_to_litstr, str_to_type};
+use crate::expand::{Expandable, ExpandableEvent};
 
 use cairo_type_parser::abi_types::{AbiType, AbiTypeAny};
 use cairo_type_parser::cairo_event::{CairoEvent, CairoEventInner};
@@ -8,8 +8,6 @@ use starknet::core::types::contract::EventFieldKind;
 
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
-use std::collections::HashMap;
-use syn::Ident;
 
 impl ExpandableEvent for CairoEvent {
     fn expand_decl(&self) -> TokenStream2 {
@@ -45,7 +43,7 @@ impl ExpandableEvent for CairoEvent {
 
         // Stop here if it's not the Event enum.
         if self.get_name() != "Event" {
-            return quote!{
+            return quote! {
                 #(#tokens)*
             };
         }
@@ -58,26 +56,26 @@ impl ExpandableEvent for CairoEvent {
 
             for (v_name, _) in &inner.variants {
                 // Get the corresponding CairoEvent in the array to access it's fields.
-                let cev = events.iter()
+                let cev = events
+                    .iter()
                     .find(|&e| &e.get_name() == v_name)
-                    .expect(format!("Event variant {} was not found in events", v_name).as_str());
+                    .unwrap_or_else(|| panic!("Event variant {} was not found in events", v_name));
 
-                let cev_fields_kinds = cev.count_fields_kinds();
+                let _cev_fields_kinds = cev.count_fields_kinds();
 
                 let mut desers_tokens = vec![];
                 let mut names_tokens = vec![];
-                let v_ident = str_to_ident(&v_name);
-                let v_name_str = str_to_litstr(&v_name);
-                
+                let v_ident = str_to_ident(v_name);
+                let v_name_str = str_to_litstr(v_name);
+
                 // Let's write the deserialization of each member/variants
                 // of the current event.
                 match &cev.inner {
                     CairoEventInner::Struct(s) => {
-                        let mut idx = 0;
-                        for (name, abi_type) in &s.members {
+                        for (idx, (name, abi_type)) in s.members.iter().enumerate() {
                             let kind = &cev.fields_kinds[idx];
-                            let name_str = str_to_litstr(&name);
-                            let name = str_to_ident(&name);
+                            let name_str = str_to_litstr(name);
+                            let name = str_to_ident(name);
                             let ty = str_to_type(&abi_type.to_rust_type_path());
                             let ty_punctuated = match abi_type {
                                 AbiTypeAny::Tuple(_) => quote!(<#ty>),
@@ -107,15 +105,13 @@ impl ExpandableEvent for CairoEvent {
                             };
 
                             names_tokens.push(quote!(#name));
-                            idx += 1;
                         }
                     }
                     CairoEventInner::Enum(e) => {
-                        let mut idx = 0;
-                        for (name, abi_type) in &e.variants {
+                        for (idx, (name, abi_type)) in e.variants.iter().enumerate() {
                             let kind = &cev.fields_kinds[idx];
-                            let name_str = str_to_litstr(&name);
-                            let name = str_to_ident(&name);
+                            let name_str = str_to_litstr(name);
+                            let name = str_to_ident(name);
                             let ty = str_to_type(&abi_type.to_rust_type_path());
                             let ty_punctuated = match abi_type {
                                 AbiTypeAny::Tuple(_) => quote!(<#ty>),
@@ -145,7 +141,6 @@ impl ExpandableEvent for CairoEvent {
                             };
 
                             names_tokens.push(quote!(#name));
-                            idx += 1;
                         }
                     }
                 };
@@ -159,9 +154,9 @@ impl ExpandableEvent for CairoEvent {
                         // We skip the selector.
                         let mut key_offset = 1;
                         let mut data_offset = 0;
-                        
+
                         #(#desers_tokens)*
-                        
+
                         return Ok(Event::#v_ident(#v_ident {
                             #(#names_tokens),*
                         }))
@@ -192,7 +187,7 @@ impl ExpandableEvent for CairoEvent {
             tokens.push(try_from);
         }
 
-        quote!{
+        quote! {
             #(#tokens)*
         }
     }

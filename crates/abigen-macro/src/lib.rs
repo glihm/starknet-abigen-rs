@@ -10,8 +10,8 @@
 //! checked for genericty to avoid duplicated types and detect correctly
 //! the members/variants that are generic.
 mod expand;
-use expand::{Expandable, ExpandableEvent};
 use expand::contract::CairoContract;
+use expand::{Expandable, ExpandableEvent};
 
 mod contract_abi;
 use contract_abi::ContractAbi;
@@ -24,7 +24,7 @@ use starknet::core::types::contract::*;
 use std::collections::HashMap;
 use syn::parse_macro_input;
 
-use cairo_type_parser::{CairoEnum, CairoFunction, CairoStruct, CairoEvent};
+use cairo_type_parser::{CairoEnum, CairoEvent, CairoFunction, CairoStruct};
 use cairo_types::{CAIRO_BASIC_ENUMS, CAIRO_BASIC_STRUCTS};
 
 #[proc_macro]
