@@ -23,6 +23,22 @@ impl CairoEvent {
         self.abi.get_cairo_type_name()
     }
 
+    /// Gets the count for each field kind (keys, data).
+    pub fn count_fields_kinds(&self) -> (usize, usize) {
+        let mut k = 0;
+        let mut d = 0;
+
+        for fk in &self.fields_kinds {
+            match fk {
+                EventFieldKind::Key => k += 1,
+                EventFieldKind::Data => d += 1,
+                _ => continue,
+            }
+        }
+
+        (k, d)
+    }
+
     /// Initializes a new instance from the abi name and it's members.
     pub fn new(abi_event: &AbiEvent) -> Option<CairoEvent> {
         match abi_event {

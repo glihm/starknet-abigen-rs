@@ -1,6 +1,6 @@
 //! Events expansion.
 use crate::expand::generic;
-use crate::expand::utils::{str_to_ident, str_to_type};
+use crate::expand::utils::{str_to_ident, str_to_type, str_to_litstr};
 use crate::Expandable;
 
 use cairo_type_parser::abi_types::{AbiType, AbiTypeAny};
@@ -8,6 +8,7 @@ use cairo_type_parser::cairo_event::{CairoEvent, CairoEventInner};
 
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
+use std::collections::HashMap;
 use syn::Ident;
 
 impl Expandable for CairoEvent {
@@ -17,120 +18,74 @@ impl Expandable for CairoEvent {
             CairoEventInner::Enum(e) => e.expand_decl(),
         };
         quote!(#decl)
-
-        // let struct_name = str_to_ident(&self.get_name());
-
-        // let mut members: Vec<TokenStream2> = vec![];
-        // for (name, abi_type) in &self.members {
-        //     let name = str_to_ident(name);
-        //     let ty = str_to_type(&abi_type.to_rust_type());
-
-        //     members.push(quote!(#name: #ty));
-        // }
-
-        // if self.is_generic() {
-        //     let gentys: Vec<Ident> = self.get_gentys().iter().map(|g| str_to_ident(g)).collect();
-
-        //     quote! {
-        //         #[derive(Debug, PartialEq)]
-        //         pub struct #struct_name<#(#gentys),*> {
-        //             #(pub #members),*
-        //         }
-        //     }
-        // } else {
-        //     quote! {
-        //         #[derive(Debug, PartialEq)]
-        //         pub struct #struct_name {
-        //             #(pub #members),*
-        //         }
-        //     }
-        // }
     }
 
     fn expand_impl(&self) -> TokenStream2 {
-        let imp = match &self.inner {
+        let mut tokens = vec![];
+
+        let inner_imp = match &self.inner {
             CairoEventInner::Struct(s) => s.expand_impl(),
             CairoEventInner::Enum(e) => e.expand_impl(),
         };
-        quote!(#imp)
-        // let struct_name = str_to_ident(&self.get_name());
 
-        // let mut sizes: Vec<TokenStream2> = vec![];
-        // let mut sers: Vec<TokenStream2> = vec![];
-        // let mut desers: Vec<TokenStream2> = vec![];
-        // let mut names: Vec<TokenStream2> = vec![];
+        tokens.push(quote!(#inner_imp));
 
-        // let mut is_first = true;
-        // for (name, abi_type) in &self.members {
-        //     let name = str_to_ident(name);
-        //     names.push(quote!(#name));
+        // Generate the get_selector() method for this event.
+        let name_ident = str_to_ident(&self.get_name());
+        let name_str = str_to_litstr(&self.get_name());
+        let selector = quote! {
+            impl #name_ident {
+                pub fn get_selector() -> starknet::core::types::FieldElement {
+                    starknet::macros::selector!(#name_str)
+                }
+            }
+        };
 
-        //     let ty = str_to_type(&abi_type.to_rust_type_path());
+        tokens.push(selector);
 
-        //     // Tuples type used as rust type item path must be surrounded
-        //     // by angle brackets.
-        //     let ty_punctuated = match abi_type {
-        //         AbiTypeAny::Tuple(_) => quote!(<#ty>),
-        //         _ => quote!(#ty),
-        //     };
+        // If it's the event enum with all other events (always called Event),
+        // We can generate the TryFrom<EmittedEvent>. It's always an enum.
+        // if self.get_name() == "Event" {
+        //     // It should always be an enum here.
+        //     if let CairoEventInner::Enum(inner) = self.inner {
+        //         let variants_tokens = vec![];
 
-        //     if is_first {
-        //         sizes.push(quote!(#ty_punctuated::serialized_size(&rust.#name)));
-        //         is_first = false;
-        //     } else {
-        //         sizes.push(quote!(+ #ty_punctuated::serialized_size(&rust.#name)));
-        //     }
+        //         for (v_name, _) in inner.variants {
+        //             let v_ident = str_to_ident(v_name);
 
-        //     sers.push(quote!(out.extend(#ty_punctuated::serialize(&rust.#name));));
-
-        //     desers.push(quote! {
-        //         let #name = #ty_punctuated::deserialize(felts, offset)?;
-        //         offset += #ty_punctuated::serialized_size(&#name);
-        //     });
-        // }
-
-        // let gentys: Vec<Ident> = self.get_gentys().iter().map(|g| str_to_ident(g)).collect();
-
-        // let impl_line = if self.is_generic() {
-        //     generic::impl_with_gentys_tokens(&struct_name, &gentys)
-        // } else {
-        //     quote!(impl cairo_types::CairoType for #struct_name)
-        // };
-
-        // let rust_type = if self.is_generic() {
-        //     generic::rust_associated_type_gentys_tokens(&struct_name, &gentys)
-        // } else {
-        //     quote!(
-        //         type RustType = Self;
-        //     )
-        // };
-
-        // quote! {
-        //     #impl_line {
-
-        //         #rust_type
-
-        //         const SERIALIZED_SIZE: std::option::Option<usize> = None;
-
-        //         #[inline]
-        //         fn serialized_size(rust: &Self::RustType) -> usize {
-        //             #(#sizes) *
+        //             let tok = quote! {
+        //                 if selector == #v_name::get_selector() {
+        //                     return Ok(AnyEvent::MyEventA(MyEventA {
+        //                         header: event.keys[1],
+        //                         value: vec![event.data[0]],
+        //                     }))
+        //                 };
+        //             }
         //         }
 
-        //         fn serialize(rust: &Self::RustType) -> Vec<starknet::core::types::FieldElement> {
-        //             let mut out: Vec<starknet::core::types::FieldElement> = vec![];
-        //             #(#sers)*
-        //             out
-        //         }
+        //         let event_emitted_event = quote! {
+        //             impl TryFrom<EmittedEvent> for AnyEvent {
+        //                 // TODO: change for a better/custom type?
+        //                 type Error = &'static str;
 
-        //         fn deserialize(felts: &[starknet::core::types::FieldElement], offset: usize) -> cairo_types::Result<Self::RustType> {
-        //             let mut offset = offset;
-        //             #(#desers)*
-        //             Ok(#struct_name {
-        //                 #(#names),*
-        //             })
+        //                 fn try_from(event: EmittedEvent) -> Result<Self, Self::Error> {
+        //                     if event.keys.is_empty() {
+        //                         return Err("Missing event selector, no keys found");
+        //                     }
+
+        //                     let selector = event.keys[0];
+
+
+        //                     Err("Could not match any event selector")
+        //                 }
+        //             }
         //         }
         //     }
-        // }
+        // };
+
+
+        quote!{
+            #(#tokens)*
+        }
     }
 }

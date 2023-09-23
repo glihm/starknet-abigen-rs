@@ -86,7 +86,6 @@ pub fn abigen(input: TokenStream) -> TokenStream {
             }
             AbiEntry::Event(ev) => {
                 if let Some(cev) = CairoEvent::new(ev) {
-                    println!("CEV: {:?}", cev);
                     events.push(cev);
                 }
                 // TODO events.
