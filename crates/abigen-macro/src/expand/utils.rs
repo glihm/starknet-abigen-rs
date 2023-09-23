@@ -1,3 +1,4 @@
+//! Utils function for expansion.
 use syn::{Ident, Type};
 
 ///

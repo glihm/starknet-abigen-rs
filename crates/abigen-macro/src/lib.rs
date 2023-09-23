@@ -1,64 +1,34 @@
+//! This crate contains all the logic to expand the parsed ABI types into
+//! rust code.
+//!
+//! Important note, functions can't be generic when they are entry point
+//! of a Cairo contracts.
+//! For this reason, all the generic types are handles for structs and enums
+//! generation only, and then applied on functions inputs/output.
+//!
+//! As the ABI as everything flatten, we must ensure that structs and enums are
+//! checked for genericty to avoid duplicated types and detect correctly
+//! the members/variants that are generic.
+mod expand;
+use expand::contract::CairoContract;
+
+mod contract_abi;
+use contract_abi::ContractAbi;
+
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 use starknet::core::types::contract::*;
-use std::fs;
-use syn::{
-    parse::{Parse, ParseStream, Result},
-    parse_macro_input, Ident, LitStr, Token,
-};
 
-use cairo_type_parser::{abi_type::AbiType, CairoEnum};
-use cairo_type_parser::{CairoFunction, CairoStruct};
-use cairo_types::ty::{CAIRO_BASIC_ENUMS, CAIRO_BASIC_STRUCTS};
+use std::collections::HashMap;
+use syn::parse_macro_input;
 
-mod expand;
+use cairo_type_parser::{CairoEnum, CairoFunction, CairoStruct};
+use cairo_types::{CAIRO_BASIC_ENUMS, CAIRO_BASIC_STRUCTS};
 
 trait Expandable {
     fn expand_decl(&self) -> TokenStream2;
     fn expand_impl(&self) -> TokenStream2;
-}
-
-#[derive(Clone, Debug)]
-pub(crate) struct ContractAbi {
-    name: Ident,
-    abi: Vec<AbiEntry>,
-}
-impl Parse for ContractAbi {
-    fn parse(input: ParseStream) -> Result<Self> {
-        // name
-        let name = input.parse::<Ident>()?;
-        input.parse::<Token![,]>()?;
-
-        // abi (from ether-rs crate).
-        // Due to limitation with the proc-macro Span API, we
-        // can't currently get a path the the file where we were called from;
-        // therefore, the path will always be rooted on the cargo manifest
-        // directory. Eventually we can use the `Span::source_file` API to
-        // have a better experience.
-        let contents = input.parse::<LitStr>()?;
-        match serde_json::from_str(&contents.value()) {
-            Ok(abi_json) => Ok(ContractAbi {
-                name,
-                abi: abi_json,
-            }),
-            Err(_) => {
-                let path = contents;
-                match fs::read_to_string(path.value()) {
-                    Ok(abi_str) => {
-                        let abi_json = serde_json::from_str(&abi_str).map_err(|e| {
-                            syn::Error::new(path.span(), format!("JSON error: {}", e))
-                        })?;
-                        Ok(ContractAbi {
-                            name,
-                            abi: abi_json,
-                        })
-                    }
-                    Err(err) => Err(syn::Error::new(path.span(), format!("File error: {}", err))),
-                }
-            }
-        }
-    }
 }
 
 #[proc_macro]
@@ -69,113 +39,74 @@ pub fn abigen(input: TokenStream) -> TokenStream {
 
     let mut tokens: Vec<TokenStream2> = vec![];
 
-    // TODO: fix imports. Do we want to import everything at the top
-    // of the contract, and put the contract inside a module?
-    // TODO: Make generic. P: Provider, A: Account.
-    tokens.push(quote! {
-        #[derive(Debug)]
-        pub struct #contract_name<'a>
-        {
-            pub address: starknet::core::types::FieldElement,
-            pub provider: &'a starknet::providers::AnyProvider,
-            pub account : std::option::Option<&'a starknet::accounts::SingleOwnerAccount<&'a starknet::providers::AnyProvider, starknet::signers::LocalWallet>>,
-        }
+    tokens.push(CairoContract::expand(contract_name.clone()));
 
-        // TODO: Perhaps better than anyhow, a custom error?
-        impl<'a> #contract_name<'a> {
-            pub fn new(
-                address: starknet::core::types::FieldElement,
-                provider: &'a starknet::providers::AnyProvider,
-            ) -> Self {
-                Self {
-                    address,
-                    provider,
-                    account: None,
-                }
-            }
-
-            pub fn with_account(mut self, account: &'a starknet::accounts::SingleOwnerAccount<&'a starknet::providers::AnyProvider, starknet::signers::LocalWallet>,
-            ) -> Self {
-                self.account = Some(account);
-                self
-            }
-        }
-    });
-
+    let mut structs: HashMap<String, CairoStruct> = HashMap::new();
+    let mut enums: HashMap<String, CairoEnum> = HashMap::new();
     let mut functions = vec![];
 
-    for entry in abi {
+    for entry in &abi {
         match entry {
             AbiEntry::Struct(s) => {
-                let cairo_entry = CairoStruct {
-                    name: AbiType::from_string(&s.name),
-                    members: s
-                        .members
-                        .iter()
-                        .map(|m| (m.name.clone(), AbiType::from_string(&m.r#type)))
-                        .collect(),
-                };
+                let cs = CairoStruct::new(&s.name, &s.members);
 
-                if CAIRO_BASIC_STRUCTS.contains(&cairo_entry.name.get_type_name_only().as_str()) {
+                if CAIRO_BASIC_STRUCTS.contains(&cs.get_name().as_str()) {
                     continue;
                 }
 
-                tokens.push(cairo_entry.expand_decl());
-                tokens.push(cairo_entry.expand_impl());
-            }
-            AbiEntry::Function(f) => {
-                // Outputs is usually only one type. It's called "outputs"
-                // to be generic. So for now we only keep the first output type (if any).
-                //
-                // TODO: ask to Starkware if there is a case where several outputs
-                // are returned. As the functions only have one output type (which can be
-                // nested, of course).
-                let output = if !f.outputs.is_empty() {
-                    Some(AbiType::from_string(&f.outputs[0].r#type))
+                if let Some(ref mut existing_cs) = structs.get_mut(&cs.get_name()) {
+                    cs.compare_generic_types(existing_cs);
                 } else {
-                    None
-                };
-
-                let cairo_entry = CairoFunction {
-                    name: AbiType::from_string(&f.name),
-                    state_mutability: f.state_mutability,
-                    inputs: f
-                        .inputs
-                        .iter()
-                        .map(|i| (i.name.clone(), AbiType::from_string(&i.r#type)))
-                        .collect(),
-                    output,
-                };
-
-                functions.push(cairo_entry.expand_impl());
+                    structs.insert(cs.get_name(), cs.clone());
+                }
             }
             AbiEntry::Enum(e) => {
-                // TODO: also skip Option, Result and other
-                // very basic enums of Cairo that must be implemented
-                // directly in CairoType.
-                let cairo_entry = CairoEnum {
-                    name: AbiType::from_string(&e.name),
-                    variants: e
-                        .variants
-                        .iter()
-                        .map(|v| (v.name.clone(), AbiType::from_string(&v.r#type)))
-                        .collect(),
-                };
+                let ce = CairoEnum::new(&e.name, &e.variants);
 
-                if CAIRO_BASIC_ENUMS.contains(&cairo_entry.name.get_type_name_only().as_str()) {
+                if CAIRO_BASIC_ENUMS.contains(&ce.get_name().as_str()) {
                     continue;
                 }
 
-                tokens.push(cairo_entry.expand_decl());
-                tokens.push(cairo_entry.expand_impl());
+                if let Some(ref mut existing_ce) = enums.get_mut(&ce.get_name()) {
+                    ce.compare_generic_types(existing_ce);
+                } else {
+                    enums.insert(ce.get_name(), ce.clone());
+                }
             }
-            AbiEntry::Event(_) => {}
-            _ => (),
+            AbiEntry::Function(f) => {
+                // Functions cannot be generic when they are entry point.
+                // From this statement, we can safely assume that any function name is
+                // unique, and the arguments can be flatten as is due to the fact
+                // that structs and enum are being parsed for genericity.
+                let cf =
+                    CairoFunction::new(&f.name, f.state_mutability.clone(), &f.inputs, &f.outputs);
+
+                functions.push(cf.expand_impl());
+            }
+            AbiEntry::Event(_ev) => {
+                // TODO events.
+                // Events are not usually used as input/output of functions, but
+                // mainly for deserialization while indexing.
+                // We should then generate specific struct for them to support
+                // the auto-parsing of `EmittedEvent` struct to detect keys/data
+                // automatically.
+            }
+            _ => continue,
         }
     }
 
+    for (_, cs) in structs {
+        tokens.push(cs.expand_decl());
+        tokens.push(cs.expand_impl());
+    }
+
+    for (_, ce) in enums {
+        tokens.push(ce.expand_decl());
+        tokens.push(ce.expand_impl());
+    }
+
     tokens.push(quote! {
-        impl<'a> #contract_name<'a>
+        impl #contract_name
         {
             #(#functions)*
         }

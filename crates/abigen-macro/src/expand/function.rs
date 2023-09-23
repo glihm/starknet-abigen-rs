@@ -1,6 +1,6 @@
 use crate::expand::utils::{str_to_ident, str_to_type};
 use crate::Expandable;
-use cairo_type_parser::abi_type::AbiType;
+use cairo_type_parser::abi_types::{AbiType, AbiTypeAny};
 use cairo_type_parser::CairoFunction;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
@@ -8,18 +8,18 @@ use starknet::core::types::contract::StateMutability;
 
 impl Expandable for CairoFunction {
     fn expand_decl(&self) -> TokenStream2 {
-        let func_name = str_to_ident(&self.name.get_type_name_only());
+        let func_name = str_to_ident(&self.name);
 
         let mut inputs: Vec<TokenStream2> = vec![];
         for (name, abi_type) in &self.inputs {
             let name = str_to_ident(name);
             let ty = str_to_type(&abi_type.to_rust_type());
-            inputs.push(quote!(#name:#ty));
+            // We can pass a reference here as serialize always takes a reference.
+            inputs.push(quote!(#name:&#ty));
         }
 
         let output = match self.state_mutability {
             StateMutability::View => match &self.output {
-                // TODO: perhaps anyhow is not the best here, custom error may be better?
                 Some(o) => {
                     let oty = str_to_type(&o.to_rust_type());
                     quote!(-> cairo_types::Result<#oty>)
@@ -44,15 +44,20 @@ impl Expandable for CairoFunction {
 
     fn expand_impl(&self) -> TokenStream2 {
         let decl = self.expand_decl();
-        let func_name = &self.name.get_type_name_only();
+        let func_name = &self.name;
 
         let mut serializations: Vec<TokenStream2> = vec![];
         for (name, abi_type) in &self.inputs {
             let name = str_to_ident(name);
             let ty = str_to_type(&abi_type.to_rust_type_path());
-            serializations.push(quote! {
-                calldata.extend(#ty::serialize(&#name));
-            });
+
+            let ser = match abi_type {
+                AbiTypeAny::Tuple(_) => quote! {
+                    calldata.extend(<#ty>::serialize(#name));
+                },
+                _ => quote!(calldata.extend(#ty::serialize(#name));),
+            };
+            serializations.push(ser);
         }
 
         let out_res = match &self.output {
@@ -61,7 +66,7 @@ impl Expandable for CairoFunction {
                 match o {
                     // Tuples type used as rust type path must be surrounded
                     // by LT/GT.
-                    AbiType::Tuple(_) => quote!(<#out_type_path>::deserialize(r, 0)),
+                    AbiTypeAny::Tuple(_) => quote!(<#out_type_path>::deserialize(&r, 0)),
                     _ => quote!(#out_type_path::deserialize(&r, 0)),
                 }
             }
@@ -138,7 +143,10 @@ impl Expandable for CairoFunction {
 #[cfg(test)]
 mod tests {
     use crate::Expandable;
-    use cairo_type_parser::{abi_type::AbiType, CairoFunction};
+    use cairo_type_parser::{
+        abi_types::{AbiType, AbiTypeAny},
+        CairoFunction,
+    };
     use proc_macro2::TokenStream;
     use quote::quote;
     use starknet::core::types::contract::StateMutability;
@@ -146,23 +154,17 @@ mod tests {
     #[test]
     fn test_decl_basic() {
         let cf = CairoFunction {
-            name: AbiType::Basic("my_func".to_string()),
+            name: "my_func".to_string(),
             state_mutability: StateMutability::View,
             inputs: vec![
-                (
-                    "v1".to_string(),
-                    AbiType::Basic("core::felt252".to_string()),
-                ),
-                (
-                    "v2".to_string(),
-                    AbiType::Basic("core::felt252".to_string()),
-                ),
+                ("v1".to_string(), AbiTypeAny::Basic("core::felt252".into())),
+                ("v2".to_string(), AbiTypeAny::Basic("core::felt252".into())),
             ],
-            output: Some(AbiType::Basic("core::felt252".to_string())),
+            output: Some(AbiTypeAny::Basic("core::felt252".into())),
         };
         let te1 = cf.expand_decl();
         let tef1: TokenStream = quote!(
-            pub async fn my_func(&self, v1: starknet::core::types::FieldElement, v2: starknet::core::types::FieldElement) -> cairo_types::Result<starknet::core::types::FieldElement>
+            pub async fn my_func(&self, v1: &starknet::core::types::FieldElement, v2: &starknet::core::types::FieldElement) -> cairo_types::Result<starknet::core::types::FieldElement>
         );
 
         assert_eq!(te1.to_string(), tef1.to_string());
@@ -171,19 +173,13 @@ mod tests {
     #[test]
     fn test_impl_basic() {
         let cf = CairoFunction {
-            name: AbiType::Basic("my_func".to_string()),
+            name: "my_func".to_string(),
             state_mutability: StateMutability::View,
             inputs: vec![
-                (
-                    "v1".to_string(),
-                    AbiType::Basic("core::felt252".to_string()),
-                ),
-                (
-                    "v2".to_string(),
-                    AbiType::Basic("core::felt252".to_string()),
-                ),
+                ("v1".to_string(), AbiTypeAny::Basic("core::felt252".into())),
+                ("v2".to_string(), AbiTypeAny::Basic("core::felt252".into())),
             ],
-            output: Some(AbiType::Basic("core::felt252".to_string())),
+            output: Some(AbiTypeAny::Basic("core::felt252".into())),
         };
         let te1 = cf.expand_impl();
 
@@ -191,12 +187,12 @@ mod tests {
         let tef1: TokenStream = quote!(
             pub async fn my_func(
                 &self,
-                v1: starknet::core::types::FieldElement,
-                v2: starknet::core::types::FieldElement
+                v1: &starknet::core::types::FieldElement,
+                v2: &starknet::core::types::FieldElement
             ) -> cairo_types::Result<starknet::core::types::FieldElement> {
                 let mut calldata = vec![];
-                calldata.extend(starknet::core::types::FieldElement::serialize(&v1));
-                calldata.extend(starknet::core::types::FieldElement::serialize(&v2));
+                calldata.extend(starknet::core::types::FieldElement::serialize(v1));
+                calldata.extend(starknet::core::types::FieldElement::serialize(v2));
 
                 let r = self.provider
                     .call(

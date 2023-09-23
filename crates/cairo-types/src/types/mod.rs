@@ -1,5 +1,6 @@
 mod array;
-mod data_type;
+mod boolean;
+mod felt;
 mod integers;
 mod option;
 mod result;

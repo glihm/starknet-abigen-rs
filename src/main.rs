@@ -1,98 +1,71 @@
+//! Main with demo for abigen macro usage.
+//!
+//! If you want to modify the contracts and change the ABI,
+//! you can then rebuild the contracts and generate the ABIs by doing:
+//!
+//! 1. `scarb build` inside the contracts folder at the root of the package.
+//! 2. `cargo run -p snabi from-sierra contracts_<contract_name>.sierra.json --expandable src/abis/<contract_name>_abi.rs --name <ContractName>`
+//!
+//! To test the contract calls, run the following:
+//!
+//! 1. `katana` to spin up katana on default port 5050.
+//! 2. `scarb build` to regenerate the up to date contract code if not already done.
+//! 3. Go into contracts folder and run: `make setup_<contract_name>` to deploy the contract.
+//! 4. Then you can run the main with `cargo run`.
 mod tests;
 
-use abigen_macro::abigen;
 use anyhow::Result;
-use cairo_types::ty::CairoType;
 
-use starknet::accounts::{Account, SingleOwnerAccount};
+mod katana_default;
+
+mod autogen_abis;
+use autogen_abis::basic_abi::{u256, BasicContract};
+use autogen_abis::gen_abi::{GenContract, MyStruct};
 
 use starknet::core::types::*;
 use starknet::macros::felt;
-use starknet::providers::{jsonrpc::HttpTransport, AnyProvider, JsonRpcClient, Provider};
-use starknet::signers::{LocalWallet, SigningKey};
 
-use url::Url;
-
-abigen!(ContractA, "./test.abi.json");
-
-abigen!(
-    ContractB,
-    r#"
-[
-  {
-    "type": "function",
-    "name": "get_val",
-    "inputs": [],
-    "outputs": [
-      {
-        "type": "core::felt252"
-      }
-    ],
-    "state_mutability": "view"
-  }
-]
-"#
-);
+use std::sync::Arc;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let rpc_url = Url::parse("http://0.0.0.0:5050")?;
-    let provider =
-        AnyProvider::JsonRpcHttp(JsonRpcClient::new(HttpTransport::new(rpc_url.clone())));
+    let (provider, account) = katana_default::get_provider_and_account().await?;
 
-    let account_address =
-        felt!("0x517ececd29116499f4a1b64b094da79ba08dfd54a3edaa316134c41f8160973");
+    let basic = BasicContract::new(
+        felt!("0x04383de1eb63b223170e1de699ff5074fbc1f6096e14604615b65d3d1cc28c7d"),
+        Arc::clone(&provider),
+    )
+    .with_account(Arc::clone(&account));
 
-    let signer = wallet_from_private_key(&Some(
-        "0x0000001800000000300000180000000000030000000000003006001800006600".to_string(),
-    ))
-    .unwrap();
+    let v1 = FieldElement::ONE;
+    let v2 = u256 {
+        low: 2_u128,
+        high: 0_u128,
+    };
 
-    // If you modify the contract, even with a salt, it will be deployed at
-    // a different address.
-    let contract_address =
-        felt!("0x02de662b356d56d25be451106ae2b54db05e476f8bbb9f0519fd8c2a63e575a9");
+    basic.set_storage(&v1, &v2).await?;
 
-    let chain_id = provider.chain_id().await?;
-    let account = SingleOwnerAccount::new(&provider, signer, account_address, chain_id);
+    let (v1_r, v2_r) = basic.read_storage_tuple().await.unwrap();
+    assert_eq!(v1_r, v1);
+    assert_eq!(v2_r, v2);
 
-    let contract_a = ContractA::new(contract_address, &provider).with_account(&account);
-    let contract_b = ContractB::new(contract_address, &provider);
+    let gen = GenContract::new(
+        felt!("0x0505ca46219e39ede6f186e3056535d82e4eb44bbb49b77531930eeacd1c89e3"),
+        Arc::clone(&provider),
+    )
+    .with_account(Arc::clone(&account));
 
-    contract_a
-        .set_val(FieldElement::TWO)
-        .await
-        .expect("Fail call set val");
-    let v_get_a = contract_a.get_val().await.expect("Fail call get val");
-    assert_eq!(v_get_a, FieldElement::TWO);
-    let v_get_b = contract_b.get_val().await.expect("Fail call get val");
-    assert_eq!(v_get_b, v_get_a);
+    let ms = MyStruct {
+        f1: FieldElement::ONE,
+        f2: FieldElement::TWO,
+        f3: FieldElement::THREE,
+    };
 
-    contract_a
-        .hello_world(FieldElement::THREE)
-        .await
-        .expect("Fail call hello world");
+    gen.func1(&ms).await?;
+
+    let (f1, f2) = gen.read().await.unwrap();
+    assert_eq!(f1, FieldElement::ONE);
+    assert_eq!(f2, FieldElement::TWO);
 
     Ok(())
-}
-
-// TODO: Check the class between cairo option and std option.
-// we need to pre-declare option in cairo-types and use it with the path cairo_types::Option.
-/// Returns a local wallet from a private key, if provided.
-fn wallet_from_private_key(
-    private_key: &std::option::Option<String>,
-) -> std::option::Option<LocalWallet> {
-    if let Some(pk) = private_key {
-        let private_key = match FieldElement::from_hex_be(pk) {
-            Ok(p) => p,
-            Err(e) => {
-                println!("Error importing private key: {:?}", e);
-                return None;
-            }
-        };
-        let key = SigningKey::from_secret_scalar(private_key);
-        Some(LocalWallet::from_signing_key(key))
-    } else {
-        None
-    }
 }

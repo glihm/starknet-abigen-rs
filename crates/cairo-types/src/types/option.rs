@@ -4,8 +4,7 @@
 //! To follow the serialization rule, `Some` has index 0, and `None` index 1.
 //!
 //! https://github.com/starkware-libs/cairo/blob/main/corelib/src/option.cairo#L6
-use crate::error::{Error, Result};
-use crate::ty::CairoType;
+use crate::{CairoType, Error, Result};
 use alloc::string::ToString;
 use alloc::{vec, vec::Vec};
 use starknet::core::types::FieldElement;

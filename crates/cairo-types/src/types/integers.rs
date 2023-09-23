@@ -1,5 +1,5 @@
-use crate::ty::CairoType;
-use crate::Result;
+//! CairoType implementation for integers (signed/unsigned).
+use crate::{CairoType, Result};
 use alloc::{vec, vec::Vec};
 use starknet::core::types::FieldElement;
 

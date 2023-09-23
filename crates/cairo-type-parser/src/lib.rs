@@ -1,35 +1,22 @@
-pub mod abi_type;
+//! This crates is about parsing Cairo types from an ABI.
+//! Later, this will also be able to parse Cairo type from Cairo code.
+//!
+//! The important consideration are the generic type. Indeed, in the ABI
+//! there is no information about a type genericity and how exactly
+//! the members/variants are following the generic type as everything is
+//! flattened.
+//!
+//! `abi_types` is the low level parsing of the types. It supports
+//! nested types.
+//!
+//! `CairoStruct`, `CairoEnum` and `CairoFunction` are higher level
+//! types to resolve the genericity and manage members/variants/inputs/outputs
+//! for simpler expansion.
 
-use starknet::core::types::contract::StateMutability;
-
-use abi_type::AbiType;
-
-#[derive(Debug)]
-pub enum CairoAbiEntry {
-    Array(Vec<AbiType>),
-    Struct(CairoStruct),
-    Enum(CairoEnum),
-    Function(CairoFunction),
-}
-
-#[derive(Debug)]
-pub struct CairoStruct {
-    pub name: AbiType,
-    pub members: Vec<(String, AbiType)>,
-}
-
-#[derive(Debug)]
-pub struct CairoEnum {
-    pub name: AbiType,
-    pub variants: Vec<(String, AbiType)>,
-}
-
-#[derive(Debug)]
-pub struct CairoFunction {
-    // TODO: perhaps the name can be a regular string.
-    pub name: AbiType,
-    pub state_mutability: StateMutability,
-    pub inputs: Vec<(String, AbiType)>,
-    // For now, only one output type is supported (or none).
-    pub output: Option<AbiType>,
-}
+pub mod abi_types;
+pub mod cairo_struct;
+pub use cairo_struct::CairoStruct;
+pub mod cairo_enum;
+pub use cairo_enum::CairoEnum;
+pub mod cairo_function;
+pub use cairo_function::CairoFunction;
