@@ -9,7 +9,7 @@ use syn::Ident;
 pub fn impl_with_gentys_tokens(entity_name: &Ident, gentys: &Vec<Ident>) -> TokenStream2 {
     let gentys_rust: Vec<Ident> = gentys
         .iter()
-        .map(|g| str_to_ident(format!("R{}", g.to_string()).as_str()))
+        .map(|g| str_to_ident(format!("R{}", g).as_str()))
         .collect();
 
     let mut tokens = vec![];
@@ -31,7 +31,7 @@ pub fn impl_with_gentys_tokens(entity_name: &Ident, gentys: &Vec<Ident>) -> Toke
 pub fn rust_associated_type_gentys_tokens(entity_name: &Ident, gentys: &[Ident]) -> TokenStream2 {
     let gentys_rust: Vec<Ident> = gentys
         .iter()
-        .map(|g| str_to_ident(format!("R{}", g.to_string()).as_str()))
+        .map(|g| str_to_ident(format!("R{}", g).as_str()))
         .collect();
 
     quote!(type RustType = #entity_name<#(#gentys_rust),*>;)
