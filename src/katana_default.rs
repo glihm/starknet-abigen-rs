@@ -7,6 +7,24 @@ use starknet::signers::{LocalWallet, SigningKey};
 use std::sync::Arc;
 use url::Url;
 
+/// Fetches events for all blocks.
+pub async fn fetch_all_events(provider: Arc<AnyProvider>) -> Result<Vec<EmittedEvent>> {
+
+    let filter = EventFilter {
+        from_block: Some(BlockId::Number(0)),
+        to_block: Some(BlockId::Tag(BlockTag::Latest)),
+        address: None,
+        keys: None,
+    };
+
+    let chunk_size = 100;
+
+    Ok(provider
+       .get_events(filter.clone(), None, chunk_size)
+       .await?
+       .events)
+}
+
 /// Returns a default provider and account for testing purposes on Katana.
 pub async fn get_provider_and_account() -> Result<(
     Arc<AnyProvider>,

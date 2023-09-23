@@ -10,6 +10,7 @@
 //! checked for genericty to avoid duplicated types and detect correctly
 //! the members/variants that are generic.
 mod expand;
+use expand::{Expandable, ExpandableEvent};
 use expand::contract::CairoContract;
 
 mod contract_abi;
@@ -25,11 +26,6 @@ use syn::parse_macro_input;
 
 use cairo_type_parser::{CairoEnum, CairoFunction, CairoStruct, CairoEvent};
 use cairo_types::{CAIRO_BASIC_ENUMS, CAIRO_BASIC_STRUCTS};
-
-trait Expandable {
-    fn expand_decl(&self) -> TokenStream2;
-    fn expand_impl(&self) -> TokenStream2;
-}
 
 #[proc_macro]
 pub fn abigen(input: TokenStream) -> TokenStream {
@@ -109,9 +105,9 @@ pub fn abigen(input: TokenStream) -> TokenStream {
         tokens.push(ce.expand_impl());
     }
 
-    for ev in events {
+    for ev in &events {
         tokens.push(ev.expand_decl());
-        tokens.push(ev.expand_impl());
+        tokens.push(ev.expand_impl(&events));
     }
 
     tokens.push(quote! {

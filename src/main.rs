@@ -84,71 +84,44 @@ async fn main() -> Result<()> {
     // Add small delays to avoid nonce error submitting txs too fast.
     event_contract.emit_a(&FieldElement::ONE, &vec![felt!("0xff"), felt!("0xf1")]).await?;
     tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
+
     event_contract.emit_b(&felt!("0x1234")).await?;
     tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
-    event_contract.emit_c(&felt!("0x11"), &felt!("0x22"), &felt!("0x33"), &ContractAddress(felt!("0xaa"))).await?;
 
-    let filter = EventFilter {
-        from_block: Some(BlockId::Number(0)),
-        to_block: Some(BlockId::Tag(BlockTag::Latest)),
-        address: None,
-        keys: None,
-    };
+    event_contract.emit_c(
+        &felt!("0x11"),
+        &felt!("0x22"),
+        &felt!("0x33"),
+        &ContractAddress(felt!("0xaa"))
+    ).await?;
 
-    let chunk_size = 100;
-    let event_page = provider
-        .get_events(filter.clone(), None, chunk_size)
-        .await?;
+    let events = katana_default::fetch_all_events(Arc::clone(&provider)).await?;
 
-    for e in event_page.events {
+    for e in events {
         let my_event: AnyEvent = match e.try_into() {
-            Ok(ev) => {
-                println!("EVENT: {:?}", ev);
-                ev
-            },
+            Ok(ev) => ev,
             Err(s) => {
-                println!("Error parsing event: {}", s);
+                // An event from other contracts, ignore.
                 continue;
+            }
+        };
+
+        match my_event {
+            AnyEvent::MyEventA(a) => {
+                assert_eq!(a.header, FieldElement::ONE);
+                assert_eq!(a.value, vec![felt!("0xff"), felt!("0xf1")]);
+            }
+            AnyEvent::MyEventB(b) => {
+                assert_eq!(b.value, felt!("0x1234"));
+            }
+            AnyEvent::MyEventC(c) => {
+                assert_eq!(c.v1, felt!("0x11"));
+                assert_eq!(c.v2, felt!("0x22"));
+                assert_eq!(c.v3, felt!("0x33"));
+                assert_eq!(c.v4, ContractAddress(felt!("0xaa")));
             }
         };
     }
 
     Ok(())
-}
-
-impl TryFrom<EmittedEvent> for AnyEvent {
-    // TODO: check a better type...?
-    type Error = String;
-
-    fn try_from(event: EmittedEvent) -> Result<Self, Self::Error> {
-        if event.keys.is_empty() {
-            return Err("Missing event key".to_string());
-        }
-        let selector = event.keys[0];
-
-        if selector == MyEventA::get_selector() {
-            let mut key_offset = 1;
-            let mut data_offset = 0;
-
-            let header = match FieldElement::deserialize(&event.keys, key_offset) {
-                Ok(v) => v,
-                Err(e) => return Err(format!("Could not deserialize field header for MyEventA: {:?}", e)),
-            };
-            key_offset += FieldElement::serialized_size(&header);
-
-            let value = match Vec::<FieldElement>::deserialize(&event.data, data_offset) {
-                Ok(v) => v,
-                Err(e) => return Err(format!("Could not deserialize field value for MyEventA: {:?}", e)),
-            };
-
-            data_offset += Vec::<FieldElement>::serialized_size(&value);
-
-            return Ok(AnyEvent::MyEventA(MyEventA {
-                header,
-                value,
-            }))
-        };
-
-        Err("Could not match any event selector".to_string())
-    }
 }
