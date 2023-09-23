@@ -1,6 +1,5 @@
-use super::{AbiType, AbiTypeAny};
+use super::{AbiType, AbiTypeAny, GENTY_FROZEN};
 
-// TODO: check how to add support for generics inside tuples.
 #[derive(Debug, PartialEq, Clone)]
 pub struct AbiTuple {
     pub inners: Vec<AbiTypeAny>,
@@ -27,14 +26,10 @@ impl AbiType for AbiTuple {
         return self.genty.clone();
     }
 
-    fn set_genty(&mut self, genty: &str) {
-        self.genty = genty.to_string();
-    }
-
     fn compare_generic(&mut self, other: &AbiTypeAny) {
         match other {
             AbiTypeAny::Tuple(_) => {
-                if &self.genty != "_" {
+                if &self.genty != GENTY_FROZEN {
                     self.genty = other.get_genty();
                 }
             }
@@ -46,7 +41,7 @@ impl AbiType for AbiTuple {
         };
     }
 
-    fn get_generic_for(&mut self, cairo_types_gentys: Vec<(&str, &str)>) -> (String, bool) {
+    fn apply_generic(&mut self, cairo_types_gentys: Vec<(&str, &str)>) -> (String, bool) {
         // Check if the whole tuple is the generic.
         for (cairo_type, genty) in &cairo_types_gentys {
             if &self.get_cairo_type_full() == cairo_type {
@@ -60,7 +55,7 @@ impl AbiType for AbiTuple {
         let arr_len = self.inners.len();
 
         for (idx, inner) in self.inners.iter_mut().enumerate() {
-            let (type_str, is_generic) = inner.get_generic_for(cairo_types_gentys.clone());
+            let (type_str, is_generic) = inner.apply_generic(cairo_types_gentys.clone());
 
             if is_generic && !tuple_has_generic {
                 tuple_has_generic = true;
@@ -90,12 +85,12 @@ impl AbiType for AbiTuple {
         s
     }
 
-    fn get_cairo_type_name_only(&self) -> String {
+    fn get_cairo_type_name(&self) -> String {
         "|tuple|".to_string()
     }
 
     fn to_rust_type(&self) -> String {
-        if !self.genty.is_empty() && &self.genty != "_" {
+        if !self.genty.is_empty() && &self.genty != GENTY_FROZEN {
             self.genty.clone()
         } else {
             let mut s = "(".to_string();
@@ -112,7 +107,7 @@ impl AbiType for AbiTuple {
     }
 
     fn to_rust_type_path(&self) -> String {
-        if !self.genty.is_empty() && &self.genty != "_" {
+        if !self.genty.is_empty() && &self.genty != GENTY_FROZEN {
             self.genty.clone()
         } else {
             let mut s = "(".to_string();
@@ -157,7 +152,7 @@ mod tests {
     #[test]
     fn cairo_type_name_only() {
         let t = get_default();
-        assert_eq!(t.get_cairo_type_name_only(), "|tuple|");
+        assert_eq!(t.get_cairo_type_name(), "|tuple|");
     }
 
     #[test]
@@ -205,56 +200,56 @@ mod tests {
 
     #[test]
     fn generic_tuple() {
-        let t = AbiTypeAny::from_string("(core::felt252, core::integer::u32)");
-        assert_eq!(t.get_generic_for(
+        let mut t = AbiTypeAny::from_string("(core::felt252, core::integer::u32)");
+        assert_eq!(t.apply_generic(
             vec![("(core::felt252, core::integer::u32)", "A")]),
                    ("A".to_string(), true));
     }
 
     #[test]
     fn generic_inner() {
-        let t = AbiTypeAny::from_string("(core::felt252, core::integer::u32)");
-        assert_eq!(t.get_generic_for(
+        let mut t = AbiTypeAny::from_string("(core::felt252, core::integer::u32)");
+        assert_eq!(t.apply_generic(
             vec![("core::felt252", "A")]),
                    ("(A, core::integer::u32)".to_string(), true));
     }
 
     #[test]
     fn generic_inner_2() {
-        let t = AbiTypeAny::from_string("(core::felt252, core::integer::u32)");
-        assert_eq!(t.get_generic_for(
+        let mut t = AbiTypeAny::from_string("(core::felt252, core::integer::u32)");
+        assert_eq!(t.apply_generic(
             vec![("core::integer::u32", "A")]),
                    ("(core::felt252, A)".to_string(), true));
     }
 
     #[test]
     fn generic_tuple_not() {
-        let t = AbiTypeAny::from_string("(core::felt252, core::integer::u32)");
-        assert_eq!(t.get_generic_for(
+        let mut t = AbiTypeAny::from_string("(core::felt252, core::integer::u32)");
+        assert_eq!(t.apply_generic(
             vec![("(core::u32, core::u256)", "A")]),
                    ("(core::felt252, core::integer::u32)".to_string(), false));
     }
 
     #[test]
     fn generic_inner_not() {
-        let t = AbiTypeAny::from_string("(core::felt252, core::integer::u32)");
-        assert_eq!(t.get_generic_for(
+        let mut t = AbiTypeAny::from_string("(core::felt252, core::integer::u32)");
+        assert_eq!(t.apply_generic(
             vec![("core::u256", "A")]),
                    ("(core::felt252, core::integer::u32)".to_string(), false));
     }
 
     #[test]
     fn generic_inner_multiple() {
-        let t = AbiTypeAny::from_string("(core::felt252, core::integer::u32)");
-        assert_eq!(t.get_generic_for(
+        let mut t = AbiTypeAny::from_string("(core::felt252, core::integer::u32)");
+        assert_eq!(t.apply_generic(
             vec![("core::felt252", "A"), ("core::integer::u32", "B")]),
                    ("(A, B)".to_string(), true));
     }
 
     #[test]
     fn generic_inner_multiple_2() {
-        let t = AbiTypeAny::from_string("(core::felt252, core::integer::u32)");
-        assert_eq!(t.get_generic_for(
+        let mut t = AbiTypeAny::from_string("(core::felt252, core::integer::u32)");
+        assert_eq!(t.apply_generic(
             vec![("core::array", "A"), ("core::integer::u32", "B")]),
                    ("(core::felt252, B)".to_string(), true));
     }

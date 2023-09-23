@@ -1,3 +1,7 @@
+//! ABI types base module.
+//!
+//! The idea of those types is to handle the parsing of any valid
+//! flatten cairo type that can also contain nested types.
 use std::iter::Peekable;
 use std::str::Chars;
 
@@ -13,55 +17,76 @@ pub use generic::AbiGeneric;
 pub mod tuple;
 pub use tuple::AbiTuple;
 
-// TODO: if we want to process Option or Result as built-in,
-// we need here a new variant for each. With this in mind, we will
-// be able to handle them correctly.
-// For now, they are generated on the fly an considered as Basic or Generic.
+/// If a generic type is flagged as frozen, it means
+/// that at least one type in the ABI were found
+/// different from the generic one. In that case, we
+/// don't want it to be modified again, even if it matches
+/// an other generic type.
+///
+/// # Example
+///
+/// struct MyStruct<T> {
+///   a: felt252,
+///   b: T,
+/// }
+///
+/// In this scenario, when `MyStruct<felt252>` is used,
+/// we can't know which of a or b is generic. So both will be which is fine.
+/// But if in the same ABI we have `MyStruct<u8>`, then it will
+/// be possible to detect that b is generic, a is not.
+/// So if we parse `MyStruct<u8>` first, we do want to FREEZE a
+/// as NOT being generic. Like this even if for `MyStruct<felt252>` there is
+/// a match, it will be ignored.
+const GENTY_FROZEN: &str = "_";
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum AbiTypeAny {
     Basic(AbiBasic),
     Array(AbiArray),
-    // Generics for struct and enums.
+    // Generics is for struct and enums.
     Generic(AbiGeneric),
     Tuple(AbiTuple),
 }
 
 pub trait AbiType {
+    /// Gets the generic type if the type is generic,
+    /// the type name otherwise.
     fn get_genty(&self) -> String;
-    fn set_genty(&mut self, genty: &str);
 
+    /// Compares the generic state between two `AbiTypeAny`.
+    /// As the ABI does not provide information about the type genericity,
+    /// we must compare several types with the same name to successfully identify
+    /// the one that are generic.
     fn compare_generic(&mut self, other: &AbiTypeAny);
 
-    fn get_generic_for(&mut self, cairo_types_gentys: Vec<(&str, &str)>) -> (String, bool);
+    /// Applies a generic type for the given cairo type Vec(cairo_type, generic_type).
+    /// Returns the generic type applied and true if the type is generic,
+    /// false and the type itself otherwise.
+    fn apply_generic(&mut self, cairo_types_gentys: Vec<(&str, &str)>) -> (String, bool);
 
+    /// Gets the full cairo type. A "full" type includes the type
+    /// and possible nested types.
     fn get_cairo_type_full(&self) -> String;
 
-    fn get_cairo_type_name_only(&self) -> String;
+    /// Returns only the cairo type name.
+    fn get_cairo_type_name(&self) -> String;
 
+    /// Gets the rust type from the `AbiType`.
+    /// This always includes all possible nested types and their genericity.
     fn to_rust_type(&self) -> String;
 
+    /// Get the rust type item path from the `AbiType`.
+    /// This always includes all possible nested types and their genericity.
     fn to_rust_type_path(&self) -> String;
 }
 
 impl AbiType for AbiTypeAny {
-    // TODO: do we want to accept any kind, and it's the type itself that
-    // made the comparison?
     fn compare_generic(&mut self, other: &AbiTypeAny) {
         match self {
             AbiTypeAny::Basic(a) => a.compare_generic(other),
             AbiTypeAny::Array(a) => a.compare_generic(other),
             AbiTypeAny::Generic(a) => a.compare_generic(other),
             AbiTypeAny::Tuple(a) => a.compare_generic(other),
-        }
-    }
-
-    fn set_genty(&mut self, genty: &str) {
-        match self {
-            AbiTypeAny::Basic(a) => a.set_genty(genty),
-            AbiTypeAny::Array(a) => a.set_genty(genty),
-            AbiTypeAny::Generic(a) => a.set_genty(genty),
-            AbiTypeAny::Tuple(a) => a.set_genty(genty),
         }
     }
 
@@ -74,12 +99,12 @@ impl AbiType for AbiTypeAny {
         }
     }
 
-    fn get_generic_for(&mut self, cairo_types_gentys: Vec<(&str, &str)>) -> (String, bool) {
+    fn apply_generic(&mut self, cairo_types_gentys: Vec<(&str, &str)>) -> (String, bool) {
         match self {
-            AbiTypeAny::Basic(a) => a.get_generic_for(cairo_types_gentys),
-            AbiTypeAny::Array(a) => a.get_generic_for(cairo_types_gentys),
-            AbiTypeAny::Generic(a) => a.get_generic_for(cairo_types_gentys),
-            AbiTypeAny::Tuple(a) => a.get_generic_for(cairo_types_gentys),
+            AbiTypeAny::Basic(a) => a.apply_generic(cairo_types_gentys),
+            AbiTypeAny::Array(a) => a.apply_generic(cairo_types_gentys),
+            AbiTypeAny::Generic(a) => a.apply_generic(cairo_types_gentys),
+            AbiTypeAny::Tuple(a) => a.apply_generic(cairo_types_gentys),
         }
     }
 
@@ -92,12 +117,12 @@ impl AbiType for AbiTypeAny {
         }
     }
 
-    fn get_cairo_type_name_only(&self) -> String {
+    fn get_cairo_type_name(&self) -> String {
         match self {
-            AbiTypeAny::Basic(a) => a.get_cairo_type_name_only(),
-            AbiTypeAny::Array(a) => a.get_cairo_type_name_only(),
-            AbiTypeAny::Generic(a) => a.get_cairo_type_name_only(),
-            AbiTypeAny::Tuple(a) => a.get_cairo_type_name_only(),
+            AbiTypeAny::Basic(a) => a.get_cairo_type_name(),
+            AbiTypeAny::Array(a) => a.get_cairo_type_name(),
+            AbiTypeAny::Generic(a) => a.get_cairo_type_name(),
+            AbiTypeAny::Tuple(a) => a.get_cairo_type_name(),
         }
     }
 
@@ -120,18 +145,24 @@ impl AbiType for AbiTypeAny {
     }
 }
 
+/// Utils functions for `AbiTypeAny` to be called
+/// without testing the enum variant.
 impl AbiTypeAny {
 
+    /// Returns true if the type is a generic,
+    /// false otherwise.
     pub fn is_generic(&self) -> bool {
         match self {
-            AbiTypeAny::Generic(_) => true,
+            Self::Generic(_) => true,
             _ => false
         }
     }
 
+    /// Returns true if the type is the unit type,
+    /// false otherwise.
     pub fn is_unit(&self) -> bool {
         match self {
-            AbiTypeAny::Basic(b) => {
+            Self::Basic(b) => {
                 if b.get_cairo_type_full() == "()" {
                     true
                 } else {
@@ -142,12 +173,15 @@ impl AbiTypeAny {
         }
     }
 
-    pub fn from_string(type_string: &str) -> AbiTypeAny {
+    /// Parses a string to build an `AbiTypeAny`.
+    pub fn from_string(type_string: &str) -> Self {
         let mut chars = type_string.chars().peekable();
         Self::parse_type(&mut chars)
     }
 
-    fn parse_type(chars: &mut Peekable<Chars>) -> AbiTypeAny {
+    /// Parses any cairo type from the given string.
+    /// This function handles the possible nested types.
+    fn parse_type(chars: &mut Peekable<Chars>) -> Self {
         let mut generic_types = Vec::new();
         let mut current_type = String::new();
         let mut in_generic = false;
@@ -199,25 +233,21 @@ impl AbiTypeAny {
 
         if generic_types.is_empty() {
             // TODO: check if this one may be handled as Basic("()");
-            AbiTypeAny::Basic("()".into())
+            Self::Basic("()".into())
         } else if generic_types.len() == 1 {
             // Basic, Array or Generic with 1 inner type.
             generic_types.pop().unwrap()
         } else if chars.nth(0) == Some('(') {
             // Tuple.
-            AbiTypeAny::Tuple(AbiTuple::new(generic_types))
+            Self::Tuple(AbiTuple::new(generic_types))
         } else {
-            // Generic types into a generic type.
-            println!("GENERIC_TYPES? {:?}", generic_types);
             unreachable!();
         }
     }
 
-    fn parse_generic(current_type: &str, chars: &mut Peekable<Chars>) -> AbiTypeAny {
+    /// Parses generic types detected between angle brackets.
+    fn parse_generic(current_type: &str, chars: &mut Peekable<Chars>) -> Self {
         let mut inners = vec![];
-
-        let is_array = current_type.contains("core::array::Array")
-            || current_type.contains("core::array::Span");
 
         while let Some(c) = chars.peek() {
             match c {
@@ -236,26 +266,30 @@ impl AbiTypeAny {
         }
 
         if inners.len() == 0 {
-            panic!("Array/Generic type expects at least one inner type");
+            panic!("Array/Span/Generic type expects at least one inner type");
         }
+
+        // Array and Span are processed exactly the same, using `Vec`.
+        let is_array = current_type.contains("core::array::Array")
+            || current_type.contains("core::array::Span");
 
         if is_array {
             if inners.len() == 1 {
-                AbiTypeAny::Array(AbiArray::new(current_type, inners[0].clone()))
+                Self::Array(AbiArray::new(current_type, inners[0].clone()))
             } else {
                 panic!("Array/Span expect exactly one inner type");
             }
         } else {
-            AbiTypeAny::Generic(AbiGeneric::new(current_type, inners))
+            Self::Generic(AbiGeneric::new(current_type, inners))
         }
     }
 
-    fn parse_tuple(chars: &mut Peekable<Chars>) -> AbiTypeAny {
+    /// Parses a tuple, which can also contains nested types.
+    fn parse_tuple(chars: &mut Peekable<Chars>) -> Self {
         let mut tuple_values = Vec::new();
 
         if let Some(_) = chars.next_if(|&x| x == ')') {
-            // TODO: check if this one may be changed to `Basic("()")`.
-            return AbiTypeAny::Basic("()".into());
+            return Self::Basic("()".into());
         }
 
         while let Some(c) = chars.peek() {
@@ -273,6 +307,6 @@ impl AbiTypeAny {
             }
         }
 
-        AbiTypeAny::Tuple(AbiTuple::new(tuple_values))
+        Self::Tuple(AbiTuple::new(tuple_values))
     }
 }

@@ -13,10 +13,12 @@ pub struct CairoStruct {
 }
 
 impl CairoStruct {
+    /// Gets the name of the struct type.
     pub fn get_name(&self) -> String {
-        return self.abi.get_cairo_type_name_only()
+        return self.abi.get_cairo_type_name()
     }
 
+    /// Returns true if the struct is generic, false otherwise.
     pub fn is_generic(&self) -> bool {
         if let AbiTypeAny::Generic(_) = self.abi {
             true
@@ -25,6 +27,7 @@ impl CairoStruct {
         }
     }
 
+    /// Returns the list of generic types, if any.
     pub fn get_gentys(&self) -> Vec<String> {
         if let AbiTypeAny::Generic(g) = &self.abi {
             g.get_gentys_only()
@@ -54,7 +57,7 @@ impl CairoStruct {
                         .map(|(v1, v2)| (&v1[..], &v2[..])).collect();
 
                     let (type_str, is_generic)
-                        = m_abi.get_generic_for(cairo_gentys);
+                        = m_abi.apply_generic(cairo_gentys);
 
                     generic_members.insert(name.clone(),
                                            (type_str.clone(), is_generic));
@@ -73,6 +76,7 @@ impl CairoStruct {
         }
     }
 
+    /// Compares the generic types for each members with an other `CairoStruct`.
     pub fn compare_generic_types(&self, existing_cs: &mut CairoStruct) {
         match &self.abi {
             AbiTypeAny::Generic(_) => {

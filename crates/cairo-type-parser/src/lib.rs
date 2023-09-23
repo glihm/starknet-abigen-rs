@@ -1,3 +1,18 @@
+//! This crates is about parsing Cairo types from an ABI.
+//! Later, this will also be able to parse Cairo type from Cairo code.
+//!
+//! The important consideration are the generic type. Indeed, in the ABI
+//! there is no information about a type genericity and how exactly
+//! the members/variants are following the generic type as everything is
+//! flattened.
+//!
+//! `abi_types` is the low level parsing of the types. It supports
+//! nested types.
+//!
+//! `CairoStruct`, `CairoEnum` and `CairoFunction` are higher level
+//! types to resolve the genericity and manage members/variants/inputs/outputs
+//! for simpler expansion.
+
 pub mod abi_types;
 pub mod cairo_struct;
 pub use cairo_struct::CairoStruct;
@@ -5,23 +20,3 @@ pub mod cairo_enum;
 pub use cairo_enum::CairoEnum;
 pub mod cairo_function;
 pub use cairo_function::CairoFunction;
-
-#[derive(Debug, Clone)]
-pub enum CairoAny {
-    Struct(CairoStruct),
-    Enum(CairoEnum),
-    Function(Box<CairoFunction>),
-    Basic,
-}
-
-impl CairoAny {
-    pub fn is_generic(&self) -> bool {
-        match self {
-            CairoAny::Struct(s) => s.is_generic(),
-            CairoAny::Enum(e) => e.is_generic(),
-            CairoAny::Function(f) => f.is_generic(),
-            CairoAny::Basic => false,
-        }
-    }
-
-}

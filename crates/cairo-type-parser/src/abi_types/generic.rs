@@ -1,4 +1,4 @@
-use super::{AbiType, AbiTypeAny};
+use super::{AbiType, AbiTypeAny, GENTY_FROZEN};
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct AbiGeneric {
@@ -8,6 +8,7 @@ pub struct AbiGeneric {
 }
 
 impl AbiGeneric {
+    /// Initializes a new instance.
     pub fn new(cairo_type: &str, inners: Vec<AbiTypeAny>) -> Self {
         AbiGeneric {
             cairo_type: cairo_type.to_string(),
@@ -16,11 +17,13 @@ impl AbiGeneric {
         }
     }
 
+    /// Gets the definition of the type with it's generic types.
     pub fn get_rust_generic_def(&self, suffix: &str) -> String {
         let gentys = self.get_gentys_only();
-        format!("{}<{}{}>", self.get_cairo_type_name_only(), gentys.join(", "), suffix)
+        format!("{}<{}{}>", self.get_cairo_type_name(), gentys.join(", "), suffix)
     }
 
+    /// Returns only the generic types list.
     pub fn get_gentys_only(&self) -> Vec<String> {
         // Starts to 'A'.
         let ascii: u8 = 65;
@@ -33,6 +36,8 @@ impl AbiGeneric {
         gentys
     }
 
+    /// Returns the list of tuple, containing the (cairo_type, generic_type)
+    /// for each generic type.
     pub fn get_cairo_types_gentys(&self) -> Vec<(String, String)> {
         // Starts to 'A'.
         let ascii: u8 = 65;
@@ -55,14 +60,10 @@ impl AbiType for AbiGeneric {
         return self.genty.clone();
     }
 
-    fn set_genty(&mut self, genty: &str) {
-        self.genty = genty.to_string();
-    }
-
     fn compare_generic(&mut self, other: &AbiTypeAny) {
         match other {
             AbiTypeAny::Generic(_) => {
-                if &self.genty != "_" {
+                if &self.genty != GENTY_FROZEN {
                     self.genty = other.get_genty();
                 }
             }
@@ -74,7 +75,7 @@ impl AbiType for AbiGeneric {
         };
     }
 
-    fn get_generic_for(&mut self, cairo_types_gentys: Vec<(&str, &str)>) -> (String, bool) {
+    fn apply_generic(&mut self, cairo_types_gentys: Vec<(&str, &str)>) -> (String, bool) {
         // Check if the whole struct is the generic.
         for (cairo_type, genty) in &cairo_types_gentys {
             if &self.get_cairo_type_full() == cairo_type {
@@ -88,7 +89,7 @@ impl AbiType for AbiGeneric {
         let arr_len = self.inners.len();
 
         for (idx, inner) in self.inners.iter_mut().enumerate() {
-            let (type_str, is_generic) = inner.get_generic_for(cairo_types_gentys.clone());
+            let (type_str, is_generic) = inner.apply_generic(cairo_types_gentys.clone());
 
             if is_generic && !struct_has_generic {
                 struct_has_generic = true;
@@ -119,7 +120,7 @@ impl AbiType for AbiGeneric {
         s
     }
 
-    fn get_cairo_type_name_only(&self) -> String {
+    fn get_cairo_type_name(&self) -> String {
         // TODO: need to opti that with regex?
         let f = self
             .cairo_type
@@ -131,22 +132,22 @@ impl AbiType for AbiGeneric {
     }
 
     fn to_rust_type(&self) -> String {
-        if !self.genty.is_empty() && &self.genty != "_" {
+        if !self.genty.is_empty() && &self.genty != GENTY_FROZEN {
             self.genty.clone()
         } else {
             let joined_inners = self.inners.iter().map(|i| i.to_rust_type()).collect::<Vec<_>>().join(", ");
 
-            format!("{}<{}>", self.get_cairo_type_name_only(), joined_inners)
+            format!("{}<{}>", self.get_cairo_type_name(), joined_inners)
         }
     }
 
     fn to_rust_type_path(&self) -> String {
-        if !self.genty.is_empty() && &self.genty != "_" {
+        if !self.genty.is_empty() && &self.genty != GENTY_FROZEN {
             self.genty.clone()
         } else {
             let joined_inners = self.inners.iter().map(|i| i.to_rust_type()).collect::<Vec<_>>().join(", ");
             
-            format!("{}::<{}>", self.get_cairo_type_name_only(), joined_inners)
+            format!("{}::<{}>", self.get_cairo_type_name(), joined_inners)
         }
     }
 }
@@ -191,7 +192,7 @@ mod tests {
     #[test]
     fn cairo_type_name_only() {
         let t = get_default();
-        assert_eq!(t.get_cairo_type_name_only(), "MyStruct");
+        assert_eq!(t.get_cairo_type_name(), "MyStruct");
     }
 
     #[test]
@@ -265,8 +266,8 @@ mod tests {
 
     #[test]
     fn generic_generic() {
-        let t = AbiTypeAny::from_string("contract1::MyStruct::<core::felt252>");
-        assert_eq!(t.get_generic_for(
+        let mut t = AbiTypeAny::from_string("contract1::MyStruct::<core::felt252>");
+        assert_eq!(t.apply_generic(
             vec![("contract1::MyStruct::<core::felt252>", "A")]),
                    ("A".to_string(), true)
         );
@@ -274,8 +275,8 @@ mod tests {
 
     #[test]
     fn generic_inner() {
-        let t = AbiTypeAny::from_string("contract1::MyStruct::<core::felt252>");
-        assert_eq!(t.get_generic_for(
+        let mut t = AbiTypeAny::from_string("contract1::MyStruct::<core::felt252>");
+        assert_eq!(t.apply_generic(
             vec![("core::felt252", "A")]),
                    ("contract1::MyStruct::<A>".to_string(), true)
         );
@@ -283,8 +284,8 @@ mod tests {
 
     #[test]
     fn generic_generic_multiple() {
-        let t = AbiTypeAny::from_string("contract1::MyStruct::<core::felt252, core::integer::u32>");
-        assert_eq!(t.get_generic_for(
+        let mut t = AbiTypeAny::from_string("contract1::MyStruct::<core::felt252, core::integer::u32>");
+        assert_eq!(t.apply_generic(
             vec![("contract1::MyStruct::<core::felt252, core::integer::u32>", "A")]),
                    ("A".to_string(), true)
         );
@@ -292,8 +293,8 @@ mod tests {
 
     #[test]
     fn generic_inner_multiple() {
-        let t = AbiTypeAny::from_string("contract1::MyStruct::<core::felt252, core::integer::u32>");
-        assert_eq!(t.get_generic_for(
+        let mut t = AbiTypeAny::from_string("contract1::MyStruct::<core::felt252, core::integer::u32>");
+        assert_eq!(t.apply_generic(
             vec![("core::integer::u32", "A")]),
                    ("contract1::MyStruct::<core::felt252, A>".to_string(), true)
         );
@@ -301,8 +302,8 @@ mod tests {
 
     #[test]
     fn generic_inner_multiple_array() {
-        let t = AbiTypeAny::from_string("contract1::MyStruct::<core::array::Array<core::felt252>, core::integer::u32>");
-        assert_eq!(t.get_generic_for(
+        let mut t = AbiTypeAny::from_string("contract1::MyStruct::<core::array::Array<core::felt252>, core::integer::u32>");
+        assert_eq!(t.apply_generic(
             vec![("core::felt252", "A")]),
                    ("contract1::MyStruct::<core::array::Array::<A>, core::integer::u32>".to_string(), true)
         );
@@ -310,8 +311,8 @@ mod tests {
 
     #[test]
     fn generic_inner_multiple_ab() {
-        let t = AbiTypeAny::from_string("contract1::MyStruct::<core::felt252, core::integer::u32>");
-        assert_eq!(t.get_generic_for(
+        let mut t = AbiTypeAny::from_string("contract1::MyStruct::<core::felt252, core::integer::u32>");
+        assert_eq!(t.apply_generic(
             vec![("core::felt252", "A"), ("core::integer::u32", "B")]),
                    ("contract1::MyStruct::<A, B>".to_string(), true)
         );

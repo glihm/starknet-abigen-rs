@@ -1,12 +1,18 @@
-use super::{AbiType, AbiTypeAny};
+//! Basic types are all cairo types that are not Array/Span,
+//! generic Struct/Enum or tuple.
+//!
+//! To support recursion, the basic type stored the generic type
+//! that is assigned to it, if it belongs to a generic struct/enum.
+use super::{AbiType, AbiTypeAny, GENTY_FROZEN};
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct AbiBasic {
-    pub cairo_type: String,
-    pub genty: String,
+    cairo_type: String,
+    genty: String,
 }
 
 impl AbiBasic {
+    /// Initializes a new instance.
     pub fn new(cairo_type: &str) -> Self {
         AbiBasic {
             cairo_type: cairo_type.to_string(),
@@ -14,8 +20,10 @@ impl AbiBasic {
         }
     }
 
+    /// Maps a basic type to a built-in type that may already contains
+    /// a `CairoType` implementation. If not, it's the name of the type itself.
     fn to_rust_or_cairo_builtin_type(&self) -> String {
-        let s = self.get_cairo_type_name_only();
+        let s = self.get_cairo_type_name();
         match s.as_str() {
             "felt252" => "starknet::core::types::FieldElement".to_string(),
             "ContractAddress" => "cairo_types::types::starknet::ContractAddress".to_string(),
@@ -44,19 +52,13 @@ impl AbiType for AbiBasic {
         return self.genty.clone();
     }
 
-    fn set_genty(&mut self, genty: &str) {
-        if &self.genty != "_" {
-            self.genty = genty.to_string();
-        }
-    }
-
     fn compare_generic(&mut self, other: &AbiTypeAny) {
-        if &self.genty != "_" {
+        if &self.genty != GENTY_FROZEN {
             self.genty = other.get_genty();
         }
     }
 
-    fn get_generic_for(&mut self, cairo_types_gentys: Vec<(&str, &str)>) -> (String, bool) {
+    fn apply_generic(&mut self, cairo_types_gentys: Vec<(&str, &str)>) -> (String, bool) {
         // A basic type can only match one of the given types.
         // It will return the first match we can find, if any.
         for (cairo_type, genty) in cairo_types_gentys {
@@ -66,7 +68,7 @@ impl AbiType for AbiBasic {
             }
         }
 
-        self.genty = "_".to_string();
+        self.genty = GENTY_FROZEN.to_string();
         (self.cairo_type.clone(), false)
     }
 
@@ -74,7 +76,7 @@ impl AbiType for AbiBasic {
         self.cairo_type.clone()
     }
 
-    fn get_cairo_type_name_only(&self) -> String {
+    fn get_cairo_type_name(&self) -> String {
         self.cairo_type
             .split("::")
             .last()
@@ -83,7 +85,7 @@ impl AbiType for AbiBasic {
     }
 
     fn to_rust_type(&self) -> String {
-        if !self.genty.is_empty() && &self.genty != "_" {
+        if !self.genty.is_empty() && &self.genty != GENTY_FROZEN {
             self.genty.clone()
         } else {
             self.to_rust_or_cairo_builtin_type()
@@ -113,7 +115,7 @@ mod tests {
     #[test]
     fn cairo_type_name_only() {
         let t = get_default();
-        assert_eq!(t.get_cairo_type_name_only(), "felt252");
+        assert_eq!(t.get_cairo_type_name(), "felt252");
     }
 
     #[test]
@@ -137,13 +139,13 @@ mod tests {
 
     #[test]
     fn from_string_generic() {
-        let t = AbiTypeAny::from_string("core::felt252");
-        assert_eq!(t.get_generic_for(vec![("core::felt252", "A")]), ("A".to_string(), true));
+        let mut t = AbiTypeAny::from_string("core::felt252");
+        assert_eq!(t.apply_generic(vec![("core::felt252", "A")]), ("A".to_string(), true));
     }
 
     #[test]
     fn from_string_not_generic() {
-        let t = AbiTypeAny::from_string("core::u32");
-        assert_eq!(t.get_generic_for(vec![("core::felt252", "A")]), ("core::u32".to_string(), false));
+        let mut t = AbiTypeAny::from_string("core::u32");
+        assert_eq!(t.apply_generic(vec![("core::felt252", "A")]), ("core::u32".to_string(), false));
     }
 }

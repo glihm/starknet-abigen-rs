@@ -13,10 +13,12 @@ pub struct CairoEnum {
 }
 
 impl CairoEnum {
+    /// Gets the name of the enum type.
     pub fn get_name(&self) -> String {
-        return self.abi.get_cairo_type_name_only()
+        return self.abi.get_cairo_type_name()
     }
 
+    /// Returns true if the enum is generic, false otherwise.
     pub fn is_generic(&self) -> bool {
         if let AbiTypeAny::Generic(_) = self.abi {
             true
@@ -25,6 +27,7 @@ impl CairoEnum {
         }
     }
 
+    /// Returns the list of generic types, if any.
     pub fn get_gentys(&self) -> Vec<String> {
         if let AbiTypeAny::Generic(g) = &self.abi {
             g.get_gentys_only()
@@ -54,7 +57,7 @@ impl CairoEnum {
                         .map(|(v1, v2)| (&v1[..], &v2[..])).collect();
 
                     let (type_str, is_generic)
-                        = v_abi.get_generic_for(cairo_gentys);
+                        = v_abi.apply_generic(cairo_gentys);
 
                     generic_variants.insert(name.clone(),
                                             (type_str.clone(), is_generic));
@@ -73,6 +76,7 @@ impl CairoEnum {
         }
     }
 
+    /// Compares the generic types for each variants with an other `CairoEnum`.
     pub fn compare_generic_types(&self, existing_ce: &mut CairoEnum) {
         match &self.abi {
             AbiTypeAny::Generic(_) => {

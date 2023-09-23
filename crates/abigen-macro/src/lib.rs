@@ -19,7 +19,7 @@ use std::collections::HashMap;
 
 use cairo_type_parser::{CairoStruct, CairoEnum, CairoFunction};
 use cairo_type_parser::abi_types::{AbiType, AbiTypeAny};
-use cairo_types::ty::{CAIRO_BASIC_ENUMS, CAIRO_BASIC_STRUCTS};
+use cairo_types::{CAIRO_BASIC_ENUMS, CAIRO_BASIC_STRUCTS};
 
 trait Expandable {
     fn expand_decl(&self) -> TokenStream2;
@@ -93,8 +93,6 @@ pub fn abigen(input: TokenStream) -> TokenStream {
                     f.state_mutability.clone(),
                     &f.inputs,
                     &f.outputs,
-                    &structs,
-                    &enums,
                 );
 
                 functions.push(cf.expand_impl());
