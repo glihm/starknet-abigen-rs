@@ -25,7 +25,7 @@ katana
 2.  Terminal 2: Contracts setup
 
 ```sh
-cd crates/contracts && scarb build && make setup_basic
+cd crates/contracts && scarb build && make setup
 ```
 
 ```sh

@@ -3,6 +3,8 @@ config := --account data/katana_account.json \
 	--rpc http://0.0.0.0:5050 \
 	--keystore-password 1234
 
+setup: setup_basic setup_gen
+
 # Declare and deploy the basic contract on katana.
 setup_basic:
 	$(eval class_hash=$(shell starkli class-hash target/dev/contracts_basic.sierra.json))
