@@ -138,7 +138,7 @@ Events are special structs/enum that we usually want to deserialize effectively.
 The `abigen!` macro generate all the events associated types, and this always include
 one enum always named `Event`.
 
-Any contract you use `abigen!` on will contain this enum, and this also inclues the convertion
+Any contract you use `abigen!` on will contain this enum, and this also includes the convertion
 from `EmittedEvent`, which is the `starknet-rs` type returned when we fetch events.
 
 So you can do this:
