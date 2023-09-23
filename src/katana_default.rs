@@ -26,16 +26,16 @@ pub async fn get_provider_and_account() -> Result<(
     .unwrap();
 
     let chain_id = provider.chain_id().await?;
-    let account = Arc::new(SingleOwnerAccount::new(
+    let mut account = SingleOwnerAccount::new(
         Arc::clone(&provider),
         signer,
         account_address,
         chain_id,
         // Still in legacy for account deployed on katana.
         ExecutionEncoding::Legacy,
-    ));
+    );
 
-    Ok((provider, account))
+    Ok((provider, Arc::new(account)))
 }
 
 /// Returns a local wallet from a private key, if provided.

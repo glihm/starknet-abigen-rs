@@ -23,7 +23,7 @@ use starknet::core::types::contract::*;
 use std::collections::HashMap;
 use syn::parse_macro_input;
 
-use cairo_type_parser::{CairoEnum, CairoFunction, CairoStruct};
+use cairo_type_parser::{CairoEnum, CairoFunction, CairoStruct, CairoEvent};
 use cairo_types::{CAIRO_BASIC_ENUMS, CAIRO_BASIC_STRUCTS};
 
 trait Expandable {
@@ -44,6 +44,7 @@ pub fn abigen(input: TokenStream) -> TokenStream {
     let mut structs: HashMap<String, CairoStruct> = HashMap::new();
     let mut enums: HashMap<String, CairoEnum> = HashMap::new();
     let mut functions = vec![];
+    let mut events = vec![];
 
     for entry in &abi {
         match entry {
@@ -83,7 +84,11 @@ pub fn abigen(input: TokenStream) -> TokenStream {
 
                 functions.push(cf.expand_impl());
             }
-            AbiEntry::Event(_ev) => {
+            AbiEntry::Event(ev) => {
+                if let Some(cev) = CairoEvent::new(ev) {
+                    println!("CEV: {:?}", cev);
+                    events.push(cev);
+                }
                 // TODO events.
                 // Events are not usually used as input/output of functions, but
                 // mainly for deserialization while indexing.
@@ -103,6 +108,11 @@ pub fn abigen(input: TokenStream) -> TokenStream {
     for (_, ce) in enums {
         tokens.push(ce.expand_decl());
         tokens.push(ce.expand_impl());
+    }
+
+    for ev in events {
+        tokens.push(ev.expand_decl());
+        tokens.push(ev.expand_impl());
     }
 
     tokens.push(quote! {

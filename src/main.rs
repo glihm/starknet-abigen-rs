@@ -21,21 +21,26 @@ mod katana_default;
 mod autogen_abis;
 use autogen_abis::basic_abi::{u256, BasicContract};
 use autogen_abis::gen_abi::{GenContract, MyStruct};
+use autogen_abis::event_abi::{EventContract, MyEventA, MyEventB, MyEventC};
 
 use starknet::core::types::*;
+use starknet::providers::Provider;
 use starknet::macros::felt;
+use cairo_types::types::starknet::ContractAddress;
 
 use std::sync::Arc;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let (provider, account) = katana_default::get_provider_and_account().await?;
+    let (mut provider, mut account) = katana_default::get_provider_and_account().await?;
+
+    
 
     let basic = BasicContract::new(
         felt!("0x04383de1eb63b223170e1de699ff5074fbc1f6096e14604615b65d3d1cc28c7d"),
         Arc::clone(&provider),
     )
-    .with_account(Arc::clone(&account));
+        .with_account(Arc::clone(&account));
 
     let v1 = FieldElement::ONE;
     let v2 = u256 {
@@ -53,7 +58,7 @@ async fn main() -> Result<()> {
         felt!("0x0505ca46219e39ede6f186e3056535d82e4eb44bbb49b77531930eeacd1c89e3"),
         Arc::clone(&provider),
     )
-    .with_account(Arc::clone(&account));
+        .with_account(Arc::clone(&account));
 
     let ms = MyStruct {
         f1: FieldElement::ONE,
@@ -62,10 +67,38 @@ async fn main() -> Result<()> {
     };
 
     gen.func1(&ms).await?;
+    gen.func1(&ms).await?;
 
     let (f1, f2) = gen.read().await.unwrap();
     assert_eq!(f1, FieldElement::ONE);
     assert_eq!(f2, FieldElement::TWO);
 
+    let event_contract = EventContract::new(
+        felt!("0x07912723fd7a18c2b8643db307750b82556b5fc93cfb51bc70c250ed8b9a932b"),
+        Arc::clone(&provider),
+    )
+        .with_account(Arc::clone(&account));
+
+    // event_contract.emit_a(&FieldElement::ONE, &vec![felt!("0xff"), felt!("0xf1")]).await?;
+    // event_contract.emit_b(&felt!("0x1234")).await?;
+    // event_contract.emit_c(&felt!("0x11"), &felt!("0x22"), &felt!("0x33"), &ContractAddress(felt!("0xaa"))).await?;
+
+    let filter = EventFilter {
+        from_block: Some(BlockId::Number(0)),
+        to_block: Some(BlockId::Tag(BlockTag::Latest)),
+        address: None,
+        keys: None,
+    };
+
+    // let chunk_size = 100;
+    // let event_page = provider
+    //     .get_events(filter.clone(), None, chunk_size)
+    //     .await?;
+
+    // for e in event_page.events {
+    //     println!("EEE {:?}", e);
+    // }
+
     Ok(())
 }
+
