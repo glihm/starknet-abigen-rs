@@ -85,22 +85,6 @@ let values = Vec::<u32>::deserialize(felts, 0).unwrap;
 
 Any type implementing the `CairoType` trait can be used this way.
 
-Supported types as built-in in cairo-types:
-
-- `u8,16,32,64,128`
-- `i8,16,32,64,128`
-- `tuple size 2,3,4,5`
-- `Span/Array` -> `Vec`
-- `ClassHash`
-- `ContractAddress`
-- `EthAddress`
-- `Option`
-- `Result`
-- `unit`
-
-Any struct/enum in the ABI that use those types or inner struct/enum
-that uses those types will work.
-
 ## Generate the binding for your contracts
 
 1. If you have a large ABI, consider adding a file (at the same level of your `Cargo.toml`) with the `JSON` containing the ABI.
@@ -146,6 +130,54 @@ cargo run -p snabi fetch \
     0x032be4f29633d261254b1b1c6e7a6889a55354b665a513ef3928409303905631 \
     --expandable /path/my_contract_abi.rs \
     --name MyContract
+```
+
+## Example
+
+This is an example of how easy is to call a contract. You can find this code [here](https://github.com/glihm/starknet-abigen-rs/blob/main/src/main.rs):
+```rust
+#[tokio::main]
+async fn main() -> Result<()> {
+    let (provider, account) = katana_default::get_provider_and_account().await?;
+
+    let basic = BasicContract::new(
+        felt!("0x04383de1eb63b223170e1de699ff5074fbc1f6096e14604615b65d3d1cc28c7d"),
+        Arc::clone(&provider),
+    )
+    .with_account(Arc::clone(&account));
+
+    let v1 = FieldElement::ONE;
+    let v2 = u256 {
+        low: 2_u128,
+        high: 0_u128,
+    };
+
+    basic.set_storage(&v1, &v2).await?;
+
+    let (v1_r, v2_r) = basic.read_storage_tuple().await.unwrap();
+    assert_eq!(v1_r, v1);
+    assert_eq!(v2_r, v2);
+
+    let gen = GenContract::new(
+        felt!("0x0505ca46219e39ede6f186e3056535d82e4eb44bbb49b77531930eeacd1c89e3"),
+        Arc::clone(&provider),
+    )
+    .with_account(Arc::clone(&account));
+
+    let ms = MyStruct {
+        f1: FieldElement::ONE,
+        f2: FieldElement::TWO,
+        f3: FieldElement::THREE,
+    };
+
+    gen.func1(&ms).await?;
+
+    let (f1, f2) = gen.read().await.unwrap();
+    assert_eq!(f1, FieldElement::ONE);
+    assert_eq!(f2, FieldElement::TWO);
+
+    Ok(())
+}
 ```
 
 ## Serialization
