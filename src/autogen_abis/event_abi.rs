@@ -1,4 +1,5 @@
 // WARNING: This file is auto-generated.
+#![allow(clippy::ptr_arg)]
 
 use abigen_macro::abigen;
 use cairo_types::CairoType;
