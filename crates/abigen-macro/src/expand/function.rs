@@ -110,7 +110,7 @@ impl Expandable for CairoFunction {
                     // and it's generic types without complexifiying the whole typing.
                     // So it's constructed at every call. There is surely a better approach.
                     let account = match &self.account {
-                        Some(a) => a,
+                        Some(a) => std::sync::Arc::clone(&a),
                         // TODO: better error handling here.
                         _ => return Err(anyhow::anyhow!("Account is required to send invoke transactions"))
                     };

@@ -20,7 +20,10 @@ mod katana_default;
 
 mod autogen_abis;
 use autogen_abis::basic_abi::{u256, BasicContract};
+use autogen_abis::event_abi::{Event as AnyEvent, EventContract};
 use autogen_abis::gen_abi::{GenContract, MyStruct};
+
+use cairo_types::types::starknet::ContractAddress;
 
 use starknet::core::types::*;
 use starknet::macros::felt;
@@ -63,9 +66,65 @@ async fn main() -> Result<()> {
 
     gen.func1(&ms).await?;
 
+    // Need to find why there is a nonce error if two invokes are made with the same
+    // account.
+    // gen.func1(&ms).await?;
+
     let (f1, f2) = gen.read().await.unwrap();
     assert_eq!(f1, FieldElement::ONE);
     assert_eq!(f2, FieldElement::TWO);
+
+    let event_contract = EventContract::new(
+        felt!("0x009d31a89778ffba9cedb5bf7cecdc686889b0f53f3bfbfa264b24fafbc199ca"),
+        Arc::clone(&provider),
+    )
+    .with_account(Arc::clone(&account));
+
+    // Add small delays to avoid nonce error submitting txs too fast.
+    event_contract
+        .emit_a(&FieldElement::ONE, &vec![felt!("0xff"), felt!("0xf1")])
+        .await?;
+    tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
+
+    event_contract.emit_b(&felt!("0x1234")).await?;
+    tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
+
+    event_contract
+        .emit_c(
+            &felt!("0x11"),
+            &felt!("0x22"),
+            &felt!("0x33"),
+            &ContractAddress(felt!("0xaa")),
+        )
+        .await?;
+
+    let events = katana_default::fetch_all_events(Arc::clone(&provider)).await?;
+
+    for e in events {
+        let my_event: AnyEvent = match e.try_into() {
+            Ok(ev) => ev,
+            Err(_s) => {
+                // An event from other contracts, ignore.
+                continue;
+            }
+        };
+
+        match my_event {
+            AnyEvent::MyEventA(a) => {
+                assert_eq!(a.header, FieldElement::ONE);
+                assert_eq!(a.value, vec![felt!("0xff"), felt!("0xf1")]);
+            }
+            AnyEvent::MyEventB(b) => {
+                assert_eq!(b.value, felt!("0x1234"));
+            }
+            AnyEvent::MyEventC(c) => {
+                assert_eq!(c.v1, felt!("0x11"));
+                assert_eq!(c.v2, felt!("0x22"));
+                assert_eq!(c.v3, felt!("0x33"));
+                assert_eq!(c.v4, ContractAddress(felt!("0xaa")));
+            }
+        };
+    }
 
     Ok(())
 }

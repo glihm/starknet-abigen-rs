@@ -20,3 +20,5 @@ pub mod cairo_enum;
 pub use cairo_enum::CairoEnum;
 pub mod cairo_function;
 pub use cairo_function::CairoFunction;
+pub mod cairo_event;
+pub use cairo_event::CairoEvent;
