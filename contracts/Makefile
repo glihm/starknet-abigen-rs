@@ -9,3 +9,9 @@ setup_basic:
 	starkli declare target/dev/contracts_basic.sierra.json ${config}
 	starkli deploy ${class_hash} --salt 0x1234 ${config}
 
+# Declare and deploy the basic contract on katana.
+setup_gen:
+	$(eval class_hash=$(shell starkli class-hash target/dev/contracts_gen.sierra.json))
+	starkli declare target/dev/contracts_gen.sierra.json ${config}
+	starkli deploy ${class_hash} --salt 0x1234 ${config}
+

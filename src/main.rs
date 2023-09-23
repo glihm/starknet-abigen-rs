@@ -20,6 +20,7 @@ mod katana_default;
 
 mod autogen_abis;
 use autogen_abis::basic_abi::{u256, BasicContract};
+use autogen_abis::gen_abi::{GenContract, MyStruct};
 
 use starknet::core::types::*;
 use starknet::macros::felt;
@@ -34,7 +35,7 @@ async fn main() -> Result<()> {
         felt!("0x04383de1eb63b223170e1de699ff5074fbc1f6096e14604615b65d3d1cc28c7d"),
         Arc::clone(&provider),
     )
-    .with_account(Arc::clone(&account));
+        .with_account(Arc::clone(&account));
 
     let v1 = FieldElement::ONE;
     let v2 = u256 {
@@ -47,6 +48,24 @@ async fn main() -> Result<()> {
     let (v1_r, v2_r) = basic.read_storage_tuple().await.unwrap();
     assert_eq!(v1_r, v1);
     assert_eq!(v2_r, v2);
+
+    let gen = GenContract::new(
+        felt!("0x0505ca46219e39ede6f186e3056535d82e4eb44bbb49b77531930eeacd1c89e3"),
+        Arc::clone(&provider),
+    )
+        .with_account(Arc::clone(&account));
+
+    let ms = MyStruct {
+        f1: FieldElement::ONE,
+        f2: FieldElement::TWO,
+        f3: FieldElement::THREE,
+    };
+
+    gen.func1(&ms).await?;
+
+    let (f1, f2) = gen.read().await.unwrap();
+    assert_eq!(f1, FieldElement::ONE);
+    assert_eq!(f2, FieldElement::TWO);
 
     Ok(())
 }
