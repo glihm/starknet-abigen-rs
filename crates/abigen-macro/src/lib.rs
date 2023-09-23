@@ -106,7 +106,9 @@ pub fn abigen(input: TokenStream) -> TokenStream {
     }
 
     tokens.push(quote! {
-        impl #contract_name
+        impl<P> #contract_name<P>
+        where
+            P: starknet::providers::Provider + Send + Sync, <P as starknet::providers::Provider>::Error: 'static
         {
             #(#functions)*
         }

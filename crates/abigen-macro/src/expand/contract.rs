@@ -11,18 +11,22 @@ impl CairoContract {
     pub fn expand(contract_name: Ident) -> TokenStream2 {
         quote! {
             #[derive(Debug)]
-            pub struct #contract_name
+            pub struct #contract_name<P>
+            where
+                P: starknet::providers::Provider + Send + Sync, <P as starknet::providers::Provider>::Error: 'static
             {
                 pub address: starknet::core::types::FieldElement,
-                pub provider: std::sync::Arc<starknet::providers::AnyProvider>,
-                pub account : std::option::Option<std::sync::Arc<starknet::accounts::SingleOwnerAccount<std::sync::Arc<starknet::providers::AnyProvider>, starknet::signers::LocalWallet>>>,
+                pub provider: std::sync::Arc<P>,
+                pub account: std::option::Option<std::sync::Arc<starknet::accounts::SingleOwnerAccount<std::sync::Arc<P>, starknet::signers::LocalWallet>>>,
             }
 
-            // TODO: Perhaps better than anyhow, a custom error?
-            impl #contract_name {
+            impl<P> #contract_name<P>
+            where
+                P: starknet::providers::Provider + Send + Sync, <P as starknet::providers::Provider>::Error: 'static
+             {
                 pub fn new(
                     address: starknet::core::types::FieldElement,
-                    provider: std::sync::Arc<starknet::providers::AnyProvider>,
+                    provider: std::sync::Arc<P>,
                 ) -> Self {
                     Self {
                         address,
@@ -31,7 +35,7 @@ impl CairoContract {
                     }
                 }
 
-                pub fn with_account(mut self, account: std::sync::Arc<starknet::accounts::SingleOwnerAccount<std::sync::Arc<starknet::providers::AnyProvider>, starknet::signers::LocalWallet>>,
+                pub fn with_account(mut self, account: std::sync::Arc<starknet::accounts::SingleOwnerAccount<std::sync::Arc<P>, starknet::signers::LocalWallet>>,
                 ) -> Self {
                     self.account = Some(std::sync::Arc::clone(&account));
                     self
