@@ -1,3 +1,4 @@
+//! Enums expansion, taking in account generic types if any.
 use crate::expand::utils::{str_to_ident, str_to_type};
 use crate::expand::generic;
 use crate::Expandable;
@@ -58,8 +59,8 @@ impl Expandable for CairoEnum {
             let variant_name = str_to_ident(&name);
             let ty = str_to_type(&abi_type.to_rust_type_path());
 
-            // Tuples type used as rust type path must be surrounded
-            // by LT/GT.
+            // Tuples type used as rust type item path must be surrounded
+            // by angle brackets.
             let ty_punctuated = match abi_type {
                 AbiTypeAny::Tuple(_) => quote!(<#ty>),
                 _ => quote!(#ty),

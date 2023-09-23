@@ -1,3 +1,5 @@
+//! Expands the contract first implementation with
+//! default configuration for provider and account, if any.
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 

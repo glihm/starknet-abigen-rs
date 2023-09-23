@@ -1,4 +1,6 @@
+//! Struct expansion, taking in account generic types if any.
 use crate::expand::utils::{str_to_ident, str_to_type};
+use crate::expand::generic;
 use crate::Expandable;
 
 use cairo_type_parser::abi_types::{AbiType, AbiTypeAny};
@@ -49,14 +51,6 @@ impl Expandable for CairoStruct {
         let mut desers: Vec<TokenStream2> = vec![];
         let mut names: Vec<TokenStream2> = vec![];
 
-        let gentys: Vec<Ident> = self.get_gentys()
-            .iter()
-            .map(|g| str_to_ident(g)).collect();
-
-        let gentys_rust: Vec<Ident> = self.get_gentys()
-            .iter()
-            .map(|g| str_to_ident(format!("R{}", g).as_str())).collect();
-
         let mut is_first = true;
         for (name, abi_type) in &self.members {
             let name = str_to_ident(name);
@@ -64,8 +58,8 @@ impl Expandable for CairoStruct {
 
             let ty = str_to_type(&abi_type.to_rust_type_path());
 
-            // Tuples type used as rust type path must be surrounded
-            // by LT/GT symbols.
+            // Tuples type used as rust type item path must be surrounded
+            // by angle brackets.
             let ty_punctuated = match abi_type {
                 AbiTypeAny::Tuple(_) => quote!(<#ty>),
                 _ => quote!(#ty),
@@ -86,27 +80,18 @@ impl Expandable for CairoStruct {
             });
         }
 
+        let gentys: Vec<Ident> = self.get_gentys()
+            .iter()
+            .map(|g| str_to_ident(g)).collect();
+
         let impl_line = if self.is_generic() {
-            let mut tokens = vec![];
-            tokens.push(quote! {
-                impl<#(#gentys),* , #(#gentys_rust),*> cairo_types::CairoType for #struct_name<#(#gentys),*>
-                    where
-            });
-
-            for (i, g) in gentys.iter().enumerate() {
-                let gr = &gentys_rust[i];
-                tokens.push(quote!(#g: CairoType<RustType = #gr>,));
-            }
-
-            println!("{}", quote!(#(#tokens)*));
-
-            quote!(#(#tokens)*)
+            generic::impl_with_gentys_tokens(&struct_name, &gentys)
         } else {
             quote!(impl cairo_types::CairoType for #struct_name)
         };
 
         let rust_type = if self.is_generic() {
-            quote!(type RustType = #struct_name<#(#gentys_rust),*>;)
+            generic::rust_associated_type_gentys_tokens(&struct_name, &gentys)
         } else {
             quote!(type RustType = Self;)
         };

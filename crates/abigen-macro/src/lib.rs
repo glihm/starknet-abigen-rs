@@ -1,11 +1,19 @@
+//! This crate contains all the logic to expand the parsed ABI types into
+//! rust code.
+//!
+//! Important note, functions can't be generic when they are entry point
+//! of a Cairo contracts.
+//! For this reason, all the generic types are handles for structs and enums
+//! generation only, and then applied on functions inputs/output.
+//!
+//! As the ABI as everything flatten, we must ensure that structs and enums are
+//! checked for genericty to avoid duplicated types and detect correctly
+//! the members/variants that are generic.
 mod expand;
 use expand::contract::CairoContract;
 
 mod contract_abi;
 use contract_abi::ContractAbi;
-
-mod contract_fetch;
-use contract_fetch::ContractFetch;
 
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
@@ -18,7 +26,6 @@ use syn::{
 use std::collections::HashMap;
 
 use cairo_type_parser::{CairoStruct, CairoEnum, CairoFunction};
-use cairo_type_parser::abi_types::{AbiType, AbiTypeAny};
 use cairo_types::{CAIRO_BASIC_ENUMS, CAIRO_BASIC_STRUCTS};
 
 trait Expandable {
@@ -38,6 +45,7 @@ pub fn abigen(input: TokenStream) -> TokenStream {
 
     let mut structs: HashMap<String, CairoStruct> = HashMap::new();
     let mut enums: HashMap<String, CairoEnum> = HashMap::new();
+    let mut functions = vec![];
 
     for entry in &abi {
         match entry {
@@ -67,27 +75,11 @@ pub fn abigen(input: TokenStream) -> TokenStream {
                     enums.insert(ce.get_name(), ce.clone());
                 }
             }
-            AbiEntry::Event(_ev) => {
-                // TODO events.
-            }
-            // Events
-            _ => continue
-        }
-    }
-
-    // For the functions, we must take any existing enum or struct.
-    // as we will have the correct rust type for generics.
-    // But as we need filtered structs and enum, this must be done
-    // in a second loop when all structs/enums are parsed.
-    let mut functions = vec![];
-
-    for entry in &abi {
-        match entry {
             AbiEntry::Function(f) => {
-
                 // Functions cannot be generic when they are entry point.
-                // From this statement, we can safely assume that any function name is unique,
-                // and we only have to care about arguments that may contain generic.
+                // From this statement, we can safely assume that any function name is
+                // unique, and the arguments can be flatten as is due to the fact
+                // that structs and enum are being parsed for genericity.
                 let cf = CairoFunction::new(
                     &f.name,
                     f.state_mutability.clone(),
@@ -97,11 +89,18 @@ pub fn abigen(input: TokenStream) -> TokenStream {
 
                 functions.push(cf.expand_impl());
             }
+            AbiEntry::Event(_ev) => {
+                // TODO events.
+                // Events are not usually used as input/output of functions, but
+                // mainly for deserialization while indexing.
+                // We should then generate specific struct for them to support
+                // the auto-parsing of `EmittedEvent` struct to detect keys/data
+                // automatically.
+            }
             _ => continue
         }
     }
 
-    // Expand only once structs and enums taking generics in account.
     for (_, cs) in structs {
         tokens.push(cs.expand_decl());
         tokens.push(cs.expand_impl());

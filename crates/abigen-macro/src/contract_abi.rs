@@ -1,3 +1,22 @@
+//! Defines the arguments of the `abigen` macro.
+//!
+//! `ContractAbi` is expected to the argument
+//! passed to the macro. We should then parse the
+//! token stream to ensure the arguments are correct.
+//!
+//! At this moment, the macro supports two fashions:
+//!
+//! Loading from a file.
+//! ```
+//! abigen!(ContractName, "path/to/abi.json"
+//! ```
+//!
+//! Loading from a literal string ABI.
+//! ```
+//! abigen!(ContractName, r#"
+//!    [{ .... }]
+//! #");
+//! ```
 use starknet::core::types::contract::*;
 use std::fs;
 use syn::{
@@ -29,6 +48,8 @@ impl Parse for ContractAbi {
                 abi: abi_json,
             }),
             Err(e) => {
+                // TODO: check how we can notify better the user in case of error.
+                // Or do we want 2 macros to easy debugging / better UX on error?
                 println!("Error loading the input as ABI: {:?}\nTry to load a JSON file",
                          e);
 
