@@ -1,5 +1,5 @@
 use anyhow::Result;
-use starknet::accounts::{SingleOwnerAccount, ExecutionEncoding};
+use starknet::accounts::{ExecutionEncoding, SingleOwnerAccount};
 use starknet::core::types::*;
 use starknet::macros::felt;
 use starknet::providers::{jsonrpc::HttpTransport, AnyProvider, JsonRpcClient, Provider};

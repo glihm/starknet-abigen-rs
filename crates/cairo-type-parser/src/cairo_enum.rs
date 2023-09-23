@@ -76,6 +76,5 @@ impl CairoEnum {
                 }
             }
         }
-
     }
 }

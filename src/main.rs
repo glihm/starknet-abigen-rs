@@ -35,7 +35,7 @@ async fn main() -> Result<()> {
         felt!("0x04383de1eb63b223170e1de699ff5074fbc1f6096e14604615b65d3d1cc28c7d"),
         Arc::clone(&provider),
     )
-        .with_account(Arc::clone(&account));
+    .with_account(Arc::clone(&account));
 
     let v1 = FieldElement::ONE;
     let v2 = u256 {
@@ -53,7 +53,7 @@ async fn main() -> Result<()> {
         felt!("0x0505ca46219e39ede6f186e3056535d82e4eb44bbb49b77531930eeacd1c89e3"),
         Arc::clone(&provider),
     )
-        .with_account(Arc::clone(&account));
+    .with_account(Arc::clone(&account));
 
     let ms = MyStruct {
         f1: FieldElement::ONE,

@@ -54,7 +54,6 @@ impl CairoStruct {
                 generic_members.insert(name.clone(), (type_str.clone(), is_generic));
             }
 
-
             members.push((name.clone(), m_abi.clone()));
         }
 

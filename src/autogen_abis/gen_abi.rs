@@ -2,11 +2,12 @@
 
 use abigen_macro::abigen;
 use cairo_types::CairoType;
+use starknet::accounts::Account;
 use starknet::core::types::{BlockId, BlockTag};
 use starknet::providers::Provider;
-use starknet::accounts::Account;
-abigen!(GenContract,
-r#"
+abigen!(
+    GenContract,
+    r#"
 [
   {
     "type": "struct",
@@ -100,4 +101,5 @@ r#"
     "variants": []
   }
 ]
-"#);
+"#
+);

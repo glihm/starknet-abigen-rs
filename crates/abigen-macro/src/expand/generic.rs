@@ -28,10 +28,7 @@ pub fn impl_with_gentys_tokens(entity_name: &Ident, gentys: &Vec<Ident>) -> Toke
 }
 
 /// Expands the associated types lines for generic types.
-pub fn rust_associated_type_gentys_tokens(
-    entity_name: &Ident,
-    gentys: &[Ident],
-) -> TokenStream2 {
+pub fn rust_associated_type_gentys_tokens(entity_name: &Ident, gentys: &[Ident]) -> TokenStream2 {
     let gentys_rust: Vec<Ident> = gentys
         .iter()
         .map(|g| str_to_ident(format!("R{}", g.to_string()).as_str()))

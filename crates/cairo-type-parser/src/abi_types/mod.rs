@@ -158,9 +158,7 @@ impl AbiTypeAny {
     /// false otherwise.
     pub fn is_unit(&self) -> bool {
         match self {
-            Self::Basic(b) => {
-                b.get_cairo_type_full() == "()"
-            }
+            Self::Basic(b) => b.get_cairo_type_full() == "()",
             _ => false,
         }
     }
