@@ -132,6 +132,49 @@ cargo run -p snabi fetch \
     --name MyContract
 ```
 
+## How to work with events
+
+Events are special structs/enum that we usually want to deserialize effectively.
+The `abigen!` macro generate all the events associated types, and this always include
+one enum always named `Event`.
+
+Any contract you use `abigen!` on will contain this enum, and this also inclues the convertion
+from `EmittedEvent`, which is the `starknet-rs` type returned when we fetch events.
+
+So you can do this:
+
+```rust
+// the Event enum is always declared if at least 1 event is present
+// in the cairo file.
+use myContract::{Event as AnyEvent};
+
+let events = provider.fetch_events(...);
+
+for e in events {
+    // The `TryFrom` is already implemented for each variant, which includes
+    // the deserialization of the variant.
+    let my_event: AnyEvent = match e.try_into() {
+        Ok(ev) => ev,
+        Err(_s) => {
+            // An event from other contracts, ignore.
+            continue;
+        }
+    };
+    
+    // Then, you can safely check which event it is, and work with it,
+    // with the rust type!
+    match my_event {
+        AnyEvent::MyEventA(a) => {
+            // do stuff with a.
+        }
+        AnyEvent::MyEventB(b) => {
+            // do stuff with b.
+        }
+        ...
+    };
+}
+```
+
 ## Example
 
 This is an example of how easy is to call a contract. You can find this code [here](https://github.com/glihm/starknet-abigen-rs/blob/main/src/main.rs):
