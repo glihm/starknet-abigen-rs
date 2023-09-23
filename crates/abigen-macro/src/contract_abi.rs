@@ -7,16 +7,16 @@
 //! At this moment, the macro supports two fashions:
 //!
 //! Loading from a file.
-//! ```
+//!
 //! abigen!(ContractName, "path/to/abi.json"
-//! ```
+//!
 //!
 //! Loading from a literal string ABI.
-//! ```
+//!
 //! abigen!(ContractName, r#"
 //!    [{ .... }]
-//! #");
-//! ```
+//! "#);
+//!
 use starknet::core::types::contract::*;
 use std::fs;
 use syn::{

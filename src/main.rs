@@ -15,6 +15,8 @@ use starknet::providers::{jsonrpc::HttpTransport, AnyProvider, JsonRpcClient, Pr
 use starknet::signers::{LocalWallet, SigningKey};
 use url::Url;
 
+abigen!(ContractC, "test.abi.json");
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let rpc_url = Url::parse("http://0.0.0.0:5050")?;
