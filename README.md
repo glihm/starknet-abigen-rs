@@ -8,7 +8,14 @@ reaching a first good milestrone.
 - [X] Types generation with serialization/deserialization for any type in the contract.
 - [X] Support for generic types.
 - [X] Auto generation of the contract with it's functions (call and invoke).
-- [ ] Generation of Events structs to parse automatically `EmittedEvent`.
+- [X] Generation of Events structs to parse automatically `EmittedEvent`.
+
+## PR on starknet-rs
+
+The goal of this work is to be included in `starknet-rs` library.
+You can follow the status of such process checking those PRs:
+
+1. https://github.com/xJonathanLEI/starknet-rs/pull/475
 
 ## Quick start
 
