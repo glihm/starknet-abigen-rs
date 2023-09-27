@@ -64,8 +64,11 @@ async fn main() {
     let address = FieldElement::from_hex_be("0x1234").unwrap();
     let contract = MyContract::new(address, Arc::clone(&provider));
 
+    ...
 }
 ```
+
+Full example can be seen [here](https://github.com/glihm/starknet-rs/blob/abigen/examples/abigen.rs) and [here](https://github.com/glihm/starknet-rs/blob/abigen/examples/abigen_events.rs). 
 
 ## Quick start
 
