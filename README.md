@@ -17,6 +17,56 @@ You can follow the status of such process checking those PRs:
 
 1. https://github.com/xJonathanLEI/starknet-rs/pull/475
 
+## If you just want to test the macro and not explore
+
+If you only want to test your contract without
+trying to explore here, please use the fork used for the PR on `starknet-rs`:
+
+```toml
+# Cargo.toml of your project
+[package]
+name = "test-abigen"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+starknet = { git = "https://github.com/glihm/starknet-rs", branch = "abigen" }
+tokio = { version = "1.15.0", features = ["full"] }
+url = "2.2.2"
+```
+
+```rust
+
+// main.rs
+use starknet::{
+    accounts::{ExecutionEncoding, SingleOwnerAccount},
+    core::types::{BlockId, BlockTag, EventFilter, FieldElement},
+    macros::{abigen, felt},
+    providers::{jsonrpc::HttpTransport, JsonRpcClient, Provider},
+    signers::{LocalWallet, SigningKey},
+};
+
+use std::sync::Arc;
+use url::Url;
+
+// All the events are always grouped in one enun called `Event`
+// in the ABI.
+
+abigen!(MyContract, "./abi.json");
+
+#[tokio::main]
+async fn main() {
+    let rpc_url = Url::parse("http://0.0.0.0:5050").unwrap();
+    let provider = Arc::new(JsonRpcClient::new(HttpTransport::new(rpc_url.clone())));
+
+    let address = FieldElement::from_hex_be("0x1234").unwrap();
+    let contract = MyContract::new(address, Arc::clone(&provider));
+
+}
+```
+
 ## Quick start
 
 1. Terminal 1: Run Katana
