@@ -62,17 +62,30 @@ async fn main() {
 
     let contract = MyContract::new(contract_address, &account);
 
-    contract
+    let r = contract
         .write_val(&(val + FieldElement::ONE))
         .await
         .expect("Call to `write_val` failed");
 
-    // Some delay to the tx to be processed. Watch the receipt in production
-    // code if you need so.
-    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
-
     // `MyContract` also contains a reader field that you can use if you need both
     // to call external and views with the same instance.
+
+    loop {
+        match contract
+            .reader
+            .get_tx_status(r.transaction_hash)
+            .await
+            .as_ref()
+        {
+            "ok" => break,
+            "pending" => tokio::time::sleep(tokio::time::Duration::from_secs(1)).await,
+            e => {
+                println!("Transaction error: {e}");
+                break;
+            }
+        }
+    }
+
     let val = contract
         .reader
         .read_val()

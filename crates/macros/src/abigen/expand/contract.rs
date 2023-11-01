@@ -50,6 +50,42 @@ impl CairoContract {
                 pub fn get_call_block_id(&self) -> starknet::core::types::BlockId {
                     self.call_block_id
                 }
+
+                // TODO: String is not the ideal, but we need to export an enum somewhere for that.
+                pub async fn get_tx_status(&self, transaction_hash: FieldElement) -> String {
+                    use starknet::{
+                        core::types::{ExecutionResult, FieldElement, StarknetError},
+                        providers::{MaybeUnknownErrorCode, Provider, ProviderError, StarknetErrorWithMessage},
+                    };
+
+                    match self.provider.get_transaction_receipt(transaction_hash).await {
+                        Ok(receipt) => match receipt.execution_result() {
+                            ExecutionResult::Succeeded => {
+                                "ok".to_string()
+                            }
+                            ExecutionResult::Reverted { reason } => {
+                                format!("reverted: {}", reason)
+                            }
+                        },
+                        Err(ProviderError::StarknetError(StarknetErrorWithMessage {
+                            code: MaybeUnknownErrorCode::Known(StarknetError::TransactionHashNotFound),
+                            ..
+                        })) => {
+                            "pending".to_string()
+                        }
+                        // Some nodes are still serving error code `25` for tx hash not found. This is
+                        // technically a bug on the node's side, but we maximize compatibility here by also
+                        // accepting it.
+                        Err(ProviderError::StarknetError(StarknetErrorWithMessage {
+                            code: MaybeUnknownErrorCode::Known(StarknetError::InvalidTransactionIndex),
+                            ..
+                        })) => {
+                            "pending".to_string()
+                        }
+                        Err(err) => format!("error: {err}")
+                    }
+                }
+
             }
         };
 
