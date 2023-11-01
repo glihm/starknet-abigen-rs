@@ -10,120 +10,34 @@ reaching a first good milestrone.
 - [X] Auto generation of the contract with it's functions (call and invoke).
 - [X] Generation of Events structs to parse automatically `EmittedEvent`.
 
-## PR on starknet-rs
+## How to use it
 
-The goal of this work is to be included in `starknet-rs` library.
-You can follow the status of such process checking those PRs:
-
-1. https://github.com/xJonathanLEI/starknet-rs/pull/475
-2. Please take a look to this [README](https://github.com/glihm/starknet-rs/tree/abigen/starknet-macros) for the newest information about the syntax being worked on.
-
-## If you just want to test the macro and not explore
-
-If you only want to test your contract without
-trying to explore here, please use the fork used for the PR on `starknet-rs`:
+For now this crate is not yet published on `crated.io`, but here is how you can do the following.
+Please consider for now using `starknet v0.6.0` as `0.7.*` has some breaking changes not yet implemented here.
 
 ```toml
 # Cargo.toml of your project
-[package]
-name = "test-abigen"
-version = "0.1.0"
-edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-starknet = { git = "https://github.com/glihm/starknet-rs", branch = "abigen" }
-tokio = { version = "1.15.0", features = ["full"] }
-url = "2.2.2"
+starknet-abigen-parser = { git = "https://github.com/glihm/starknet-abigen-rs", tag = "v0.1.0" }
+starknet-abigen-macros = { git = "https://github.com/glihm/starknet-abigen-rs", tag = "v0.1.0" }
+starknet = "0.6.0"
 ```
 
 ```rust
-use starknet::{
-    // Note here, we import an ABI type. This applies for
-    // ContractAddress, ClassHash, EthAddress only.
-    accounts::{ExecutionEncoding, SingleOwnerAccount},
-    contract::abi::ContractAddress,
-    core::{chain_id, types::FieldElement},
-    macros::abigen,
-    providers::SequencerGatewayProvider,
-    signers::{LocalWallet, SigningKey},
-};
+// Your main.rs or other rust file:
+...
+use starknet_abigen_parser;
+use starknet_abigen_macros::abigen;
 
-// Generate the bindings for the contract and also includes
-// all the structs and enums present in the ABI with the exact
-// same name.
-abigen!(TokenContract, "./examples/contracts_abis/mini_erc20.json");
+abigen!(MyContract, "./path/to/abi.json");
 
 #[tokio::main]
 async fn main() {
-    let provider = SequencerGatewayProvider::starknet_alpha_goerli();
-    println!("provider {:?}", provider);
-    let eth_goerli_token_address = FieldElement::from_hex_be(
-        "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7",
-    )
-    .unwrap();
-
-    // If you only plan to call views functions, you can use the `Reader`, which
-    // only requires a provider along with your contract address.
-    let token_contract = TokenContractReader::new(eth_goerli_token_address, &provider);
-
-    // To call a view, there is no need to initialize an account. You can directly
-    // use the name of the method in the ABI to realize the call.
-    let balance: u256 = token_contract
-        .balanceOf(&ContractAddress(
-            FieldElement::from_hex_be("YOUR_HEX_CONTRACT_ADDRESS_HERE").unwrap(),
-        ))
-        .await
-        .expect("Call to get balance failed");
-
-    println!("Your ETH (goerli) balance: {:?}", balance);
-
-    // For the inputs / outputs of the ABI functions, all the types are
-    // defined where the abigen! macro is expanded. Note that `u256`
-    // for the balance were already in the scope as it's generated from
-    // the ABI.
-
-    // If you want to do some invoke for external functions, you must use an account.
-    let signer = LocalWallet::from(SigningKey::from_secret_scalar(
-        FieldElement::from_hex_be("YOUR_PRIVATE_KEY_IN_HEX_HERE").unwrap(),
-    ));
-    let address = FieldElement::from_hex_be("YOUR_ACCOUNT_CONTRACT_ADDRESS_IN_HEX_HERE").unwrap();
-    let account = SingleOwnerAccount::new(
-        provider,
-        signer,
-        address,
-        chain_id::TESTNET,
-        ExecutionEncoding::Legacy,
-    );
-
-    // The `TokenContract` also contains a reader field that you can use if you need both
-    // to call external and views with the same instance.
-    let token_contract = TokenContract::new(eth_goerli_token_address, &account);
-
-    // Example here of querying again the balance, using the internal reader of the
-    // contract setup with an account.
-    token_contract
-        .reader
-        .balanceOf(&ContractAddress(
-            FieldElement::from_hex_be("YOUR_HEX_CONTRACT_ADDRESS_HERE").unwrap(),
-        ))
-        .await
-        .expect("Call to get balance failed");
-
-    let _ = token_contract
-        .approve(
-            &ContractAddress(FieldElement::from_hex_be("SPENDER_ADDRESS_HEX").unwrap()),
-            &u256 {
-                low: 10000,
-                high: 0,
-            },
-        )
-        .await;
+    ...
 }
 ```
-
-Full example can be seen [here](https://github.com/glihm/starknet-rs/blob/abigen/examples/abigen.rs) and [here](https://github.com/glihm/starknet-rs/blob/abigen/examples/abigen_events.rs). 
+You can find a first simple example in the `examples` folder [here](https://github.com/glihm/starknet-abigen-rs/tree/v0.1.0/examples). 
 
 ## Quick start
 
@@ -146,19 +60,6 @@ cd contracts && scarb build && make setup
 ```sh
 cargo run
 ```
-
-## Overview
-
-This repository contains the following crates:
-
-- [`abigen-macro`] - The [`abigen!`] procedural macro
-- [`cairo-types`] - Cairo types binded with Rust types
-- [`cairo-type-parser`] - A simple parser for Cairo type strings
-
-[`abigen-macro`]: ./crates/abigen-macro
-[`cairo-types`]: ./crates/cairo-types
-[`cairo-type-parser`]: ./crates/cairo-type-parser
-[`abigen!`]: ./crates/abigen-macro
 
 ## Cairo - Rust similarity
 
@@ -209,7 +110,7 @@ Any type implementing the `CairoType` trait can be used this way.
 abigen!(MyContract, "./mycontract.abi.json")
 ```
 
-2. If you only want to make a quick call without too much setup, you can paste an ABI directly using:
+2. (DISABLED FOR NOW) If you only want to make a quick call without too much setup, you can paste an ABI directly using:
 
 ```rust
 abigen!(MyContract, r#"
@@ -229,23 +130,8 @@ abigen!(MyContract, r#"
 "#);
 ```
 
-3. You can use `snabi` tool that is inside the repo to generate a rust file containing your full ABI expanded with the macro. You can find an example of this in the `src/main.rs`.
-
-Basically you can:
-```bash
-# Generate a rust file directly from a Sierra file to then simply import it as a module in Rust.
-cargo run -p snabi from-sierra \
-    target/dev/contracts_basic.sierra.json \
-    --expandable /path/my_contract_abi.rs \
-    --name MyContract
-
-# You can also fetch an ABI on chain:
-cargo run -p snabi fetch \
-    http://0.0.0.0:5050 \
-    0x032be4f29633d261254b1b1c6e7a6889a55354b665a513ef3928409303905631 \
-    --expandable /path/my_contract_abi.rs \
-    --name MyContract
-```
+3. To extract ABI from your contract, please use the tool `jq` if you are in local, or any starknet explorer.
+   With jq, you can do: `cat target/dev/my_contract.contract_class.json | jq .abi > /path/abi.json`.
 
 ## How to work with events
 
@@ -287,54 +173,6 @@ for e in events {
         }
         ...
     };
-}
-```
-
-## Example
-
-This is an example of how easy is to call a contract. You can find this code [here](https://github.com/glihm/starknet-abigen-rs/blob/main/src/main.rs):
-```rust
-#[tokio::main]
-async fn main() -> Result<()> {
-    let (provider, account) = katana_default::get_provider_and_account().await?;
-
-    let basic = BasicContract::new(
-        felt!("0x04383de1eb63b223170e1de699ff5074fbc1f6096e14604615b65d3d1cc28c7d"),
-        Arc::clone(&provider),
-    )
-    .with_account(Arc::clone(&account));
-
-    let v1 = FieldElement::ONE;
-    let v2 = u256 {
-        low: 2_u128,
-        high: 0_u128,
-    };
-
-    basic.set_storage(&v1, &v2).await?;
-
-    let (v1_r, v2_r) = basic.read_storage_tuple().await.unwrap();
-    assert_eq!(v1_r, v1);
-    assert_eq!(v2_r, v2);
-
-    let gen = GenContract::new(
-        felt!("0x0505ca46219e39ede6f186e3056535d82e4eb44bbb49b77531930eeacd1c89e3"),
-        Arc::clone(&provider),
-    )
-    .with_account(Arc::clone(&account));
-
-    let ms = MyStruct {
-        f1: FieldElement::ONE,
-        f2: FieldElement::TWO,
-        f3: FieldElement::THREE,
-    };
-
-    gen.func1(&ms).await?;
-
-    let (f1, f2) = gen.read().await.unwrap();
-    assert_eq!(f1, FieldElement::ONE);
-    assert_eq!(f2, FieldElement::TWO);
-
-    Ok(())
 }
 ```
 
@@ -403,6 +241,16 @@ Will be serialized as:
 ```
 [123, 1, 0, 1, 9]
 ```
+
+## PR on starknet-rs
+
+The goal of this work was to be included in `starknet-rs` library.
+You can follow the status of such process checking those PRs:
+
+1. https://github.com/xJonathanLEI/starknet-rs/pull/475
+2. Please take a look to this [README](https://github.com/glihm/starknet-rs/tree/abigen/starknet-macros) for the newest information about the syntax being worked on.
+
+But we may choose a standalone path in the future to add more features.
 
 ## Disclaimer
 
