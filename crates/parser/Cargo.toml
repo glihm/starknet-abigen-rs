@@ -1,0 +1,8 @@
+[package]
+name = "starknet-abigen-parser"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+starknet.workspace = true
+thiserror.workspace = true
