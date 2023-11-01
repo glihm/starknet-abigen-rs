@@ -1,35 +1,25 @@
 [package]
-name = "starknet-abigen-rs"
+name = "starknet-abigen"
 version = "0.1.0"
 edition = "2021"
 
 [workspace]
 members = [
-    "crates/cairo-types",
-    "crates/cairo-type-parser",
-    "crates/abigen-macro",
-    "snabi",
-    "expanded-examples/",
+    "crates/macros",
+    "crates/parser",
 ]
 
 [workspace.dependencies]
 # workspace crates
-cairo-types = { path = "crates/cairo-types", default-features = false }
-cairo-type-parser = { path = "crates/cairo-type-parser", default-features = false }
-abigen-macro = { path = "crates/abigen-macro", default-features = false }
+starknet-abigen-parser = { path = "crates/parser" }
+starknet-abigen-macros = { path = "crates/macros" }
 
 # serde
 serde = { version = "1.0", default-features = false, features = ["alloc"] }
 serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
 
-# macros
-proc-macro2 = "1.0"
-quote = "1.0"
-syn = "2.0"
-
-# starknet
 starknet = "0.6.0"
-
+thiserror = "1.0"
 anyhow = "1.0"
 tokio = { version = "1.15.0", features = ["full"] }
 url = "2.2.2"
@@ -39,9 +29,9 @@ url = "2.2.2"
 url.workspace = true
 anyhow.workspace = true
 tokio.workspace = true
-cairo-types.workspace = true
-cairo-type-parser.workspace = true
-abigen-macro.workspace = true
-
 starknet.workspace = true
 serde_json.workspace = true
+
+# Local
+starknet-abigen-parser.workspace = true
+starknet-abigen-macros.workspace = true
