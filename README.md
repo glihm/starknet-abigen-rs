@@ -58,7 +58,7 @@ cd contracts && scarb build && make setup
 ```
 
 ```sh
-cargo run
+cargo run --example simple_get_set
 ```
 
 ## Cairo - Rust similarity

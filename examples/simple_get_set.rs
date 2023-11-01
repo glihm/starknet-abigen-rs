@@ -21,7 +21,7 @@ async fn main() {
         AnyProvider::JsonRpcHttp(JsonRpcClient::new(HttpTransport::new(rpc_url.clone())));
 
     let contract_address = FieldElement::from_hex_be(
-        "0x005cf74aa753132d4b0fe55f8e16ea23474349d0f1f76aa24051b88e1ea75123",
+        "0x02a293bd31c51a9d3b9ca52bceb77d920523a1cfdde513a95e2a5e792f6e85da",
     )
     .unwrap();
 
