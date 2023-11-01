@@ -37,7 +37,7 @@ async fn main() {
     ...
 }
 ```
-You can find a first simple example in the `examples` folder [here](https://github.com/glihm/starknet-abigen-rs/tree/v0.1.0/examples). 
+You can find a first simple example in the `examples` folder [here](https://github.com/glihm/starknet-abigen-rs/tree/5cde6560bdaf273f1bea779b73b5e2c53cabc2c2/examples). 
 
 ## Quick start
 
