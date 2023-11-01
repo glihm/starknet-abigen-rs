@@ -10,17 +10,23 @@ use starknet_abigen_parser::{
     CairoFunction,
 };
 
+fn get_func_inputs(inputs: &[(String, AbiTypeAny)]) -> Vec<TokenStream2> {
+    let mut out: Vec<TokenStream2> = vec![];
+
+    for (name, abi_type) in inputs {
+        let name = str_to_ident(name);
+        let ty = str_to_type(&abi_type.to_rust_type());
+        // We can pass a reference here as serialize always takes a reference.
+        out.push(quote!(#name:&#ty));
+    }
+
+    out
+}
+
 impl Expandable for CairoFunction {
     fn expand_decl(&self) -> TokenStream2 {
         let func_name = str_to_ident(&self.name);
-
-        let mut inputs: Vec<TokenStream2> = vec![];
-        for (name, abi_type) in &self.inputs {
-            let name = str_to_ident(name);
-            let ty = str_to_type(&abi_type.to_rust_type());
-            // We can pass a reference here as serialize always takes a reference.
-            inputs.push(quote!(#name:&#ty));
-        }
+        let inputs = get_func_inputs(&self.inputs);
 
         let output = match self.state_mutability {
             StateMutability::View => match &self.output {
@@ -105,33 +111,59 @@ impl Expandable for CairoFunction {
                     #out_res
                 }
             },
-            StateMutability::External => quote! {
-                // TODO: How can we add Fee configuration + estimate fee out of the box.
-                // maybe two methods are generated, one for actually running, the other
-                // for estimate the fees.
-                // Or, we can add a config struct as the last argument? Or directly
-                // at the initialization of the contract, we can give a config for
-                // fees (manual, estimated + scale factor).
-                // The estimate only may be done at the function level, to avoid
-                // altering the contract instance itself and hence races.
-                #[allow(clippy::ptr_arg)]
-                #decl {
-                    use starknet_abigen_parser::CairoType;
-                    use starknet::accounts::Account;
+            StateMutability::External => {
+                // Also generate the Call getter for the function.
+                let func_name_call = str_to_ident(&format!("{}_getcall", self.name));
+                let inputs = get_func_inputs(&self.inputs);
 
-                    let mut __calldata = vec![];
-                    #(#serializations)*
+                quote! {
+                    pub fn #func_name_call(
+                        &self,
+                        #(#inputs),*
+                    ) -> starknet::accounts::Call {
+                        use starknet_abigen_parser::CairoType;
 
-                    let calls = vec![starknet::accounts::Call {
-                        to: self.address,
-                        selector: starknet::macros::selector!(#func_name),
-                        calldata: __calldata,
-                    }];
+                        let mut __calldata = vec![];
+                        #(#serializations)*
 
-                    // TODO: add a way for fee estimation and max fee to be parametrizable.
-                    self.account.execute(calls).send().await
+                        starknet::accounts::Call {
+                            to: self.address,
+                            selector: starknet::macros::selector!(#func_name),
+                            calldata: __calldata,
+                        }
+                    }
+
+                    #[allow(clippy::ptr_arg)]
+                    #decl {
+                        use starknet_abigen_parser::CairoType;
+                        use starknet::accounts::Account;
+
+                        let mut __calldata = vec![];
+                        #(#serializations)*
+
+                        let calls = vec![starknet::accounts::Call {
+                            to: self.address,
+                            selector: starknet::macros::selector!(#func_name),
+                            calldata: __calldata,
+                        }];
+
+                        // TODO: add a way for fee estimation and max fee to be parametrizable.
+                        self.account.execute(calls).send().await
+                    }
+
+                    // We can add a function *_estimate_fee?
+                    //
+                    // TODO: How can we add Fee configuration + estimate fee out of the box.
+                    // maybe two methods are generated, one for actually running, the other
+                    // for estimate the fees.
+                    // Or, we can add a config struct as the last argument? Or directly
+                    // at the initialization of the contract, we can give a config for
+                    // fees (manual, estimated + scale factor).
+                    // The estimate only may be done at the function level, to avoid
+                    // altering the contract instance itself and hence races.
+
                 }
-            },
+            }
         }
     }
 }

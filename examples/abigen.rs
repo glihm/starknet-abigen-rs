@@ -1,5 +1,5 @@
 use starknet::{
-    accounts::{ExecutionEncoding, SingleOwnerAccount},
+    accounts::{Account, ExecutionEncoding, SingleOwnerAccount},
     core::types::FieldElement,
     providers::{jsonrpc::HttpTransport, AnyProvider, JsonRpcClient},
     signers::{LocalWallet, SigningKey},
@@ -12,7 +12,7 @@ use url::Url;
 // same name.
 // It's usually a good idea to place the macro call into a separate module
 // to avoid name clashes.
-abigen!(MyContract, "./examples/abi/simple_read_write_val.abi.json");
+abigen!(MyContract, "./examples/abi/simple_get_set.abi.json");
 
 #[tokio::main]
 async fn main() {
@@ -21,7 +21,7 @@ async fn main() {
         AnyProvider::JsonRpcHttp(JsonRpcClient::new(HttpTransport::new(rpc_url.clone())));
 
     let contract_address = FieldElement::from_hex_be(
-        "0x02fce3db5fa32227b8bef21c76eaf20f8edb29b1662f7fd8920adaa27d75b7b5",
+        "0x005cf74aa753132d4b0fe55f8e16ea23474349d0f1f76aa24051b88e1ea75123",
     )
     .unwrap();
 
@@ -31,12 +31,13 @@ async fn main() {
 
     // To call a view, there is no need to initialize an account. You can directly
     // use the name of the method in the ABI to realize the call.
-    let val = contract
-        .read_val()
-        .await
-        .expect("Call to `read_val` failed");
+    let a = contract.get_a().await.expect("Call to `get_a` failed");
 
-    println!("Value retrieved: {:?}", val);
+    println!("a = {:?}", a);
+
+    let b = contract.get_b().await.expect("Call to `get_b` failed");
+
+    println!("b = {:?}", b);
 
     // For the inputs / outputs of the ABI functions, all the types are
     // defined where the abigen macro is expanded. Consider using the macro abigen
@@ -63,9 +64,9 @@ async fn main() {
     let contract = MyContract::new(contract_address, &account);
 
     let r = contract
-        .write_val(&(val + FieldElement::ONE))
+        .set_a(&(a + FieldElement::ONE))
         .await
-        .expect("Call to `write_val` failed");
+        .expect("Call to `set_a` failed");
 
     // `MyContract` also contains a reader field that you can use if you need both
     // to call external and views with the same instance.
@@ -86,11 +87,54 @@ async fn main() {
         }
     }
 
-    let val = contract
+    let a = contract
         .reader
-        .read_val()
+        .get_a()
         .await
-        .expect("Call to `read_val` failed");
+        .expect("Call to `get_a` failed");
 
-    println!("Value retrieved: {:?}", val);
+    println!("a = {:?}", a);
+
+    // Now let's say we want to do multicall, and in one transaction we want to set a and b.
+    let call_set_a = contract.set_a_getcall(&FieldElement::from_hex_be("0xee").unwrap());
+    let call_set_b = contract.set_b_getcall(&u256 { low: 0xff, high: 0 });
+
+    let r = contract
+        .account
+        .execute(vec![call_set_a, call_set_b])
+        .send()
+        .await
+        .expect("Multicall failed");
+
+    loop {
+        match contract
+            .reader
+            .get_tx_status(r.transaction_hash)
+            .await
+            .as_ref()
+        {
+            "ok" => break,
+            "pending" => tokio::time::sleep(tokio::time::Duration::from_secs(1)).await,
+            e => {
+                println!("Transaction error: {e}");
+                break;
+            }
+        }
+    }
+
+    let a = contract
+        .reader
+        .get_a()
+        .await
+        .expect("Call to `get_a` failed");
+
+    println!("a = {:?}", a);
+
+    let b = contract
+        .reader
+        .get_b()
+        .await
+        .expect("Call to `get_b` failed");
+
+    println!("b = {:?}", b);
 }
