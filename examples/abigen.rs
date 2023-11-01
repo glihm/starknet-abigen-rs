@@ -12,7 +12,7 @@ use url::Url;
 // same name.
 // It's usually a good idea to place the macro call into a separate module
 // to avoid name clashes.
-abigen!(MyContract, "./examples/abi/simple_get_set.abi.json");
+abigen!(MyContract, "./contracts/abi/simple_get_set.json");
 
 #[tokio::main]
 async fn main() {

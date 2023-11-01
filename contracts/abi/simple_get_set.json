@@ -61,9 +61,8 @@
   },
   {
     "type": "event",
-    "name": "scarb_pg::abigen_demo::abigen_demo::Event",
+    "name": "contracts::simple_get_set::simple_get_set::Event",
     "kind": "enum",
     "variants": []
   }
 ]
-
