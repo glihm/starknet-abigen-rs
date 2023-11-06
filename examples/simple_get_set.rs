@@ -1,10 +1,11 @@
 use starknet::{
-    accounts::{Account, ExecutionEncoding, SingleOwnerAccount},
+    accounts::{Account, ConnectedAccount, ExecutionEncoding, SingleOwnerAccount},
     core::types::FieldElement,
     providers::{jsonrpc::HttpTransport, AnyProvider, JsonRpcClient},
     signers::{LocalWallet, SigningKey},
 };
 use starknet_abigen::macros::abigen;
+use std::sync::Arc;
 use url::Url;
 
 // Generate the bindings for the contract and also includes
@@ -53,31 +54,26 @@ async fn main() {
     )
     .unwrap();
 
-    let account = SingleOwnerAccount::new(
+    let account = Arc::new(SingleOwnerAccount::new(
         provider,
         signer,
         address,
         FieldElement::from_hex_be("0x4b4154414e41").unwrap(), // KATANA
         ExecutionEncoding::Legacy,
-    );
+    ));
 
-    let contract = MyContract::new(contract_address, &account);
+    let contract = MyContract::new(contract_address, account);
 
     let r = contract
         .set_a(&(a + FieldElement::ONE))
         .await
         .expect("Call to `set_a` failed");
 
-    // `MyContract` also contains a reader field that you can use if you need both
-    // to call external and views with the same instance.
+    // Create a new reader from contract account.
+    let reader = contract.reader();
 
     loop {
-        match contract
-            .reader
-            .get_tx_status(r.transaction_hash)
-            .await
-            .as_ref()
-        {
+        match reader.get_tx_status(r.transaction_hash).await.as_ref() {
             "ok" => break,
             "pending" => tokio::time::sleep(tokio::time::Duration::from_secs(1)).await,
             e => {
@@ -87,11 +83,7 @@ async fn main() {
         }
     }
 
-    let a = contract
-        .reader
-        .get_a()
-        .await
-        .expect("Call to `get_a` failed");
+    let a = reader.get_a().await.expect("Call to `get_a` failed");
 
     println!("a = {:?}", a);
 
@@ -107,12 +99,7 @@ async fn main() {
         .expect("Multicall failed");
 
     loop {
-        match contract
-            .reader
-            .get_tx_status(r.transaction_hash)
-            .await
-            .as_ref()
-        {
+        match reader.get_tx_status(r.transaction_hash).await.as_ref() {
             "ok" => break,
             "pending" => tokio::time::sleep(tokio::time::Duration::from_secs(1)).await,
             e => {
@@ -122,19 +109,21 @@ async fn main() {
         }
     }
 
-    let a = contract
-        .reader
-        .get_a()
-        .await
-        .expect("Call to `get_a` failed");
+    let a = reader.get_a().await.expect("Call to `get_a` failed");
 
     println!("a = {:?}", a);
 
-    let b = contract
-        .reader
-        .get_b()
-        .await
-        .expect("Call to `get_b` failed");
+    let b = reader.get_b().await.expect("Call to `get_b` failed");
 
     println!("b = {:?}", b);
+
+    let arc_contract = Arc::new(contract);
+
+    let handle = tokio::spawn(async move {
+        other_func(arc_contract.clone()).await;
+    });
+
+    handle.await.unwrap();
 }
+
+async fn other_func<A: ConnectedAccount + Sync>(_contract: Arc<MyContract<A>>) {}
