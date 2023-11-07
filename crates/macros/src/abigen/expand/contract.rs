@@ -25,7 +25,7 @@ impl CairoContract {
                 }
 
                 pub fn reader(&self) -> #reader<A::Provider> {
-                    MyContractReader::new(self.address, self.account.provider())
+                    #reader::new(self.address, self.account.provider())
                 }
             }
 
