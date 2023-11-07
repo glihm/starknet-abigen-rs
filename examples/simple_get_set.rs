@@ -126,4 +126,31 @@ async fn main() {
     handle.await.unwrap();
 }
 
-async fn other_func<A: ConnectedAccount + Sync>(_contract: Arc<MyContract<A>>) {}
+async fn other_func<A: ConnectedAccount + Sync>(contract: Arc<MyContract<A>>) {
+    // As `Arc<MyContract<A>>` is also implementing `ConnectedAccount`,
+    // passing a contract you also have the reader that you can retrieve anytime
+    // by calling `contract.reader()`.
+    let set_b = contract
+        .set_b(&u256 {
+            low: 0x1234,
+            high: 0,
+        })
+        .await
+        .expect("Call to `set_b` failed");
+
+    let reader = contract.reader();
+
+    loop {
+        match reader.get_tx_status(set_b.transaction_hash).await.as_ref() {
+            "ok" => break,
+            "pending" => tokio::time::sleep(tokio::time::Duration::from_secs(1)).await,
+            e => {
+                println!("Transaction error: {e}");
+                break;
+            }
+        }
+    }
+
+    let b = reader.get_b().await.expect("Call to `get_b` failed");
+    println!("b = {:?}", b);
+}
