@@ -19,9 +19,9 @@ Please consider for now using `starknet v0.6.0` as `0.7.*` has some breaking cha
 # Cargo.toml of your project
 
 [dependencies]
-starknet-abigen-parser = { git = "https://github.com/glihm/starknet-abigen-rs", tag = "v0.1.2" }
-starknet-abigen-macros = { git = "https://github.com/glihm/starknet-abigen-rs", tag = "v0.1.2" }
-starknet = "0.6.0"
+starknet-abigen-parser = { git = "https://github.com/glihm/starknet-abigen-rs", branch = "legacy" }
+starknet-abigen-macros = { git = "https://github.com/glihm/starknet-abigen-rs", branch = "legacy" }
+starknet = "0.7.0"
 ```
 
 ```rust
