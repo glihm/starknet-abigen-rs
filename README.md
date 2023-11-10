@@ -13,15 +13,14 @@ reaching a first good milestrone.
 ## How to use it
 
 For now this crate is not yet published on `crated.io`, but here is how you can do the following.
-Please consider for now using `starknet v0.6.0` as `0.7.*` has some breaking changes not yet implemented here.
 
 ```toml
 # Cargo.toml of your project
 
 [dependencies]
-starknet-abigen-parser = { git = "https://github.com/glihm/starknet-abigen-rs", tag = "v0.1.2" }
-starknet-abigen-macros = { git = "https://github.com/glihm/starknet-abigen-rs", tag = "v0.1.2" }
-starknet = "0.6.0"
+starknet-abigen-parser = { git = "https://github.com/glihm/starknet-abigen-rs", tag = "v0.1.3" }
+starknet-abigen-macros = { git = "https://github.com/glihm/starknet-abigen-rs", tag = "v0.1.3" }
+starknet = "0.7.0"
 ```
 
 ```rust
