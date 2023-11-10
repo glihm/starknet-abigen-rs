@@ -1,0 +1,96 @@
+[
+  {
+    "members": [
+      {
+        "name": "low",
+        "offset": 0,
+        "type": "felt"
+      },
+      {
+        "name": "high",
+        "offset": 1,
+        "type": "felt"
+      }
+    ],
+    "name": "Uint256",
+    "size": 2,
+    "type": "struct"
+  },
+  {
+    "data": [
+      {
+        "name": "previousOwner",
+        "type": "felt"
+      },
+      {
+        "name": "newOwner",
+        "type": "felt"
+      }
+    ],
+    "keys": [],
+    "name": "OwnershipTransferred",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "name": "owner",
+        "type": "felt"
+      }
+    ],
+    "name": "constructor",
+    "outputs": [],
+    "type": "constructor"
+  },
+  {
+    "inputs": [
+      {
+        "name": "new_address",
+        "type": "felt"
+      }
+    ],
+    "name": "transfer_ownership",
+    "outputs": [],
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "name": "block_number_len",
+        "type": "felt"
+      },
+      {
+        "name": "block_number",
+        "type": "Uint256*"
+      },
+      {
+        "name": "block_hash_len",
+        "type": "felt"
+      },
+      {
+        "name": "block_hash",
+        "type": "felt*"
+      }
+    ],
+    "name": "set_blockhashes",
+    "outputs": [],
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "name": "block_number",
+        "type": "Uint256"
+      }
+    ],
+    "name": "get_blockhash",
+    "outputs": [
+      {
+        "name": "blockhash",
+        "type": "felt"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]

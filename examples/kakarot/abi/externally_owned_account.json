@@ -1,0 +1,234 @@
+[
+  {
+    "members": [
+      {
+        "name": "low",
+        "offset": 0,
+        "type": "felt"
+      },
+      {
+        "name": "high",
+        "offset": 1,
+        "type": "felt"
+      }
+    ],
+    "name": "Uint256",
+    "size": 2,
+    "type": "struct"
+  },
+  {
+    "members": [
+      {
+        "name": "to",
+        "offset": 0,
+        "type": "felt"
+      },
+      {
+        "name": "selector",
+        "offset": 1,
+        "type": "felt"
+      },
+      {
+        "name": "data_offset",
+        "offset": 2,
+        "type": "felt"
+      },
+      {
+        "name": "data_len",
+        "offset": 3,
+        "type": "felt"
+      }
+    ],
+    "name": "CallArray",
+    "size": 4,
+    "type": "struct"
+  },
+  {
+    "data": [
+      {
+        "name": "evm_contract_address",
+        "type": "felt"
+      },
+      {
+        "name": "starknet_contract_address",
+        "type": "felt"
+      }
+    ],
+    "keys": [],
+    "name": "evm_contract_deployed",
+    "type": "event"
+  },
+  {
+    "data": [
+      {
+        "name": "msg_hash",
+        "type": "Uint256"
+      },
+      {
+        "name": "response_len",
+        "type": "felt"
+      },
+      {
+        "name": "response",
+        "type": "felt*"
+      },
+      {
+        "name": "success",
+        "type": "felt"
+      }
+    ],
+    "keys": [],
+    "name": "transaction_executed",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "name": "kakarot_address",
+        "type": "felt"
+      },
+      {
+        "name": "evm_address",
+        "type": "felt"
+      }
+    ],
+    "name": "initialize",
+    "outputs": [],
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "name": "call_array_len",
+        "type": "felt"
+      },
+      {
+        "name": "call_array",
+        "type": "CallArray*"
+      },
+      {
+        "name": "calldata_len",
+        "type": "felt"
+      },
+      {
+        "name": "calldata",
+        "type": "felt*"
+      }
+    ],
+    "name": "__validate__",
+    "outputs": [],
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "name": "class_hash",
+        "type": "felt"
+      }
+    ],
+    "name": "__validate_declare__",
+    "outputs": [],
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "name": "call_array_len",
+        "type": "felt"
+      },
+      {
+        "name": "call_array",
+        "type": "CallArray*"
+      },
+      {
+        "name": "calldata_len",
+        "type": "felt"
+      },
+      {
+        "name": "calldata",
+        "type": "felt*"
+      }
+    ],
+    "name": "__execute__",
+    "outputs": [
+      {
+        "name": "response_len",
+        "type": "felt"
+      },
+      {
+        "name": "response",
+        "type": "felt*"
+      }
+    ],
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "name": "interface_id",
+        "type": "felt"
+      }
+    ],
+    "name": "supports_interface",
+    "outputs": [
+      {
+        "name": "success",
+        "type": "felt"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "get_evm_address",
+    "outputs": [
+      {
+        "name": "evm_address",
+        "type": "felt"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "bytecode",
+    "outputs": [
+      {
+        "name": "bytecode_len",
+        "type": "felt"
+      },
+      {
+        "name": "bytecode",
+        "type": "felt*"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "bytecode_len",
+    "outputs": [
+      {
+        "name": "len",
+        "type": "felt"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "account_type",
+    "outputs": [
+      {
+        "name": "type",
+        "type": "felt"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]

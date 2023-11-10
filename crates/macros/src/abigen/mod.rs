@@ -27,6 +27,8 @@ use expand::{Expandable, ExpandableEvent};
 mod contract_abi;
 use contract_abi::ContractAbi;
 
+pub mod legacy;
+
 use crate::abigen::expand::utils;
 
 pub fn abigen_internal(input: TokenStream) -> TokenStream {
@@ -127,7 +129,8 @@ fn parse_entry(
             // Functions cannot be generic when they are entry point.
             // From this statement, we can safely assume that any function name is
             // unique.
-            let cf = CairoFunction::new(&f.name, f.state_mutability.clone(), &f.inputs, &f.outputs);
+            let outputs = vec![];
+            let cf = CairoFunction::new(&f.name, f.state_mutability.clone(), &f.inputs, &outputs);
             match f.state_mutability {
                 StateMutability::View => views.push(cf.expand_impl()),
                 StateMutability::External => externals.push(cf.expand_impl()),

@@ -23,21 +23,32 @@ fn get_func_inputs(inputs: &[(String, AbiTypeAny)]) -> Vec<TokenStream2> {
     out
 }
 
+fn get_func_outputs(outputs: &[(String, AbiTypeAny)]) -> Vec<TokenStream2> {
+    let mut out: Vec<TokenStream2> = vec![];
+
+    for (name, abi_type) in outputs {
+        let _name = str_to_ident(name);
+        let ty = str_to_type(&abi_type.to_rust_type());
+        out.push(quote!(#ty));
+    }
+
+    out
+}
+
 impl Expandable for CairoFunction {
     fn expand_decl(&self) -> TokenStream2 {
         let func_name = str_to_ident(&self.name);
         let inputs = get_func_inputs(&self.inputs);
 
         let output = match self.state_mutability {
-            StateMutability::View => match &self.output {
-                Some(o) => {
-                    let oty = str_to_type(&o.to_rust_type());
-                    quote!(-> starknet_abigen_parser::cairo_types::Result<#oty>)
-                }
-                None => {
+            StateMutability::View => {
+                if self.outputs.is_empty() {
                     quote!(-> starknet_abigen_parser::cairo_types::Result<()>)
+                } else {
+                    let otys = get_func_outputs(&self.outputs);
+                    quote!(-> starknet_abigen_parser::cairo_types::Result<(#(#otys),*)>)
                 }
-            },
+            }
             StateMutability::External => {
                 quote!(-> Result<starknet::core::types::InvokeTransactionResult,
                        starknet::accounts::AccountError<A::SignError>>
@@ -71,17 +82,21 @@ impl Expandable for CairoFunction {
             serializations.push(ser);
         }
 
-        let out_res = match &self.output {
-            Some(o) => {
-                let out_type_path = str_to_type(&o.to_rust_type_path());
-                match o {
+        let out_res = if self.outputs.is_empty() {
+            quote!(Ok(()))
+        } else {
+            let mut out = vec![];
+            for (_name, abi_type) in &self.outputs {
+                let out_type_path = str_to_type(&abi_type.to_rust_type_path());
+                match abi_type {
                     // Tuples type used as rust type path must be surrounded
                     // by LT/GT.
-                    AbiTypeAny::Tuple(_) => quote!(<#out_type_path>::deserialize(&r, 0)),
-                    _ => quote!(#out_type_path::deserialize(&r, 0)),
+                    AbiTypeAny::Tuple(_) => out.push(quote!(<#out_type_path>::deserialize(&r, 0)?)),
+                    _ => out.push(quote!(#out_type_path::deserialize(&r, 0)?)),
                 }
             }
-            None => quote!(Ok(())),
+
+            quote!(Ok((#(#out),*)))
         };
 
         match &self.state_mutability {

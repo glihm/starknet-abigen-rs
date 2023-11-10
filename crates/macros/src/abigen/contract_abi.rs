@@ -17,7 +17,7 @@
 //!    [{ .... }]
 //! "#);
 //!
-use starknet::core::types::contract::AbiEntry;
+use starknet::core::types::contract::{legacy::RawLegacyAbiEntry, AbiEntry};
 use std::fs::File;
 use syn::{
     parse::{Parse, ParseStream, Result},
@@ -45,5 +45,30 @@ impl Parse for ContractAbi {
             .map_err(|e| syn::Error::new(json_path.span(), format!("JSON parse error: {}", e)))?;
 
         Ok(ContractAbi { name, abi })
+    }
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct ContractAbiLegacy {
+    pub name: Ident,
+    pub abi: Vec<RawLegacyAbiEntry>,
+}
+
+impl Parse for ContractAbiLegacy {
+    fn parse(input: ParseStream) -> Result<Self> {
+        let name = input.parse::<Ident>()?;
+        input.parse::<Token![,]>()?;
+
+        // Path rooted to the Cargo.toml location.
+        let json_path = input.parse::<LitStr>()?;
+
+        let abi = serde_json::from_reader::<_, Vec<RawLegacyAbiEntry>>(
+            File::open(json_path.value()).map_err(|e| {
+                syn::Error::new(json_path.span(), format!("JSON open file error: {}", e))
+            })?,
+        )
+        .map_err(|e| syn::Error::new(json_path.span(), format!("JSON parse error: {}", e)))?;
+
+        Ok(ContractAbiLegacy { name, abi })
     }
 }

@@ -1,4 +1,4 @@
-use starknet::core::types::contract::{AbiNamedMember, AbiOutput, StateMutability};
+use starknet::core::types::contract::{AbiNamedMember, StateMutability};
 
 use super::abi_types::AbiTypeAny;
 
@@ -7,10 +7,8 @@ pub struct CairoFunction {
     pub name: String,
     pub state_mutability: StateMutability,
     pub inputs: Vec<(String, AbiTypeAny)>,
-    // For now, only one output type is supported (or none).
-    // TODO: investigate the cases where more than one output is
-    // present in the ABI.
-    pub output: Option<AbiTypeAny>,
+    // cairo 0 can have multiple outputs.
+    pub outputs: Vec<(String, AbiTypeAny)>,
 }
 
 impl CairoFunction {
@@ -19,17 +17,14 @@ impl CairoFunction {
         abi_name: &str,
         state_mutability: StateMutability,
         inputs: &[AbiNamedMember],
-        outputs: &Vec<AbiOutput>,
+        outputs: &[AbiNamedMember],
     ) -> CairoFunction {
         let name = abi_name.to_string();
 
-        let output = if !outputs.is_empty() {
-            // For now, only first output is considered.
-            // TODO: investigate when we can have several outputs.
-            Some(AbiTypeAny::from_string(&outputs[0].r#type))
-        } else {
-            None
-        };
+        let outputs = outputs
+            .iter()
+            .map(|o| (o.name.clone(), AbiTypeAny::from_string(&o.r#type)))
+            .collect();
 
         let inputs = inputs
             .iter()
@@ -40,7 +35,7 @@ impl CairoFunction {
             name,
             state_mutability,
             inputs,
-            output,
+            outputs,
         }
     }
 }

@@ -1,6 +1,6 @@
 //! CairoType implementation for `Vec`.
 //! They are used for Array and Span cairo types.
-use crate::cairo_types::{CairoType, Error, Result};
+use crate::cairo_types::{CairoType, Result};
 use starknet::core::types::FieldElement;
 
 impl<T, RT> CairoType for Vec<T>
@@ -14,27 +14,23 @@ where
     #[inline]
     fn serialized_size(rust: &Self::RustType) -> usize {
         let data = rust;
-        // 1 + because the length is always the first felt.
-        1 + data.iter().map(T::serialized_size).sum::<usize>()
+        // In cairo 0, the length is always passed as an argument.
+        data.iter().map(T::serialized_size).sum::<usize>()
     }
 
     fn serialize(rust: &Self::RustType) -> Vec<FieldElement> {
-        let mut out: Vec<FieldElement> = vec![rust.len().into()];
+        // No length in array for cairo 0.
+        let mut out: Vec<FieldElement> = vec![];
         rust.iter().for_each(|r| out.extend(T::serialize(r)));
         out
     }
 
     fn deserialize(felts: &[FieldElement], offset: usize) -> Result<Self::RustType> {
-        let len: usize = usize::from_str_radix(format!("{:x}", felts[offset]).as_str(), 16)
-            .map_err(|_| {
-                Error::Deserialize("First felt of an array must fit into usize".to_string())
-            })?;
-
         let mut out: Vec<RT> = vec![];
-        let mut offset = offset + 1;
+        let mut offset = offset;
 
         loop {
-            if out.len() == len {
+            if out.len() == felts.len() {
                 break;
             }
 

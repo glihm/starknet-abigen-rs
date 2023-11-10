@@ -211,7 +211,15 @@ impl AbiTypeAny {
         }
 
         if !current_type.is_empty() {
-            generic_types.push(AbiTypeAny::Basic((&current_type).into()));
+            // Cairo 0 felt array are not generic.
+            if current_type == "felt*" {
+                generic_types.push(AbiTypeAny::Array(AbiArray::new(
+                    &current_type,
+                    AbiTypeAny::Basic("felt".into()),
+                )));
+            } else {
+                generic_types.push(AbiTypeAny::Basic((&current_type).into()));
+            }
         }
 
         if generic_types.is_empty() {

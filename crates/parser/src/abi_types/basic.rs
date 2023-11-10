@@ -27,6 +27,7 @@ impl AbiBasic {
         let s = self.get_cairo_type_name();
         match s.as_str() {
             "felt252" => "starknet::core::types::FieldElement".to_string(),
+            "felt" => "starknet::core::types::FieldElement".to_string(),
             "ContractAddress" => {
                 format!("{}::ContractAddress", CAIRO_TYPES_PATH)
             }
