@@ -139,6 +139,7 @@ impl Expandable for CairoFunction {
                 // TODO: if it's possible to do it with lifetime,
                 // this can be try in an issue.
                 quote! {
+                    #[allow(clippy::ptr_arg)]
                     pub fn #func_name_call(
                         &self,
                         #(#inputs),*
@@ -155,6 +156,7 @@ impl Expandable for CairoFunction {
                         }
                     }
 
+                    #[allow(clippy::ptr_arg)]
                     pub fn #func_name_ident(
                         &self,
                         #(#inputs),*
