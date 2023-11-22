@@ -17,6 +17,8 @@ pub use generic::AbiGeneric;
 pub mod tuple;
 pub use tuple::AbiTuple;
 
+use crate::cairo_types::CAIRO_TYPES_PATH;
+
 /// If a generic type is flagged as frozen, it means
 /// that at least one type in the ABI were found
 /// different from the generic one. In that case, we
@@ -46,6 +48,50 @@ pub enum AbiTypeAny {
     // Generics is for struct and enums.
     Generic(AbiGeneric),
     Tuple(AbiTuple),
+}
+
+impl AbiTypeAny {
+    pub fn to_rust_type_legacy_check(&self, is_legacy: bool) -> String {
+        match self {
+            AbiTypeAny::Basic(a) => a.to_rust_type(),
+            AbiTypeAny::Array(a) => {
+                if is_legacy {
+                    let inner = a
+                        .to_rust_type()
+                        .trim_start_matches("Vec<")
+                        .trim_end_matches('>')
+                        .trim()
+                        .to_string();
+                    format!("{}::CairoArrayLegacy<{}>", CAIRO_TYPES_PATH, inner)
+                } else {
+                    a.to_rust_type()
+                }
+            }
+            AbiTypeAny::Generic(a) => a.to_rust_type(),
+            AbiTypeAny::Tuple(a) => a.to_rust_type(),
+        }
+    }
+
+    pub fn to_rust_type_path_legacy_check(&self, is_legacy: bool) -> String {
+        match self {
+            AbiTypeAny::Basic(a) => a.to_rust_type_path(),
+            AbiTypeAny::Array(a) => {
+                if is_legacy {
+                    let inner = a
+                        .to_rust_type_path()
+                        .trim_start_matches("Vec::<")
+                        .trim_end_matches('>')
+                        .trim()
+                        .to_string();
+                    format!("{}::CairoArrayLegacy::<{}>", CAIRO_TYPES_PATH, inner)
+                } else {
+                    a.to_rust_type_path()
+                }
+            }
+            AbiTypeAny::Generic(a) => a.to_rust_type_path(),
+            AbiTypeAny::Tuple(a) => a.to_rust_type_path(),
+        }
+    }
 }
 
 pub trait AbiType {
@@ -211,7 +257,15 @@ impl AbiTypeAny {
         }
 
         if !current_type.is_empty() {
-            generic_types.push(AbiTypeAny::Basic((&current_type).into()));
+            // Cairo 0 felt array are not generic.
+            if current_type == "felt*" {
+                generic_types.push(AbiTypeAny::Array(AbiArray::new(
+                    &current_type,
+                    AbiTypeAny::Basic("felt".into()),
+                )));
+            } else {
+                generic_types.push(AbiTypeAny::Basic((&current_type).into()));
+            }
         }
 
         if generic_types.is_empty() {

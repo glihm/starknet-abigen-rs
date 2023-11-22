@@ -28,17 +28,14 @@ use quote::quote;
 
 use starknet::core::types::contract::StateMutability;
 
-use starknet_abigen_parser::{
-    abi_types::{AbiType, AbiTypeAny},
-    CairoFunction,
-};
+use starknet_abigen_parser::{abi_types::AbiTypeAny, CairoFunction};
 
-fn get_func_inputs(inputs: &[(String, AbiTypeAny)]) -> Vec<TokenStream2> {
+fn get_func_inputs(inputs: &[(String, AbiTypeAny)], is_legacy: bool) -> Vec<TokenStream2> {
     let mut out: Vec<TokenStream2> = vec![];
 
     for (name, abi_type) in inputs {
         let name = str_to_ident(name);
-        let ty = str_to_type(&abi_type.to_rust_type());
+        let ty = str_to_type(&abi_type.to_rust_type_legacy_check(is_legacy));
         // We can pass a reference here as serialize always takes a reference.
         out.push(quote!(#name:&#ty));
     }
@@ -46,45 +43,31 @@ fn get_func_inputs(inputs: &[(String, AbiTypeAny)]) -> Vec<TokenStream2> {
     out
 }
 
-impl Expandable for CairoFunction {
-    fn expand_decl(&self) -> TokenStream2 {
-        let func_name = str_to_ident(&self.name);
-        let inputs = get_func_inputs(&self.inputs);
+fn get_func_outputs(outputs: &[AbiTypeAny], is_legacy: bool) -> Vec<TokenStream2> {
+    let mut out: Vec<TokenStream2> = vec![];
 
-        let output = match self.state_mutability {
-            StateMutability::View => match &self.output {
-                Some(o) => {
-                    let oty = str_to_type(&o.to_rust_type());
-                    quote!(-> starknet_abigen_parser::cairo_types::Result<#oty>)
-                }
-                None => {
-                    quote!(-> starknet_abigen_parser::cairo_types::Result<()>)
-                }
-            },
-            StateMutability::External => {
-                quote!(-> Result<starknet::core::types::InvokeTransactionResult,
-                       starknet::accounts::AccountError<A::SignError>>
-                )
-            }
-        };
-
-        quote! {
-            pub async fn #func_name(
-                &self,
-                #(#inputs),*
-            ) #output
-        }
+    for abi_type in outputs {
+        let ty = str_to_type(&abi_type.to_rust_type_legacy_check(is_legacy));
+        out.push(quote!(#ty));
     }
 
-    fn expand_impl(&self) -> TokenStream2 {
-        let _decl = self.expand_decl();
+    out
+}
+
+impl Expandable for CairoFunction {
+    fn expand_decl(&self, _is_legacy: bool) -> TokenStream2 {
+        quote!()
+    }
+
+    fn expand_impl(&self, is_legacy: bool) -> TokenStream2 {
+        let _decl = self.expand_decl(is_legacy);
         let func_name = &self.name;
         let func_name_ident = str_to_ident(&self.name);
 
         let mut serializations: Vec<TokenStream2> = vec![];
         for (name, abi_type) in &self.inputs {
             let name = str_to_ident(name);
-            let ty = str_to_type(&abi_type.to_rust_type_path());
+            let ty = str_to_type(&abi_type.to_rust_type_path_legacy_check(is_legacy));
 
             let ser = match abi_type {
                 AbiTypeAny::Tuple(_) => quote! {
@@ -95,19 +78,27 @@ impl Expandable for CairoFunction {
             serializations.push(ser);
         }
 
-        let out_type = match &self.output {
-            Some(o) => {
-                let out_type = str_to_type(&o.to_rust_type());
-                quote!(#out_type)
-            }
-            None => quote!(()),
+        let out_type = if self.outputs.is_empty() {
+            quote!(())
+        } else if is_legacy {
+            // Cairo 0 always returns a tuple of values, if any.
+            let otys = get_func_outputs(&self.outputs, is_legacy);
+            quote!((#(#otys),*))
+        } else {
+            // We consider only one type for Cairo 1, if any.
+            // The outputs is a list for historical reason from Cairo 0
+            // were tuples or output were used as returned values.
+            let out_type = str_to_type(&self.outputs[0].to_rust_type_legacy_check(is_legacy));
+            quote!(#out_type)
         };
 
-        let inputs = get_func_inputs(&self.inputs);
+        let inputs = get_func_inputs(&self.inputs, is_legacy);
         let func_name_call = str_to_ident(&format!("{}_getcall", self.name));
 
         match &self.state_mutability {
             StateMutability::View => quote! {
+                #[allow(clippy::ptr_arg)]
+                #[allow(clippy::too_many_arguments)]
                 pub fn #func_name_ident(
                     &self,
                     #(#inputs),*
@@ -140,6 +131,7 @@ impl Expandable for CairoFunction {
                 // this can be try in an issue.
                 quote! {
                     #[allow(clippy::ptr_arg)]
+                    #[allow(clippy::too_many_arguments)]
                     pub fn #func_name_call(
                         &self,
                         #(#inputs),*

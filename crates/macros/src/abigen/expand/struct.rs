@@ -5,23 +5,20 @@ use super::{
     Expandable,
 };
 
-use starknet_abigen_parser::{
-    abi_types::{AbiType, AbiTypeAny},
-    CairoStruct,
-};
+use starknet_abigen_parser::{abi_types::AbiTypeAny, CairoStruct};
 
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 use syn::Ident;
 
 impl Expandable for CairoStruct {
-    fn expand_decl(&self) -> TokenStream2 {
+    fn expand_decl(&self, is_legacy: bool) -> TokenStream2 {
         let struct_name = str_to_ident(&self.get_name());
 
         let mut members: Vec<TokenStream2> = vec![];
         for (name, abi_type) in &self.members {
             let name = str_to_ident(name);
-            let ty = str_to_type(&abi_type.to_rust_type());
+            let ty = str_to_type(&abi_type.to_rust_type_legacy_check(is_legacy));
 
             members.push(quote!(#name: #ty));
         }
@@ -45,7 +42,7 @@ impl Expandable for CairoStruct {
         }
     }
 
-    fn expand_impl(&self) -> TokenStream2 {
+    fn expand_impl(&self, is_legacy: bool) -> TokenStream2 {
         let struct_name = str_to_ident(&self.get_name());
 
         let mut sizes: Vec<TokenStream2> = vec![];
@@ -58,7 +55,7 @@ impl Expandable for CairoStruct {
             let name = str_to_ident(name);
             names.push(quote!(#name));
 
-            let ty = str_to_type(&abi_type.to_rust_type_path());
+            let ty = str_to_type(&abi_type.to_rust_type_path_legacy_check(is_legacy));
 
             // Tuples type used as rust type item path must be surrounded
             // by angle brackets.

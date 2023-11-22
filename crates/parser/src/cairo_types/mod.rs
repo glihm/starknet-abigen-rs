@@ -10,6 +10,7 @@ mod error;
 pub use error::{Error, Result};
 
 pub mod types;
+pub use types::array_legacy::*;
 pub use types::starknet::*;
 pub use types::*;
 

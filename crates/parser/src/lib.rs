@@ -21,7 +21,7 @@ mod cairo_enum;
 pub use cairo_enum::CairoEnum;
 
 mod cairo_function;
-pub use cairo_function::CairoFunction;
+pub use cairo_function::{CairoFunction, CairoFunctionLegacy};
 
 mod cairo_event;
 pub use cairo_event::{CairoEvent, CairoEventInner};

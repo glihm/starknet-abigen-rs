@@ -5,29 +5,26 @@ use super::{
 };
 
 use starknet::core::types::contract::EventFieldKind;
-use starknet_abigen_parser::{
-    abi_types::{AbiType, AbiTypeAny},
-    CairoEvent, CairoEventInner,
-};
+use starknet_abigen_parser::{abi_types::AbiTypeAny, CairoEvent, CairoEventInner};
 
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 
 impl ExpandableEvent for CairoEvent {
-    fn expand_decl(&self) -> TokenStream2 {
+    fn expand_decl(&self, is_legacy: bool) -> TokenStream2 {
         let decl = match &self.inner {
-            CairoEventInner::Struct(s) => s.expand_decl(),
-            CairoEventInner::Enum(e) => e.expand_decl(),
+            CairoEventInner::Struct(s) => s.expand_decl(is_legacy),
+            CairoEventInner::Enum(e) => e.expand_decl(is_legacy),
         };
         quote!(#decl)
     }
 
-    fn expand_impl(&self, events: &[CairoEvent]) -> TokenStream2 {
+    fn expand_impl(&self, is_legacy: bool, events: &[CairoEvent]) -> TokenStream2 {
         let mut tokens = vec![];
 
         let inner_imp = match &self.inner {
-            CairoEventInner::Struct(s) => s.expand_impl(),
-            CairoEventInner::Enum(e) => e.expand_impl(),
+            CairoEventInner::Struct(s) => s.expand_impl(is_legacy),
+            CairoEventInner::Enum(e) => e.expand_impl(is_legacy),
         };
 
         tokens.push(quote!(#inner_imp));
@@ -80,7 +77,8 @@ impl ExpandableEvent for CairoEvent {
                             let kind = &cev.fields_kinds[idx];
                             let name_str = str_to_litstr(name);
                             let name = str_to_ident(name);
-                            let ty = str_to_type(&abi_type.to_rust_type_path());
+                            let ty =
+                                str_to_type(&abi_type.to_rust_type_path_legacy_check(is_legacy));
                             let ty_punctuated = match abi_type {
                                 AbiTypeAny::Tuple(_) => quote!(<#ty>),
                                 _ => quote!(#ty),
@@ -116,7 +114,8 @@ impl ExpandableEvent for CairoEvent {
                             let kind = &cev.fields_kinds[idx];
                             let name_str = str_to_litstr(name);
                             let name = str_to_ident(name);
-                            let ty = str_to_type(&abi_type.to_rust_type_path());
+                            let ty =
+                                str_to_type(&abi_type.to_rust_type_path_legacy_check(is_legacy));
                             let ty_punctuated = match abi_type {
                                 AbiTypeAny::Tuple(_) => quote!(<#ty>),
                                 _ => quote!(#ty),

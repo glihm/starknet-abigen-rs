@@ -27,6 +27,8 @@ use expand::{Expandable, ExpandableEvent};
 mod contract_abi;
 use contract_abi::ContractAbi;
 
+pub mod legacy;
+
 use crate::abigen::expand::utils;
 
 pub fn abigen_internal(input: TokenStream) -> TokenStream {
@@ -56,18 +58,18 @@ pub fn abigen_internal(input: TokenStream) -> TokenStream {
     }
 
     for (_, cs) in structs {
-        tokens.push(cs.expand_decl());
-        tokens.push(cs.expand_impl());
+        tokens.push(cs.expand_decl(false));
+        tokens.push(cs.expand_impl(false));
     }
 
     for (_, ce) in enums {
-        tokens.push(ce.expand_decl());
-        tokens.push(ce.expand_impl());
+        tokens.push(ce.expand_decl(false));
+        tokens.push(ce.expand_impl(false));
     }
 
     for ev in &events {
-        tokens.push(ev.expand_decl());
-        tokens.push(ev.expand_impl(&events));
+        tokens.push(ev.expand_decl(false));
+        tokens.push(ev.expand_impl(false, &events));
     }
 
     let reader = utils::str_to_ident(format!("{}Reader", contract_name).as_str());
@@ -129,8 +131,8 @@ fn parse_entry(
             // unique.
             let cf = CairoFunction::new(&f.name, f.state_mutability.clone(), &f.inputs, &f.outputs);
             match f.state_mutability {
-                StateMutability::View => views.push(cf.expand_impl()),
-                StateMutability::External => externals.push(cf.expand_impl()),
+                StateMutability::View => views.push(cf.expand_impl(false)),
+                StateMutability::External => externals.push(cf.expand_impl(false)),
             }
         }
         AbiEntry::Event(ev) => {

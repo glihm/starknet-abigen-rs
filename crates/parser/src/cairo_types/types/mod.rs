@@ -1,4 +1,5 @@
 pub mod array;
+pub mod array_legacy;
 pub mod boolean;
 pub mod felt;
 pub mod integers;
