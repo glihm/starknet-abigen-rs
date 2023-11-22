@@ -1,10 +1,33 @@
+//! # Functions types expansion
+//!
+//! This module contains the auto-generated types
+//! for the functions of a contract for which the bindings are requested.
+//!
+//! Starknet has two types of functions:
+//!
+//! * `Views` - Which are also named `FunctionCall` that don't modifying the state. Readonly operations.
+//! * `Externals` - Where a transaction is involved and can alter the state. Write operations.
+//!
+//! For each of these functions, there is a struct that is dedicated for each function of the contract,
+//! based on it's state mutability found in the ABI itself.
+//!
+//! * `FCall` - Struct for readonly functions.
+//! * `FInvoke` - Struct for transaction based functions.
+//!
+//! ## Examples
+//!
+//! ```ignore (pseudo-code)
+//! // TODO
+//! ```
 use super::{
     utils::{str_to_ident, str_to_type},
     Expandable,
 };
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
+
 use starknet::core::types::contract::StateMutability;
+
 use starknet_abigen_parser::{
     abi_types::{AbiType, AbiTypeAny},
     CairoFunction,
@@ -54,8 +77,9 @@ impl Expandable for CairoFunction {
     }
 
     fn expand_impl(&self) -> TokenStream2 {
-        let decl = self.expand_decl();
+        let _decl = self.expand_decl();
         let func_name = &self.name;
+        let func_name_ident = str_to_ident(&self.name);
 
         let mut serializations: Vec<TokenStream2> = vec![];
         for (name, abi_type) in &self.inputs {
@@ -71,51 +95,49 @@ impl Expandable for CairoFunction {
             serializations.push(ser);
         }
 
-        let out_res = match &self.output {
+        let out_type = match &self.output {
             Some(o) => {
-                let out_type_path = str_to_type(&o.to_rust_type_path());
-                match o {
-                    // Tuples type used as rust type path must be surrounded
-                    // by LT/GT.
-                    AbiTypeAny::Tuple(_) => quote!(<#out_type_path>::deserialize(&r, 0)),
-                    _ => quote!(#out_type_path::deserialize(&r, 0)),
-                }
+                let out_type = str_to_type(&o.to_rust_type());
+                quote!(#out_type)
             }
-            None => quote!(Ok(())),
+            None => quote!(()),
         };
+
+        let inputs = get_func_inputs(&self.inputs);
+        let func_name_call = str_to_ident(&format!("{}_getcall", self.name));
 
         match &self.state_mutability {
             StateMutability::View => quote! {
-                #[allow(clippy::ptr_arg)]
-                #decl {
+                pub fn #func_name_ident(
+                    &self,
+                    #(#inputs),*
+                ) -> starknet_abigen_parser::call::FCall<'p, P, #out_type> {
                     use starknet_abigen_parser::CairoType;
-                    use starknet::core::types::{BlockId, BlockTag};
 
                     let mut __calldata = vec![];
                     #(#serializations)*
 
-                    let r = self.provider
-                        .call(
-                            starknet::core::types::FunctionCall {
-                                contract_address: self.address,
-                                entry_point_selector: starknet::macros::selector!(#func_name),
-                                calldata: __calldata,
-                            },
-                            self.call_block_id,
-                        )
-                        .await.map_err(
-                            |err|
-                            starknet_abigen_parser::cairo_types::Error::Deserialize(
-                                format!("Deserialization error {}", err)))?;
+                    let __call = starknet::core::types::FunctionCall {
+                        contract_address: self.address,
+                        entry_point_selector: starknet::macros::selector!(#func_name),
+                        calldata: __calldata,
+                    };
 
-                    #out_res
+                    starknet_abigen_parser::call::FCall::new(
+                        __call,
+                        self.provider,
+                    )
                 }
             },
             StateMutability::External => {
-                // Also generate the Call getter for the function.
-                let func_name_call = str_to_ident(&format!("{}_getcall", self.name));
-                let inputs = get_func_inputs(&self.inputs);
-
+                // For now, Execution can't return the list of calls.
+                // This would be helpful to easily access the calls
+                // without having to add `_getcall()` method.
+                // If starknet-rs provides a way to get the calls,
+                // we can remove `_getcall()` method.
+                //
+                // TODO: if it's possible to do it with lifetime,
+                // this can be try in an issue.
                 quote! {
                     pub fn #func_name_call(
                         &self,
@@ -133,35 +155,23 @@ impl Expandable for CairoFunction {
                         }
                     }
 
-                    #[allow(clippy::ptr_arg)]
-                    #decl {
+                    pub fn #func_name_ident(
+                        &self,
+                        #(#inputs),*
+                    ) -> starknet::accounts::Execution<A> {
                         use starknet_abigen_parser::CairoType;
-                        use starknet::accounts::Account;
 
                         let mut __calldata = vec![];
                         #(#serializations)*
 
-                        let calls = vec![starknet::accounts::Call {
+                        let __call = starknet::accounts::Call {
                             to: self.address,
                             selector: starknet::macros::selector!(#func_name),
                             calldata: __calldata,
-                        }];
+                        };
 
-                        // TODO: add a way for fee estimation and max fee to be parametrizable.
-                        self.account.execute(calls).send().await
+                        self.account.execute(vec![__call])
                     }
-
-                    // We can add a function *_estimate_fee?
-                    //
-                    // TODO: How can we add Fee configuration + estimate fee out of the box.
-                    // maybe two methods are generated, one for actually running, the other
-                    // for estimate the fees.
-                    // Or, we can add a config struct as the last argument? Or directly
-                    // at the initialization of the contract, we can give a config for
-                    // fees (manual, estimated + scale factor).
-                    // The estimate only may be done at the function level, to avoid
-                    // altering the contract instance itself and hence races.
-
                 }
             }
         }

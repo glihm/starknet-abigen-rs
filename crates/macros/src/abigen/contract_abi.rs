@@ -1,22 +1,16 @@
 //! Defines the arguments of the `abigen` macro.
 //!
-//! `ContractAbi` is expected to the argument
+//! `ContractAbi` is expected to be the argument
 //! passed to the macro. We should then parse the
 //! token stream to ensure the arguments are correct.
 //!
-//! At this moment, the macro supports two fashions:
+//! At this moment, the macro supports one fashion:
 //!
-//! Loading from a file.
-//!
+//! Loading from a file with only the ABI array.
 //! abigen!(ContractName, "path/to/abi.json"
 //!
-//!
-//! Loading from a literal string ABI.
-//!
-//! abigen!(ContractName, r#"
-//!    [{ .... }]
-//! "#);
-//!
+//! TODO: support the full artifact JSON to be able to
+//! deploy contracts from abigen.
 use starknet::core::types::contract::AbiEntry;
 use std::fs::File;
 use syn::{

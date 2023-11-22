@@ -76,7 +76,7 @@ pub fn abigen_internal(input: TokenStream) -> TokenStream {
             #(#externals)*
         }
 
-        impl<'a, P: starknet::providers::Provider + Sync> #reader<'a, P> {
+        impl<'p, P: starknet::providers::Provider + Sync> #reader<'p, P> {
             #(#views)*
         }
     });

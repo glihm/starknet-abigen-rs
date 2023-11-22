@@ -1,5 +1,26 @@
-//! Expands the contract first implementation with
-//! default configuration for provider and account, if any.
+//! # Contract types expansion
+//!
+//! This module contains the auto-generated types
+//! for the contract for which the bindings are requested.
+//!
+//! A contracts has two structs being auto-generated:
+//!
+//! * <contract_name>Reader - Which is a struct for readonly operations like `FunctionCall`.
+//!   A reader can be initialized from a provider and the contract address.
+//! * <contract_name> - A struct which is used to send transaction like `Invoke`.
+//!   This struct must be initialized with an account and the contract address.
+//!   A reader can also be initialized from this struct to avoid passing both a reader
+//!   and the contract as arguments to functions.
+//!
+//! ## Examples
+//!
+//! ```ignore (pseudo-code)
+//! let reader = ContractNameReader::new(contract_address, provider);
+//!
+//! let contract = ContractName::new(contract_address, account);
+//!
+//! let reader_from_contract = contract.reader();
+//! ```
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 use syn::Ident;
@@ -30,31 +51,22 @@ impl CairoContract {
             }
 
             #[derive(Debug)]
-            pub struct #reader<'a, P: starknet::providers::Provider + Sync> {
+            pub struct #reader<'p, P: starknet::providers::Provider + Sync> {
                 pub address: starknet::core::types::FieldElement,
-                pub provider: &'a P,
-                call_block_id: starknet::core::types::BlockId,
+                pub provider: &'p P,
             }
 
-            impl<'a, P: starknet::providers::Provider + Sync> #reader<'a, P> {
+            impl<'p, P: starknet::providers::Provider + Sync> #reader<'p, P> {
                 pub fn new(
                     address: starknet::core::types::FieldElement,
-                    provider: &'a P,
+                    provider: &'p P,
                 ) -> Self {
-                    let call_block_id = starknet::core::types::BlockId::Tag(starknet::core::types::BlockTag::Pending);
-                    Self { address, provider, call_block_id }
+                    Self { address, provider }
                 }
 
-                pub fn set_call_block_id(&mut self, block_id: starknet::core::types::BlockId) {
-                    self.call_block_id = block_id;
-                }
-
-                pub fn get_call_block_id(&self) -> starknet::core::types::BlockId {
-                    self.call_block_id
-                }
-
-                // TODO: String is not the ideal, but we need to export an enum somewhere for that.
-                pub async fn get_tx_status(&self, transaction_hash: FieldElement) -> String {
+                // Code adapted from Starkli: https://github.com/xJonathanLEI/starkli
+                pub async fn get_tx_status(&self, transaction_hash: FieldElement) -> starknet_abigen_parser::call::TransactionStatus {
+                    use starknet_abigen_parser::call::TransactionStatus;
                     use starknet::{
                         core::types::{ExecutionResult, FieldElement, StarknetError},
                         providers::{MaybeUnknownErrorCode, Provider, ProviderError, StarknetErrorWithMessage},
@@ -63,17 +75,17 @@ impl CairoContract {
                     match self.provider.get_transaction_receipt(transaction_hash).await {
                         Ok(receipt) => match receipt.execution_result() {
                             ExecutionResult::Succeeded => {
-                                "ok".to_string()
+                                TransactionStatus::Succeeded
                             }
                             ExecutionResult::Reverted { reason } => {
-                                format!("reverted: {}", reason)
+                                TransactionStatus::Reverted(format!("reverted: {}", reason))
                             }
                         },
                         Err(ProviderError::StarknetError(StarknetErrorWithMessage {
                             code: MaybeUnknownErrorCode::Known(StarknetError::TransactionHashNotFound),
                             ..
                         })) => {
-                            "pending".to_string()
+                            TransactionStatus::Pending
                         }
                         // Some nodes are still serving error code `25` for tx hash not found. This is
                         // technically a bug on the node's side, but we maximize compatibility here by also
@@ -82,9 +94,9 @@ impl CairoContract {
                             code: MaybeUnknownErrorCode::Known(StarknetError::InvalidTransactionIndex),
                             ..
                         })) => {
-                            "pending".to_string()
+                            TransactionStatus::Pending
                         }
-                        Err(err) => format!("error: {err}")
+                        Err(err) => TransactionStatus::Error(format!("error: {err}"))
                     }
                 }
 
