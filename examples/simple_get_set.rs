@@ -23,7 +23,7 @@ async fn main() {
         AnyProvider::JsonRpcHttp(JsonRpcClient::new(HttpTransport::new(rpc_url.clone())));
 
     let contract_address = FieldElement::from_hex_be(
-        "0x02a293bd31c51a9d3b9ca52bceb77d920523a1cfdde513a95e2a5e792f6e85da",
+        "0x070b12278d22a3256874f8cfbf3cdc4661ea441b9df16ebbadaca38f3db87208",
     )
     .unwrap();
 
@@ -198,4 +198,16 @@ async fn other_func<A: ConnectedAccount + Sync + 'static>(contract: Arc<MyContra
 
     let b = reader.get_b().call().await.expect("Call to `get_b` failed");
     println!("b = {:?}", b);
+
+    let arr = vec![FieldElement::THREE, FieldElement::ONE, FieldElement::ZERO];
+
+    let tx_res = contract
+        .set_array(&arr)
+        .send()
+        .await
+        .expect("invoke set_array failed");
+    println!("tx_res = {:?}", tx_res);
+
+    let a = reader.get_a().call().await.expect("Call to `get_a` failed");
+    println!("a = {:?}", a);
 }

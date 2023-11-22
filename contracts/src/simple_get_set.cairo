@@ -25,4 +25,22 @@ mod simple_get_set {
     fn set_b(ref self: ContractState, b: u256) {
         self.b.write(b);
     }
+
+    #[external(v0)]
+    fn set_array(ref self: ContractState, data: Span<felt252>) {
+        assert(data.len() == 3, 'bad data len');
+        self.a.write(*data[0]);
+        self.b.write(u256 { low: (*data[1]).try_into().unwrap(), high: (*data[2]).try_into().unwrap() });
+    }
+
+    #[external(v0)]
+    fn get_array(self: @ContractState) -> Span<felt252> {
+        let b = self.b.read();
+
+        array![
+            self.a.read(),
+            b.low.into(),
+            b.high.into(),
+        ].span()
+    }
 }
