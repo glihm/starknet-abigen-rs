@@ -33,12 +33,21 @@ async fn main() {
 
     // To call a view, there is no need to initialize an account. You can directly
     // use the name of the method in the ABI to realize the call.
-    let a = contract.get_a().call().await.expect("Call to `get_a` failed");
+    let a = contract
+        .get_a()
+        .call()
+        .await
+        .expect("Call to `get_a` failed");
     println!("a {:?}", a);
 
     // If you need to explicitely set the block id of the call, you can do as
     // following. The default value is "Pending".
-    let b = contract.get_b().block_id(BlockId::Tag(BlockTag::Latest)).call().await.expect("Call to `get_b` failed");
+    let b = contract
+        .get_b()
+        .block_id(BlockId::Tag(BlockTag::Latest))
+        .call()
+        .await
+        .expect("Call to `get_b` failed");
     println!("b = {:?}", b);
 
     // For the inputs / outputs of the ABI functions, all the types are
@@ -82,7 +91,9 @@ async fn main() {
         // A simple tx watcher that polls the receipt of the transaction hash.
         match reader.get_tx_status(tx_res.transaction_hash).await {
             TransactionStatus::Succeeded => break,
-            TransactionStatus::Pending => tokio::time::sleep(tokio::time::Duration::from_secs(1)).await,
+            TransactionStatus::Pending => {
+                tokio::time::sleep(tokio::time::Duration::from_secs(1)).await
+            }
             TransactionStatus::Reverted(e) => {
                 println!("Transaction reverted: {e}");
                 break;
@@ -114,7 +125,9 @@ async fn main() {
     loop {
         match reader.get_tx_status(tx_res.transaction_hash).await {
             TransactionStatus::Succeeded => break,
-            TransactionStatus::Pending => tokio::time::sleep(tokio::time::Duration::from_secs(1)).await,
+            TransactionStatus::Pending => {
+                tokio::time::sleep(tokio::time::Duration::from_secs(1)).await
+            }
             TransactionStatus::Reverted(e) => {
                 println!("Transaction reverted: {e}");
                 break;
@@ -147,18 +160,21 @@ async fn other_func<A: ConnectedAccount + Sync + 'static>(contract: Arc<MyContra
     // passing a contract you also have the reader that you can retrieve anytime
     // by calling `contract.reader()`.
 
-    let set_b = contract.set_b(
-        &u256 {
-            low: 0xfe,
-            high: 0,
-        }
-    );
+    let set_b = contract.set_b(&u256 { low: 0xfe, high: 0 });
 
     // Example of estimation of fees.
-    let estimated_fee = set_b.estimate_fee().await.expect("Fail to estimate").overall_fee;
+    let estimated_fee = set_b
+        .estimate_fee()
+        .await
+        .expect("Fail to estimate")
+        .overall_fee;
 
     // Use the estimated fees as a base.
-    let tx_res = set_b.max_fee((estimated_fee * 2).into()).send().await.expect("invoke failed");
+    let tx_res = set_b
+        .max_fee((estimated_fee * 2).into())
+        .send()
+        .await
+        .expect("invoke failed");
     println!("{:?}", tx_res);
 
     let reader = contract.reader();
@@ -166,7 +182,9 @@ async fn other_func<A: ConnectedAccount + Sync + 'static>(contract: Arc<MyContra
     loop {
         match reader.get_tx_status(tx_res.transaction_hash).await {
             TransactionStatus::Succeeded => break,
-            TransactionStatus::Pending => tokio::time::sleep(tokio::time::Duration::from_secs(1)).await,
+            TransactionStatus::Pending => {
+                tokio::time::sleep(tokio::time::Duration::from_secs(1)).await
+            }
             TransactionStatus::Reverted(e) => {
                 println!("Transaction reverted: {e}");
                 break;

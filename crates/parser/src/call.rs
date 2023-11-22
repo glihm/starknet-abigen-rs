@@ -1,9 +1,8 @@
-
-
-use starknet::core::types::{BlockId, BlockTag, FunctionCall};
 use crate::{
-    cairo_types::{Error, Result as CairoResult}, CairoType,
+    cairo_types::{Error, Result as CairoResult},
+    CairoType,
 };
+use starknet::core::types::{BlockId, BlockTag, FunctionCall};
 use std::marker::PhantomData;
 
 #[derive(Debug)]
@@ -25,7 +24,7 @@ pub struct FCall<'p, P, T> {
 impl<'p, P, T> FCall<'p, P, T>
 where
     P: starknet::providers::Provider + Sync,
-    T: CairoType<RustType = T>
+    T: CairoType<RustType = T>,
 {
     pub fn new(call_raw: FunctionCall, provider: &'p P) -> Self {
         Self {
@@ -46,11 +45,11 @@ where
     }
 
     pub async fn call(self) -> CairoResult<T> {
-        let r = self.provider
+        let r = self
+            .provider
             .call(self.call_raw, self.block_id)
-            .await.map_err(
-                |err| Error::Deserialize(
-                    format!("Deserialization error {}", err)))?;
+            .await
+            .map_err(|err| Error::Deserialize(format!("Deserialization error {}", err)))?;
 
         T::deserialize(&r, 0)
     }
