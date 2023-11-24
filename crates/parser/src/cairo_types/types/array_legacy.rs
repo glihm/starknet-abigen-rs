@@ -49,9 +49,10 @@ where
     fn deserialize(felts: &[FieldElement], offset: usize) -> Result<Self::RustType> {
         let mut out: Vec<RT> = vec![];
         let mut offset = offset;
+        let len = felts[offset - 1];
 
         loop {
-            if out.len() == felts.len() {
+            if FieldElement::from(out.len()) == len {
                 break;
             }
 
