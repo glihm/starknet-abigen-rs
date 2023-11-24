@@ -45,6 +45,10 @@ impl CairoContract {
                     Self { address, account }
                 }
 
+                pub fn set_contract_address(mut self, address: FieldElement) {
+                    self.address = address;
+                }
+
                 pub fn provider(&self) -> &A::Provider {
                     self.account.provider()
                 }
@@ -98,6 +102,10 @@ impl CairoContract {
                     provider: P,
                 ) -> Self {
                     Self { address, provider }
+                }
+
+                pub fn set_contract_address(mut self, address: FieldElement) {
+                    self.address = address;
                 }
 
                 pub fn provider(&self) -> &P {
