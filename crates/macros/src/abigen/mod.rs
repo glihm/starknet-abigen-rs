@@ -22,7 +22,7 @@ use starknet_abigen_parser::{CairoEnum, CairoEvent, CairoFunction, CairoStruct};
 
 mod expand;
 use expand::contract::CairoContract;
-use expand::{Expandable, ExpandableEvent};
+use expand::{Expandable, ExpandableEvent, ExpandableFunction};
 
 mod contract_abi;
 use contract_abi::ContractAbi;
@@ -43,6 +43,7 @@ pub fn abigen_internal(input: TokenStream) -> TokenStream {
     let mut structs: HashMap<String, CairoStruct> = HashMap::new();
     let mut enums: HashMap<String, CairoEnum> = HashMap::new();
     let mut views = vec![];
+    let mut views_reader = vec![];
     let mut externals = vec![];
     let mut events = vec![];
 
@@ -53,6 +54,7 @@ pub fn abigen_internal(input: TokenStream) -> TokenStream {
             &mut enums,
             &mut externals,
             &mut views,
+            &mut views_reader,
             &mut events,
         );
     }
@@ -75,11 +77,12 @@ pub fn abigen_internal(input: TokenStream) -> TokenStream {
     let reader = utils::str_to_ident(format!("{}Reader", contract_name).as_str());
     tokens.push(quote! {
         impl<A: starknet::accounts::ConnectedAccount + Sync> #contract_name<A> {
+            #(#views)*
             #(#externals)*
         }
 
-        impl<'p, P: starknet::providers::Provider + Sync> #reader<'p, P> {
-            #(#views)*
+        impl<P: starknet::providers::Provider + Sync> #reader<P> {
+            #(#views_reader)*
         }
     });
 
@@ -96,6 +99,7 @@ fn parse_entry(
     enums: &mut HashMap<String, CairoEnum>,
     externals: &mut Vec<TokenStream2>,
     views: &mut Vec<TokenStream2>,
+    views_reader: &mut Vec<TokenStream2>,
     events: &mut Vec<CairoEvent>,
 ) {
     match entry {
@@ -131,8 +135,11 @@ fn parse_entry(
             // unique.
             let cf = CairoFunction::new(&f.name, f.state_mutability.clone(), &f.inputs, &f.outputs);
             match f.state_mutability {
-                StateMutability::View => views.push(cf.expand_impl(false)),
-                StateMutability::External => externals.push(cf.expand_impl(false)),
+                StateMutability::View => {
+                    views.push(cf.expand_impl(false, false));
+                    views_reader.push(cf.expand_impl(true, false));
+                }
+                StateMutability::External => externals.push(cf.expand_impl(false, false)),
             }
         }
         AbiEntry::Event(ev) => {
@@ -142,7 +149,15 @@ fn parse_entry(
         }
         AbiEntry::Interface(interface) => {
             for entry in &interface.items {
-                parse_entry(entry, structs, enums, externals, views, events);
+                parse_entry(
+                    entry,
+                    structs,
+                    enums,
+                    externals,
+                    views,
+                    views_reader,
+                    events,
+                );
             }
         }
         _ => (),

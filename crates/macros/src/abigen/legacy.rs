@@ -14,7 +14,7 @@ use starknet_abigen_parser::cairo_types::CAIRO_BASIC_STRUCTS;
 use starknet_abigen_parser::{CairoFunction, CairoStruct};
 
 use crate::abigen::expand::contract::CairoContract;
-use crate::abigen::expand::Expandable;
+use crate::abigen::expand::{Expandable, ExpandableFunction};
 
 use crate::abigen::contract_abi::ContractAbiLegacy;
 use crate::abigen::expand::utils;
@@ -30,10 +30,17 @@ pub fn abigen_internal_legacy(input: TokenStream) -> TokenStream {
 
     let mut structs: HashMap<String, CairoStruct> = HashMap::new();
     let mut views = vec![];
+    let mut views_reader = vec![];
     let mut externals = vec![];
 
     for entry in &abi {
-        parse_entry(entry, &mut structs, &mut externals, &mut views);
+        parse_entry(
+            entry,
+            &mut structs,
+            &mut externals,
+            &mut views,
+            &mut views_reader,
+        );
     }
 
     for (_, cs) in structs {
@@ -44,11 +51,12 @@ pub fn abigen_internal_legacy(input: TokenStream) -> TokenStream {
     let reader = utils::str_to_ident(format!("{}Reader", contract_name).as_str());
     tokens.push(quote! {
         impl<A: starknet::accounts::ConnectedAccount + Sync> #contract_name<A> {
+            #(#views)*
             #(#externals)*
         }
 
-        impl<'p, P: starknet::providers::Provider + Sync> #reader<'p, P> {
-            #(#views)*
+        impl<P: starknet::providers::Provider + Sync> #reader<P> {
+            #(#views_reader)*
         }
     });
 
@@ -64,6 +72,7 @@ fn parse_entry(
     structs: &mut HashMap<String, CairoStruct>,
     externals: &mut Vec<TokenStream2>,
     views: &mut Vec<TokenStream2>,
+    views_reader: &mut Vec<TokenStream2>,
 ) {
     match entry {
         RawLegacyAbiEntry::Struct(s) => {
@@ -114,8 +123,11 @@ fn parse_entry(
 
             let cf = CairoFunction::new(&f.name, mutability.clone(), &inputs, &outputs);
             match mutability {
-                StateMutability::View => views.push(cf.expand_impl(true)),
-                StateMutability::External => externals.push(cf.expand_impl(true)),
+                StateMutability::View => {
+                    views.push(cf.expand_impl(false, true));
+                    views_reader.push(cf.expand_impl(true, true));
+                }
+                StateMutability::External => externals.push(cf.expand_impl(false, true)),
             }
         }
         // RawLegacyAbiEntry::Event(ev) => {

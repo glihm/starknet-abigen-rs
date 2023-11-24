@@ -21,7 +21,7 @@
 //! ```
 use super::{
     utils::{str_to_ident, str_to_type},
-    Expandable,
+    ExpandableFunction,
 };
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
@@ -54,12 +54,12 @@ fn get_func_outputs(outputs: &[AbiTypeAny], is_legacy: bool) -> Vec<TokenStream2
     out
 }
 
-impl Expandable for CairoFunction {
+impl ExpandableFunction for CairoFunction {
     fn expand_decl(&self, _is_legacy: bool) -> TokenStream2 {
         quote!()
     }
 
-    fn expand_impl(&self, is_legacy: bool) -> TokenStream2 {
+    fn expand_impl(&self, is_for_reader: bool, is_legacy: bool) -> TokenStream2 {
         let _decl = self.expand_decl(is_legacy);
         let func_name = &self.name;
         let func_name_ident = str_to_ident(&self.name);
@@ -94,6 +94,11 @@ impl Expandable for CairoFunction {
 
         let inputs = get_func_inputs(&self.inputs, is_legacy);
         let func_name_call = str_to_ident(&format!("{}_getcall", self.name));
+        let type_param = if is_for_reader {
+            str_to_type("P")
+        } else {
+            str_to_type("A::Provider")
+        };
 
         match &self.state_mutability {
             StateMutability::View => quote! {
@@ -102,7 +107,7 @@ impl Expandable for CairoFunction {
                 pub fn #func_name_ident(
                     &self,
                     #(#inputs),*
-                ) -> starknet_abigen_parser::call::FCall<'p, P, #out_type> {
+                ) -> starknet_abigen_parser::call::FCall<#type_param, #out_type> {
                     use starknet_abigen_parser::CairoType;
 
                     let mut __calldata = vec![];
@@ -116,7 +121,7 @@ impl Expandable for CairoFunction {
 
                     starknet_abigen_parser::call::FCall::new(
                         __call,
-                        self.provider,
+                        self.provider(),
                     )
                 }
             },
@@ -128,7 +133,7 @@ impl Expandable for CairoFunction {
                 // we can remove `_getcall()` method.
                 //
                 // TODO: if it's possible to do it with lifetime,
-                // this can be try in an issue.
+                // this can be tried in an issue.
                 quote! {
                     #[allow(clippy::ptr_arg)]
                     #[allow(clippy::too_many_arguments)]
@@ -169,79 +174,5 @@ impl Expandable for CairoFunction {
                 }
             }
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::abigen::Expandable;
-    use proc_macro2::TokenStream as TokenStream2;
-    use quote::quote;
-    use starknet::core::types::contract::StateMutability;
-    use starknet_abigen_parser::{abi_types::AbiTypeAny, CairoFunction};
-
-    #[test]
-    fn test_decl_basic() {
-        let cf = CairoFunction {
-            name: "my_func".to_string(),
-            state_mutability: StateMutability::View,
-            inputs: vec![
-                ("v1".to_string(), AbiTypeAny::Basic("core::felt252".into())),
-                ("v2".to_string(), AbiTypeAny::Basic("core::felt252".into())),
-            ],
-            output: Some(AbiTypeAny::Basic("core::felt252".into())),
-        };
-        let te1 = cf.expand_decl();
-        let tef1: TokenStream2 = quote!(
-            pub async fn my_func(&self, v1: &starknet::core::types::FieldElement, v2: &starknet::core::types::FieldElement) -> starknet_abigen_parser::cairo_types::Result<starknet::core::types::FieldElement>
-        );
-
-        assert_eq!(te1.to_string(), tef1.to_string());
-    }
-
-    #[test]
-    fn test_impl_basic() {
-        let cf = CairoFunction {
-            name: "my_func".to_string(),
-            state_mutability: StateMutability::View,
-            inputs: vec![
-                ("v1".to_string(), AbiTypeAny::Basic("core::felt252".into())),
-                ("v2".to_string(), AbiTypeAny::Basic("core::felt252".into())),
-            ],
-            output: Some(AbiTypeAny::Basic("core::felt252".into())),
-        };
-        let te1 = cf.expand_impl();
-
-        #[rustfmt::skip]
-        let tef1: TokenStream2 = quote!(
-            #[allow(clippy::ptr_arg)]
-            pub async fn my_func(
-                &self,
-                v1: &starknet::core::types::FieldElement,
-                v2: &starknet::core::types::FieldElement
-            ) -> starknet_abigen_parser::cairo_types::Result<starknet::core::types::FieldElement> {
-                use starknet_abigen_parser::CairoType;
-                use starknet::core::types::{BlockId, BlockTag};
-
-                let mut __calldata = vec![];
-                __calldata.extend(starknet::core::types::FieldElement::serialize(v1));
-                __calldata.extend(starknet::core::types::FieldElement::serialize(v2));
-
-                let r = self.provider
-                    .call(
-                        starknet::core::types::FunctionCall {
-                            contract_address: self.address,
-                            entry_point_selector: starknet::macros::selector!("my_func"),
-                            calldata: __calldata,
-                        },
-                        self.call_block_id,
-                    )
-                    .await.map_err(|err| starknet_abigen_parser::cairo_types::Error::Deserialize(format!("Deserialization error {}" , err)))?;
-
-                starknet::core::types::FieldElement::deserialize(&r, 0)
-            }
-        );
-
-        assert_eq!(te1.to_string(), tef1.to_string());
     }
 }

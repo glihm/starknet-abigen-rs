@@ -45,23 +45,8 @@ impl CairoContract {
                     Self { address, account }
                 }
 
-                pub fn reader(&self) -> #reader<A::Provider> {
-                    #reader::new(self.address, self.account.provider())
-                }
-            }
-
-            #[derive(Debug)]
-            pub struct #reader<'p, P: starknet::providers::Provider + Sync> {
-                pub address: starknet::core::types::FieldElement,
-                pub provider: &'p P,
-            }
-
-            impl<'p, P: starknet::providers::Provider + Sync> #reader<'p, P> {
-                pub fn new(
-                    address: starknet::core::types::FieldElement,
-                    provider: &'p P,
-                ) -> Self {
-                    Self { address, provider }
+                pub fn provider(&self) -> &A::Provider {
+                    self.account.provider()
                 }
 
                 // Code adapted from Starkli: https://github.com/xJonathanLEI/starkli
@@ -72,7 +57,7 @@ impl CairoContract {
                         providers::{MaybeUnknownErrorCode, Provider, ProviderError, StarknetErrorWithMessage},
                     };
 
-                    match self.provider.get_transaction_receipt(transaction_hash).await {
+                    match self.provider().get_transaction_receipt(transaction_hash).await {
                         Ok(receipt) => match receipt.execution_result() {
                             ExecutionResult::Succeeded => {
                                 TransactionStatus::Succeeded
@@ -99,7 +84,25 @@ impl CairoContract {
                         Err(err) => TransactionStatus::Error(format!("error: {err}"))
                     }
                 }
+            }
 
+            #[derive(Debug)]
+            pub struct #reader<P: starknet::providers::Provider + Sync> {
+                pub address: starknet::core::types::FieldElement,
+                pub provider: P,
+            }
+
+            impl<P: starknet::providers::Provider + Sync> #reader<P> {
+                pub fn new(
+                    address: starknet::core::types::FieldElement,
+                    provider: P,
+                ) -> Self {
+                    Self { address, provider }
+                }
+
+                pub fn provider(&self) -> &P {
+                    &self.provider
+                }
             }
         };
 

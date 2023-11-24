@@ -2,7 +2,7 @@
 //!
 use super::{
     utils::{str_to_ident, str_to_type},
-    Expandable,
+    ExpandableFunction,
 };
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
@@ -38,7 +38,7 @@ fn get_func_outputs(outputs: &[AbiTypeAny]) -> Vec<TokenStream2> {
     out
 }
 
-impl Expandable for CairoFunctionLegacy {
+impl ExpandableFunction for CairoFunctionLegacy {
     fn expand_decl(&self) -> TokenStream2 {
         quote!()
     }
@@ -71,13 +71,18 @@ impl Expandable for CairoFunctionLegacy {
 
         let inputs = get_func_inputs(&self.inputs);
         let func_name_call = str_to_ident(&format!("{}_getcall", self.name));
+        let type_param = if is_for_reader {
+            str_to_type("P")
+        } else {
+            str_to_type("A::Provider")
+        };
 
         match &self.state_mutability {
             StateMutability::View => quote! {
                 pub fn #func_name_ident(
                     &self,
                     #(#inputs),*
-                ) -> starknet_abigen_parser::call::FCall<'p, P, #out_type> {
+                ) -> starknet_abigen_parser::call::FCall<#type_param, #out_type> {
                     use starknet_abigen_parser::CairoType;
 
                     let mut __calldata = vec![];

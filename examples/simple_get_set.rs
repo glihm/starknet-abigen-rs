@@ -84,12 +84,9 @@ async fn main() {
         .await
         .expect("Call to `set_a` failed");
 
-    // Create a new reader from contract account.
-    let reader = contract.reader();
-
     loop {
         // A simple tx watcher that polls the receipt of the transaction hash.
-        match reader.get_tx_status(tx_res.transaction_hash).await {
+        match contract.get_tx_status(tx_res.transaction_hash).await {
             TransactionStatus::Succeeded => break,
             TransactionStatus::Pending => {
                 tokio::time::sleep(tokio::time::Duration::from_secs(1)).await
@@ -105,7 +102,11 @@ async fn main() {
         }
     }
 
-    let a = reader.get_a().call().await.expect("Call to `get_a` failed");
+    let a = contract
+        .get_a()
+        .call()
+        .await
+        .expect("Call to `get_a` failed");
     println!("a = {:?}", a);
 
     // Now let's say we want to do multicall, and in one transaction we want to set a and b.
@@ -123,7 +124,7 @@ async fn main() {
         .expect("Multicall failed");
 
     loop {
-        match reader.get_tx_status(tx_res.transaction_hash).await {
+        match contract.get_tx_status(tx_res.transaction_hash).await {
             TransactionStatus::Succeeded => break,
             TransactionStatus::Pending => {
                 tokio::time::sleep(tokio::time::Duration::from_secs(1)).await
@@ -139,10 +140,18 @@ async fn main() {
         }
     }
 
-    let a = reader.get_a().call().await.expect("Call to `get_a` failed");
+    let a = contract
+        .get_a()
+        .call()
+        .await
+        .expect("Call to `get_a` failed");
     println!("a = {:?}", a);
 
-    let b = reader.get_b().call().await.expect("Call to `get_b` failed");
+    let b = contract
+        .get_b()
+        .call()
+        .await
+        .expect("Call to `get_b` failed");
     println!("b = {:?}", b);
 
     // Remember, ConnectedAccount is implemented for Arc<ConnectedAccount>.
@@ -177,10 +186,10 @@ async fn other_func<A: ConnectedAccount + Sync + 'static>(contract: Arc<MyContra
         .expect("invoke failed");
     println!("{:?}", tx_res);
 
-    let reader = contract.reader();
+    //let reader = MyContractReader::new(contract.address, contract.provider());
 
     loop {
-        match reader.get_tx_status(tx_res.transaction_hash).await {
+        match contract.get_tx_status(tx_res.transaction_hash).await {
             TransactionStatus::Succeeded => break,
             TransactionStatus::Pending => {
                 tokio::time::sleep(tokio::time::Duration::from_secs(1)).await
@@ -196,7 +205,11 @@ async fn other_func<A: ConnectedAccount + Sync + 'static>(contract: Arc<MyContra
         }
     }
 
-    let b = reader.get_b().call().await.expect("Call to `get_b` failed");
+    let b = contract
+        .get_b()
+        .call()
+        .await
+        .expect("Call to `get_b` failed");
     println!("b = {:?}", b);
 
     let arr = vec![FieldElement::THREE, FieldElement::ONE, FieldElement::ZERO];
@@ -208,6 +221,10 @@ async fn other_func<A: ConnectedAccount + Sync + 'static>(contract: Arc<MyContra
         .expect("invoke set_array failed");
     println!("tx_res = {:?}", tx_res);
 
-    let a = reader.get_a().call().await.expect("Call to `get_a` failed");
+    let a = contract
+        .get_a()
+        .call()
+        .await
+        .expect("Call to `get_a` failed");
     println!("a = {:?}", a);
 }
