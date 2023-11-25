@@ -1,5 +1,35 @@
 [
   {
+    "type": "enum",
+    "name": "contracts::simple_get_set::simple_get_set::TestEnum",
+    "variants": [
+      {
+        "name": "V1",
+        "type": "core::felt252"
+      },
+      {
+        "name": "V2",
+        "type": "()"
+      }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "get_set_enum",
+    "inputs": [
+      {
+        "name": "v",
+        "type": "contracts::simple_get_set::simple_get_set::TestEnum"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "contracts::simple_get_set::simple_get_set::TestEnum"
+      }
+    ],
+    "state_mutability": "view"
+  },
+  {
     "type": "function",
     "name": "get_a",
     "inputs": [],

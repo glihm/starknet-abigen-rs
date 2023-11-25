@@ -16,5 +16,5 @@ mod basic {
     #[external(v0)]
     fn read_storage_tuple(self: @ContractState) -> (felt252, u256) {
         (self.v1.read(), self.v2.read())
-    }    
+    }
 }

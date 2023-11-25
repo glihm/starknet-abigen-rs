@@ -25,11 +25,10 @@ mod gen {
     fn func2(ref self: ContractState, a: MyStruct<u256>) {
         self.v1.write(a.f2.low.into());
         self.v2.write(a.f2.high.into());
-        
     }
 
     #[external(v0)]
     fn read(self: @ContractState) -> (felt252, felt252) {
         (self.v1.read(), self.v2.read())
-    }    
+    }
 }

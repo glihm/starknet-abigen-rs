@@ -95,7 +95,7 @@ impl Expandable for CairoEnum {
         }
 
         deserializations.push(quote! {
-            _ => panic!("Index not handle for enum {}", #name_str)
+            _ => return Err(starknet_abigen_parser::cairo_types::Error::Deserialize(format!("Index not handle for enum {}", #name_str)))
         });
 
         let gentys: Vec<Ident> = self.get_gentys().iter().map(|g| str_to_ident(g)).collect();
