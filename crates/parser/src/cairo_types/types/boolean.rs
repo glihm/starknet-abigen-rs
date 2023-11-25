@@ -1,5 +1,5 @@
 //! CairoType implementation for bool.
-use crate::cairo_types::{CairoType, Result};
+use crate::cairo_types::{CairoType, Error, Result};
 use starknet::core::types::FieldElement;
 
 impl CairoType for bool {
@@ -10,6 +10,13 @@ impl CairoType for bool {
     }
 
     fn deserialize(felts: &[FieldElement], offset: usize) -> Result<Self::RustType> {
+        if offset >= felts.len() {
+            return Err(Error::Deserialize(format!(
+                "Buffer too short to deserialize a boolean: offset ({}) : buffer {:?}",
+                offset, felts,
+            )));
+        }
+
         if felts[offset] == FieldElement::ONE {
             Ok(true)
         } else {

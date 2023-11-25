@@ -13,6 +13,14 @@ where
 {
     type RustType = Option<RT>;
 
+    #[inline]
+    fn serialized_size(rust: &Self::RustType) -> usize {
+        match rust {
+            Some(d) => 1 + T::serialized_size(d),
+            None => 1,
+        }
+    }
+
     fn serialize(rust: &Self::RustType) -> Vec<FieldElement> {
         let mut out = vec![];
 
@@ -28,9 +36,23 @@ where
     }
 
     fn deserialize(felts: &[FieldElement], offset: usize) -> Result<Self::RustType> {
+        if offset >= felts.len() {
+            return Err(Error::Deserialize(format!(
+                "Buffer too short to deserialize an Option: offset ({}) : buffer {:?}",
+                offset, felts,
+            )));
+        }
+
         let idx = felts[offset];
 
         if idx == FieldElement::ZERO {
+            if offset + 1 >= felts.len() {
+                return Err(Error::Deserialize(format!(
+                    "Buffer too short to deserialize an option: offset ({}) : buffer {:?}",
+                    offset, felts,
+                )));
+            }
+
             // + 1 as the offset value is the index of the enum.
             Ok(Option::Some(T::deserialize(felts, offset + 1)?))
         } else if idx == FieldElement::ONE {

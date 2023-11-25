@@ -25,10 +25,24 @@ where
     }
 
     fn deserialize(felts: &[FieldElement], offset: usize) -> Result<Self::RustType> {
+        if offset >= felts.len() {
+            return Err(Error::Deserialize(format!(
+                "Buffer too short to deserialize an array: offset ({}) : buffer {:?}",
+                offset, felts,
+            )));
+        }
+
         let len: usize = usize::from_str_radix(format!("{:x}", felts[offset]).as_str(), 16)
             .map_err(|_| {
                 Error::Deserialize("First felt of an array must fit into usize".to_string())
             })?;
+
+        if offset + len + 1 >= felts.len() {
+            return Err(Error::Deserialize(format!(
+                "Buffer too short to deserialize an array of length {}: offset ({}) : buffer {:?}",
+                len, offset, felts,
+            )));
+        }
 
         let mut out: Vec<RT> = vec![];
         let mut offset = offset + 1;

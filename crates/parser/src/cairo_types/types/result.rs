@@ -11,6 +11,14 @@ where
 {
     type RustType = Result<RT, RE>;
 
+    #[inline]
+    fn serialized_size(rust: &Self::RustType) -> usize {
+        match rust {
+            Ok(d) => 1 + T::serialized_size(d),
+            Err(e) => 1 + E::serialized_size(e),
+        }
+    }
+
     fn serialize(rust: &Self::RustType) -> Vec<FieldElement> {
         let mut out = vec![];
 
@@ -29,6 +37,14 @@ where
     }
 
     fn deserialize(felts: &[FieldElement], offset: usize) -> CairoResult<Self::RustType> {
+        // +1 because a result always have an inner type.
+        if offset + 1 >= felts.len() {
+            return Err(CairoError::Deserialize(format!(
+                "Buffer too short to deserialize a Result: offset ({}) : buffer {:?}",
+                offset, felts,
+            )));
+        }
+
         let idx = felts[offset];
 
         if idx == FieldElement::ZERO {

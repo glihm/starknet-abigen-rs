@@ -1,5 +1,5 @@
 //! Dedicated struct for cairo 0 arrays, where len is not prefixed.
-use crate::cairo_types::{CairoType, Result};
+use crate::cairo_types::{CairoType, Error, Result};
 use starknet::core::types::FieldElement;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -47,9 +47,23 @@ where
     }
 
     fn deserialize(felts: &[FieldElement], offset: usize) -> Result<Self::RustType> {
+        if offset >= felts.len() {
+            return Err(Error::Deserialize(format!(
+                "Buffer too short to deserialize an array: offset ({}) : buffer {:?}",
+                offset, felts,
+            )));
+        }
+
         let mut out: Vec<RT> = vec![];
         let mut offset = offset;
         let len = felts[offset - 1];
+
+        if FieldElement::from(offset) + len >= FieldElement::from(felts.len()) {
+            return Err(Error::Deserialize(format!(
+                "Buffer too short to deserialize an array of length {}: offset ({}) : buffer {:?}",
+                len, offset, felts,
+            )));
+        }
 
         loop {
             if FieldElement::from(out.len()) == len {

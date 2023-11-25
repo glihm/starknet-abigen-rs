@@ -1,4 +1,4 @@
-use crate::cairo_types::{CairoType, Result};
+use crate::cairo_types::{CairoType, Error, Result};
 use starknet::core::types::FieldElement;
 
 impl CairoType for () {
@@ -21,6 +21,13 @@ impl CairoType for FieldElement {
     }
 
     fn deserialize(felts: &[FieldElement], offset: usize) -> Result<Self::RustType> {
+        if offset >= felts.len() {
+            return Err(Error::Deserialize(format!(
+                "Buffer too short to deserialize a felt: offset ({}) : buffer {:?}",
+                offset, felts,
+            )));
+        }
+
         Ok(felts[offset])
     }
 }

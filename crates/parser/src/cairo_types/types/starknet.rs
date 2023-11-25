@@ -1,7 +1,7 @@
 //! CairoType implementation for starknet types.
 //!
 //! They are alf `FieldElement` under the hood.
-use crate::cairo_types::{CairoType, Result};
+use crate::cairo_types::{CairoType, Error, Result};
 use starknet::core::types::FieldElement;
 
 /// ContractAddress.
@@ -28,6 +28,13 @@ impl CairoType for ContractAddress {
     }
 
     fn deserialize(felts: &[FieldElement], offset: usize) -> Result<Self::RustType> {
+        if offset >= felts.len() {
+            return Err(Error::Deserialize(format!(
+                "Buffer too short to deserialize a ContractAddress: offset ({}) : buffer {:?}",
+                offset, felts,
+            )));
+        }
+
         Ok(ContractAddress(FieldElement::deserialize(felts, offset)?))
     }
 }
@@ -56,6 +63,13 @@ impl CairoType for ClassHash {
     }
 
     fn deserialize(felts: &[FieldElement], offset: usize) -> Result<Self::RustType> {
+        if offset >= felts.len() {
+            return Err(Error::Deserialize(format!(
+                "Buffer too short to deserialize a ClassHash: offset ({}) : buffer {:?}",
+                offset, felts,
+            )));
+        }
+
         Ok(ClassHash(FieldElement::deserialize(felts, offset)?))
     }
 }
@@ -84,6 +98,13 @@ impl CairoType for EthAddress {
     }
 
     fn deserialize(felts: &[FieldElement], offset: usize) -> Result<Self::RustType> {
+        if offset >= felts.len() {
+            return Err(Error::Deserialize(format!(
+                "Buffer too short to deserialize an EthAddress: offset ({}) : buffer {:?}",
+                offset, felts,
+            )));
+        }
+
         Ok(EthAddress(FieldElement::deserialize(felts, offset)?))
     }
 }

@@ -1,5 +1,5 @@
 //! CairoType implementation for integers (signed/unsigned).
-use crate::cairo_types::{CairoType, Result};
+use crate::cairo_types::{CairoType, Error, Result};
 use starknet::core::types::FieldElement;
 
 macro_rules! implement_trait_for_unsigned {
@@ -12,6 +12,14 @@ macro_rules! implement_trait_for_unsigned {
             }
 
             fn deserialize(felts: &[FieldElement], offset: usize) -> Result<Self::RustType> {
+                if offset >= felts.len() {
+                    return Err(Error::Deserialize(format!(
+                        "Buffer too short to deserialize a unsigned integer: offset ({}) : buffer {:?}",
+                        offset,
+                        felts,
+                    )));
+                }
+
                 let temp: u128 = felts[offset].try_into().unwrap();
                 Ok(temp as $type)
             }
@@ -29,6 +37,14 @@ macro_rules! implement_trait_for_signed {
             }
 
             fn deserialize(felts: &[FieldElement], offset: usize) -> Result<Self::RustType> {
+                if offset >= felts.len() {
+                    return Err(Error::Deserialize(format!(
+                        "Buffer too short to deserialize a signed integer: offset ({}) : buffer {:?}",
+                        offset,
+                        felts,
+                    )));
+                }
+
                 let temp: u128 = felts[offset].try_into().unwrap();
                 Ok(temp as $type)
             }
