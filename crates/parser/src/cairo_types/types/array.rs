@@ -37,7 +37,7 @@ where
                 Error::Deserialize("First felt of an array must fit into usize".to_string())
             })?;
 
-        if offset + len + 1 >= felts.len() {
+        if offset + len >= felts.len() {
             return Err(Error::Deserialize(format!(
                 "Buffer too short to deserialize an array of length {}: offset ({}) : buffer {:?}",
                 len, offset, felts,
