@@ -58,7 +58,7 @@ impl CairoContract {
                     use starknet_abigen_parser::call::TransactionStatus;
                     use starknet::{
                         core::types::{ExecutionResult, FieldElement, StarknetError},
-                        providers::{MaybeUnknownErrorCode, Provider, ProviderError, StarknetErrorWithMessage},
+                        providers::{Provider, ProviderError},
                     };
 
                     match self.provider().get_transaction_receipt(transaction_hash).await {
@@ -70,19 +70,13 @@ impl CairoContract {
                                 TransactionStatus::Reverted(format!("reverted: {}", reason))
                             }
                         },
-                        Err(ProviderError::StarknetError(StarknetErrorWithMessage {
-                            code: MaybeUnknownErrorCode::Known(StarknetError::TransactionHashNotFound),
-                            ..
-                        })) => {
+                        Err(ProviderError::StarknetError(StarknetError::TransactionHashNotFound)) => {
                             TransactionStatus::Pending
                         }
                         // Some nodes are still serving error code `25` for tx hash not found. This is
                         // technically a bug on the node's side, but we maximize compatibility here by also
                         // accepting it.
-                        Err(ProviderError::StarknetError(StarknetErrorWithMessage {
-                            code: MaybeUnknownErrorCode::Known(StarknetError::InvalidTransactionIndex),
-                            ..
-                        })) => {
+                        Err(ProviderError::StarknetError(StarknetError::InvalidTransactionIndex)) => {
                             TransactionStatus::Pending
                         }
                         Err(err) => TransactionStatus::Error(format!("error: {err}"))
