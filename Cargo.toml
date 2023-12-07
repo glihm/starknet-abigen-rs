@@ -18,7 +18,7 @@ starknet-abigen-macros = { path = "crates/macros" }
 serde = { version = "1.0", default-features = false, features = ["alloc"] }
 serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
 
-starknet = "0.7.0"
+starknet = { git = "https://github.com/xJonathanLEI/starknet-rs", rev = "fec81d126c58ff3dff6cbfd4b9e714913298e54e" }
 thiserror = "1.0"
 anyhow = "1.0"
 tokio = { version = "1.15.0", features = ["full"] }
