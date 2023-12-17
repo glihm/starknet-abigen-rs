@@ -1,3 +1,6 @@
+# ⚠️ ARCHIVED ⚠️
+This repo will no longer be maintained, in favor of it's new version available here: https://github.com/cartridge-gg/cainome.
+
 # Starknet abigen for rust bindings
 
 Passionate work about providing rust binding to Starknet community, by the community.
